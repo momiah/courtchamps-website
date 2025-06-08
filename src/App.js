@@ -39,7 +39,7 @@ export default function App() {
       label: "Scoreboard",
       image: appImages.scoreboard,
       description:
-        "Real-time match updates, player stats, and live scores to keep you engaged during games.",
+        "Add scores and see real-time match updates, player stats, and player performance.",
     },
     {
       label: "Home page",
@@ -69,13 +69,13 @@ export default function App() {
       label: "Team details modal",
       image: appImages.teamDetailModal,
       description:
-        "View detailed team stats for your team and see who your rival is!.",
+        "View detailed team stats for your team and see who your rival is!",
     },
     {
       label: "Chat Room",
       image: appImages.chatRoom,
       description:
-        "Connect with players in dedicated private chat room for every league, discuss games, and share experiences!.",
+        "Connect with players in dedicated private chat room for every league, discuss games, and share experiences!",
     },
   ];
 
@@ -164,6 +164,7 @@ const PageContainer = styled.div({
 
 const HeaderSection = styled.div({
   marginBottom: "48px",
+  paddingLeft: "74px",
 });
 
 const Logo = styled.img({
