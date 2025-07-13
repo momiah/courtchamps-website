@@ -1,15 +1,28 @@
-// App.js
 import React, { useEffect } from "react";
 import styled from "styled-components";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 import CourtChampsLogo from "./assets/court-champ-logo.png";
 import AppStoreBadge from "./assets/app-store-mobile-download-button.png";
 import PlayStoreBadge from "./assets/play-store-mobile-download-button.png";
 import { appImages } from "./assets/appImages";
 
+import DeleteAccount from "./pages/accounts/DeleteAccount";
+
 export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/accounts/delete-account" element={<DeleteAccount />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function HomePage() {
   useEffect(() => {
     AOS.init({
       duration: 600,
@@ -103,7 +116,6 @@ export default function App() {
       <FeaturesContainer>
         {features.map((feat, idx) => {
           const isOdd = idx % 2 === 1;
-          // Pick animations based on index parity
           const imgAnimation = isOdd ? "fade-left" : "fade-right";
           const textAnimation = isOdd ? "fade-right" : "fade-left";
 
@@ -115,7 +127,6 @@ export default function App() {
                 data-aos={imgAnimation}
                 data-aos-offset="150"
               />
-
               <FeatureDescriptionContainer
                 reverse={isOdd}
                 data-aos={textAnimation}
@@ -141,6 +152,16 @@ export default function App() {
         >
           Privacy Policy
         </a>
+        <Link
+          to="/accounts/delete-account"
+          style={{
+            color: "#FFFFFF",
+            textDecoration: "none",
+            marginRight: "8px",
+          }}
+        >
+          Delete Account
+        </Link>
         <span>info@courtchamps.com</span>
         <span>© 2025 CourtChamps</span>
       </FooterRow>
