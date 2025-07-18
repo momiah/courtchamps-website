@@ -3,8 +3,6 @@ import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import CourtChampsLogo from "../../assets/court-champ-logo.png";
 import { LoadingOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { auth } from "../../context/firebase"; // Adjust path to your firebase.js
-import { sendSignInLinkToEmail } from "firebase/auth";
 
 export default function DeleteAccount() {
   const [email, setEmail] = useState("");
@@ -33,7 +31,7 @@ export default function DeleteAccount() {
           );
 
           const data = await response.json();
-          if (!response.ok) {
+          if (!response.ok ) {
             throw new Error(data.message || `Failed to delete account: ${response.status}`);
           }
 
@@ -56,14 +54,12 @@ export default function DeleteAccount() {
     setSuccess(false);
 
     try {
-
-      // Store token in Firestore
       const response = await fetch(
-        "https://us-central1-scoreboard-app-29148.cloudfunctions.net/storeDeletionToken",
+        "https://us-central1-scoreboard-app-29148.cloudfunctions.net/requestAccountDeletion",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email }),
+          body: JSON.stringify({ email: email.toLowerCase() }),
         }
       );
 
@@ -72,22 +68,11 @@ export default function DeleteAccount() {
         if (data.message && (data.message.includes("user-not-found") || data.message.includes("No account"))) {
           throw new Error("No account found with this email");
         }
-        if (data.message && data.message.includes("Failed to store deletion token")) {
-          throw new Error("Failed to store deletion token");
+        if (data.message && data.message.includes("invalid-email")) {
+          throw new Error("Invalid email format");
         }
         throw new Error(data.message || `Failed to fetch: ${response.status}`);
       }
-
-      const data = await response.json();
-      const { secureToken } = data;
-
-      // Send verification email using Firebase Client SDK
-      const actionCodeSettings = {
-        url: `https://courtchamps.com/accounts/delete-account?email=${encodeURIComponent(email)}&securetoken=${secureToken}`,
-        handleCodeInApp: true,
-      };
-
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
 
       setSuccess(true);
       setStatus("sent");
@@ -95,7 +80,7 @@ export default function DeleteAccount() {
       console.error("Deletion request error:", err);
       if (err.message.includes("user-not-found") || err.message.includes("No account")) {
         setError("No account found with this email.");
-      } else if (err.code === "auth/invalid-email") {
+      } else if (err.message.includes("invalid-email")) {
         setError("Invalid email format.");
       } else if (err.message.includes("Failed to fetch")) {
         setError("Network error: Unable to connect to server. Please check your internet connection.");
@@ -106,29 +91,6 @@ export default function DeleteAccount() {
       setLoading(false);
     }
   };
-
-  // Alternative using UserContext's deleteAccount
-  // const { deleteAccount } = useContext(UserContext);
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   setError("");
-  //   setSuccess(false);
-  //   try {
-  //     await deleteAccount(email);
-  //     setSuccess(true);
-  //     setStatus("sent");
-  //   } catch (err) {
-  //     if (err.message.includes("user-not-found") || err.message.includes("No account")) {
-  //       setError("No account found with this email.");
-  //     } else {
-  //       setError("An error occurred. Please try again.");
-  //     }
-  //     console.error("Deletion request error:", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   return (
     <PageContainer>
