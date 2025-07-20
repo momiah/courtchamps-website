@@ -7,16 +7,17 @@ admin.initializeApp();
 
 // Configure Nodemailer for Namecheap Private Email
 const transporter = nodemailer.createTransport({
-  host: functions.config().email.host,
-  port: functions.config().email.port,
-  secure: true, // SSL
+  host: "mail.privateemail.com",
+  port: "465",
+  secure: true,
   auth: {
-    user: functions.config().email.user,
-    pass: functions.config().email.password,
+    user: "info@courtchamps.com",
+    pass: "Speedyam1!",
   },
+  logging: true,
 });
 
-// Step 1: Request account deletion
+//Request account deletion
 exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
   cors(req, res, async () => {
     const { email } = req.body;
@@ -38,16 +39,20 @@ exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
         expires: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)),
       });
 
+      // Send verification email
+      console.log(`Sending verification email to ${email}`);
+      console.log(`Secure token: ${secureToken}`);
+
       // Send email via Namecheap Private Email
       const mailOptions = {
-        from: `${functions.config().email.user}`,
+        from: "info@courtchamps.com",
         to: email,
         subject: "Confirm Your CourtChamps Account Deletion",
         html: `
           <p>Hello,</p>
           <p></p>
-          <p>You have requested to delete your CourtChamps account. Please click the link below to confirm:</p>
-          <p><a href="https://court-champs.web.app/delete-account?email=${encodeURIComponent(email)}&securetoken=${secureToken}">Confirm Account Deletion</a></p>
+          <p>You have requested to delete your CourtChamps account. Please click the link below to proceed:</p>
+          <p><a href="https://courtchamps.com/accounts/delete-account?email=${encodeURIComponent(email)}&securetoken=${secureToken}">Confirm Account Deletion</a></p>
           <p></p>
           <p>This link will expire in 30 minutes. If you did not request this, please ignore this email.</p>
           <p></p>
@@ -57,12 +62,16 @@ exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
 
       await transporter.sendMail(mailOptions);
 
+      console.log(`Verification email sent to ${email}`);
+      console.log(`Email content: ${JSON.stringify(mailOptions)}`);
+
       res.status(200).json({ message: "Verification email sent" });
     } catch (error) {
       console.error("Error:", error);
       res.status(400).json({
         message: error.code === "auth/user-not-found"
           ? "No account found with this email"
+          : error.message.includes("SMTP connection failed") ? error.message
           : "Failed to send verification email",
       });
     }
@@ -92,50 +101,6 @@ exports.confirmAccountDeletion = functions.https.onRequest(async (req, res) => {
 
         // Delete user data from Firestore (assuming users collection uses uid as doc ID)
         await admin.firestore().collection("users").doc(user.uid).delete();
-
-        // Clean up token
-        await admin.firestore().collection("deletionTokens").doc(email).delete();
-
-        res.status(200).json({ message: "Account deleted successfully" });
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(400).json({ message: error.message || "Failed to delete account" });
-    }
-  })  
-});
-
-// I was not sure if I should use email or userId for Confirm account deletion (Option 2: users collection uses userId)
-exports.confirmAccountDeletionWithUserId = functions.https.onRequest(async (req, res) => {
-  cors(req, res, async () => {
-    const { email, secureToken } = req.body;
-
-    try {
-        // Verify token in Firestore
-        const doc = await admin.firestore().collection("deletionTokens").doc(email).get();
-        if (!doc.exists) {
-        throw new Error("Invalid or expired token");
-        }
-
-        const { secureToken: storedToken, expires } = doc.data();
-        if (storedToken !== secureToken || expires.toDate() < new Date()) {
-        throw new Error("Invalid or expired token");
-        }
-
-        // Delete user from Firebase Auth
-        const user = await admin.auth().getUserByEmail(email);
-        await admin.auth().deleteUser(user.uid);
-
-        // Find user document in Firestore by email (as you used userId is a field)
-        const userQuery = await admin.firestore()
-        .collection("users")
-        .where("email", "==", email)
-        .limit(1)
-        .get();
-
-        if (!userQuery.empty) {
-        const userDoc = userQuery.docs[0];
-        await userDoc.ref.delete(); // Delete the document
-        }
 
         // Clean up token
         await admin.firestore().collection("deletionTokens").doc(email).delete();
