@@ -14,7 +14,6 @@ const transporter = nodemailer.createTransport({
     user: "info@courtchamps.com",
     pass: "Speedyam1!",
   },
-  logging: true,
 });
 
 //Request account deletion
@@ -39,10 +38,6 @@ exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
         expires: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)),
       });
 
-      // Send verification email
-      console.log(`Sending verification email to ${email}`);
-      console.log(`Secure token: ${secureToken}`);
-
       // Send email via Namecheap Private Email
       const mailOptions = {
         from: "info@courtchamps.com",
@@ -61,9 +56,6 @@ exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
       };
 
       await transporter.sendMail(mailOptions);
-
-      console.log(`Verification email sent to ${email}`);
-      console.log(`Email content: ${JSON.stringify(mailOptions)}`);
 
       res.status(200).json({ message: "Verification email sent" });
     } catch (error) {
