@@ -4,12 +4,11 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
-import CourtChampsLogo from "./assets/court-champ-logo.png";
-import AppStoreBadge from "./assets/app-store-mobile-download-button.png";
-import PlayStoreBadge from "./assets/play-store-mobile-download-button.png";
+import { CourtChampLogo, playStoreBadge, appStoreBadge } from "./assets";
 import { appImages } from "./assets/appImages";
 
 import DeleteAccount from "./pages/accounts/DeleteAccount";
+import JoinPage from "./pages/join/JoinPage";
 
 export default function App() {
   return (
@@ -17,6 +16,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/accounts/delete-account" element={<DeleteAccount />} />
+        {/* e.g. https://courtchamps.com/join/league/abc123 */}
+        <Route
+          path="/join/:competitionType/:competitionId"
+          element={<JoinPage />}
+        />
       </Routes>
     </Router>
   );
@@ -36,14 +40,14 @@ function HomePage() {
   const openAppStore = () => {
     window.open(
       "https://apps.apple.com/app/court-champs/id6538725576",
-      "_blank"
+      "_blank",
     );
   };
 
   const openPlayStore = () => {
     window.open(
       "https://play.google.com/store/apps/details?id=com.courtchamp",
-      "_blank"
+      "_blank",
     );
   };
 
@@ -95,7 +99,7 @@ function HomePage() {
   return (
     <PageContainer>
       <HeaderSection>
-        <Logo src={CourtChampsLogo} alt="CourtChamps Logo" data-aos="zoom-in" />
+        <Logo src={CourtChampLogo} alt="CourtChamps Logo" data-aos="zoom-in" />
       </HeaderSection>
       <BadgeRow>
         <BadgeLink
@@ -103,33 +107,30 @@ function HomePage() {
           data-aos="zoom-in"
           data-aos-offset="150"
         >
-          <BadgeImage src={AppStoreBadge} alt="Download on the App Store" />
+          <BadgeImage src={appStoreBadge} alt="Download on the App Store" />
         </BadgeLink>
         <BadgeLink
           onClick={openPlayStore}
           data-aos="zoom-in"
           data-aos-offset="150"
         >
-          <BadgeImage src={PlayStoreBadge} alt="Get it on Google Play" />
+          <BadgeImage src={playStoreBadge} alt="Get it on Google Play" />
         </BadgeLink>
       </BadgeRow>
       <FeaturesContainer>
         {features.map((feat, idx) => {
           const isOdd = idx % 2 === 1;
-          const imgAnimation = isOdd ? "fade-left" : "fade-right";
-          const textAnimation = isOdd ? "fade-right" : "fade-left";
-
           return (
             <FeatureRow key={idx} reverse={isOdd}>
               <FeatureImage
                 src={feat.image}
                 alt={feat.label}
-                data-aos={imgAnimation}
+                data-aos={isOdd ? "fade-left" : "fade-right"}
                 data-aos-offset="150"
               />
               <FeatureDescriptionContainer
                 reverse={isOdd}
-                data-aos={textAnimation}
+                data-aos={isOdd ? "fade-right" : "fade-left"}
                 data-aos-offset="150"
               >
                 <FeatureTitle>{feat.label}</FeatureTitle>
@@ -163,13 +164,13 @@ function HomePage() {
           Delete Account
         </Link>
         <span>info@courtchamps.com</span>
-        <span>© 2025 CourtChamps</span>
+        <span>© {new Date().getFullYear()} CourtChamps</span>
       </FooterRow>
     </PageContainer>
   );
 }
 
-// Styled components (object style)
+// ─── Styled Components ────────────────────────────────────────────────────────
 
 const PageContainer = styled.div({
   display: "flex",
@@ -204,14 +205,13 @@ const FeaturesContainer = styled.div({
   marginBottom: "64px",
 });
 
-const FeatureRow = styled.div(({ reverse }) => ({
+const FeatureRow = styled.div<{ reverse?: boolean }>(({ reverse }) => ({
   display: "flex",
   flexDirection: reverse ? "row-reverse" : "row",
   alignItems: "center",
   justifyContent: "center",
   width: "100%",
   gap: "24px",
-
   "@media (max-width: 768px)": {
     flexDirection: "column",
     gap: "16px",
@@ -224,25 +224,25 @@ const FeatureImage = styled.img({
   borderRadius: "16px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
   objectFit: "cover",
-
   "@media (max-width: 768px)": {
     maxWidth: "200px",
     height: "auto",
   },
 });
 
-const FeatureDescriptionContainer = styled.div(({ reverse }) => ({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: reverse ? "flex-end" : "flex-start",
-  maxWidth: "400px",
-  padding: "0 16px",
-
-  "@media (max-width: 768px)": {
-    alignItems: "center",
-    padding: 25,
-  },
-}));
+const FeatureDescriptionContainer = styled.div<{ reverse?: boolean }>(
+  ({ reverse }) => ({
+    display: "flex",
+    flexDirection: "column",
+    alignItems: reverse ? "flex-end" : "flex-start",
+    maxWidth: "400px",
+    padding: "0 16px",
+    "@media (max-width: 768px)": {
+      alignItems: "center",
+      padding: 25,
+    },
+  }),
+);
 
 const FeatureTitle = styled.div({
   fontSize: "2.25rem",
@@ -250,10 +250,7 @@ const FeatureTitle = styled.div({
   color: "#FFFFFF",
   textAlign: "inherit",
   width: "100%",
-  "@media (max-width: 768px)": {
-    fontSize: "1rem",
-    width: "100%",
-  },
+  "@media (max-width: 768px)": { fontSize: "1rem", width: "100%" },
 });
 
 const FeatureText = styled.div({
@@ -261,10 +258,7 @@ const FeatureText = styled.div({
   color: "#CCCCCC",
   marginTop: "8px",
   textAlign: "inherit",
-  "@media (max-width: 768px)": {
-    fontSize: "0.875rem",
-    width: "100%",
-  },
+  "@media (max-width: 768px)": { fontSize: "0.875rem", width: "100%" },
 });
 
 const BadgeRow = styled.div({
@@ -282,19 +276,14 @@ const BadgeLink = styled.button({
   padding: 0,
   cursor: "pointer",
   transition: "transform 0.2s",
-  ":hover": {
-    transform: "scale(1.05)",
-  },
+  ":hover": { transform: "scale(1.05)" },
 });
 
 const BadgeImage = styled.img({
   height: "60px",
   objectFit: "contain",
   maxWidth: "200px",
-  "@media (max-width: 480px)": {
-    height: "50px",
-    maxWidth: "160px",
-  },
+  "@media (max-width: 480px)": { height: "50px", maxWidth: "160px" },
 });
 
 const FooterRow = styled.div({
@@ -305,7 +294,5 @@ const FooterRow = styled.div({
   width: "100%",
   padding: "16px 0",
   gap: "25px",
-  "@media (max-width: 480px)": {
-    fontSize: "0.75rem",
-  },
+  "@media (max-width: 480px)": { fontSize: "0.75rem" },
 });
