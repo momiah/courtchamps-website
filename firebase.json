@@ -7,6 +7,10 @@
         "source": "/preview/**",
         "function": "ogPreview"
       },
+   {
+  "source": "/og/videos**",
+  "function": "ogPreview"
+},
       {
         "source": "**",
         "destination": "/index.html"

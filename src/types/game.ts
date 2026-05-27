@@ -1,6 +1,6 @@
 // types/game.ts
 
-// Base Player type - adjust fields based on your actual player schema
+import { COMPETITION_TYPES } from "../schemas/schema";
 export interface Player {
   userId: string;
   firstName: string;
@@ -13,11 +13,15 @@ export interface PlayerWithXP extends Player {
   XP: number;
 }
 
-// Team structure within a game
 export interface GameTeam {
   player1: Player | null;
   player2: Player | null;
-  score?: number;
+  score?: number | null;
+}
+
+export interface Teams {
+  team1: { player1: Player; player2?: Player };
+  team2: { player1: Player; player2?: Player };
 }
 export interface GameResult {
   winner: {
@@ -32,7 +36,6 @@ export interface GameResult {
   };
 }
 
-// Approval status options
 export type ApprovalStatus =
   | "Scheduled"
   | "Pending"
@@ -48,7 +51,7 @@ export interface Game {
   gameId: string;
   gamescore: string;
   createdAt?: Date;
-  date?: string; // "DD-MM-YYYY"
+  date?: string;
   team1: GameTeam;
   team2: GameTeam;
   result: GameResult | null;
@@ -57,23 +60,114 @@ export interface Game {
   numberOfDeclines: number;
   approvalStatus: ApprovalStatus;
   reporter: string;
-  // Optional tournament-specific fields
   court?: number;
   gameNumber?: number;
   createdTime?: string;
   reportedAt?: Date | null;
   reportedTime?: string | null;
-  // status?: GameStatus;
+  approvers: Approver[];
+  videoUrl?: string;
+  videoApproved?: boolean | null;
+  videoCount?: number;
 }
+
+export interface GameVideoUploadPayload {
+  gameId: string;
+  competitionId: string;
+  competitionName: string;
+  competitionType:
+    | typeof COMPETITION_TYPES.LEAGUE
+    | typeof COMPETITION_TYPES.TOURNAMENT;
+  videoUrl: string;
+  gamescore: string;
+  date: string;
+  postedBy: VideoPostedBy;
+  teams: Teams;
+  videoLength?: number;
+}
+
+export interface PendingUpload extends Omit<
+  GameVideoUploadPayload,
+  "videoUrl"
+> {
+  status: "uploading";
+  progress: number;
+  startedAt: Date;
+  uploadId?: string;
+}
+export interface VideoPostedBy {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  profileImage: string;
+}
+
+export interface GameVideo extends GameVideoUploadPayload {
+  createdAt: Date;
+  likes: number;
+  likedBy: string[];
+  views: number;
+  commentCount: number;
+  videoApproved?: boolean | null;
+  playerIds?: string[];
+  transcoded?: boolean;
+}
+
+export interface Comment {
+  commentId: string;
+  gameId: string;
+  text: string;
+  createdAt: Date;
+  postedBy: VideoPostedBy;
+  likes: number;
+  likedBy: string[];
+  replyCount: number;
+}
+
+export interface GameVideoCommentReply {
+  replyId: string;
+  commentId: string;
+  text: string;
+  createdAt: Date;
+  postedBy: VideoPostedBy;
+  likes: number;
+  likedBy: string[];
+}
+interface Approver {
+  userId: string;
+  username: string;
+}
+
 export interface Fixtures {
   round: number;
   games: Game[];
 }
+
 export interface SelectedPlayers {
   team1: (Player | null)[];
   team2: (Player | null)[];
 }
+
 export interface PresetPlayers {
   team1: GameTeam | null;
   team2: GameTeam | null;
+}
+
+export interface FixtureDisclaimer {
+  heading: string;
+  body: string;
+}
+
+export interface FixtureMetadata {
+  totalRounds: number;
+  totalGames: number;
+  estimatedMinutes: number;
+  estimatedHours: number;
+  disclaimers: FixtureDisclaimer[];
+}
+
+export interface FixtureResult {
+  fixtures: Fixtures[];
+  metadata: FixtureMetadata;
 }

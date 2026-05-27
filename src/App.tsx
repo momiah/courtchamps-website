@@ -9,6 +9,7 @@ import { appImages } from "./assets/appImages";
 
 import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
+import VideoPage from "pages/gameVideos/VideoPage";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           path="/join/:competitionType/:competitionId"
           element={<JoinPage />}
         />
+        <Route path="/videos" element={<VideoPage />} />
       </Routes>
     </Router>
   );
