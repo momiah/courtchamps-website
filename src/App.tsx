@@ -7,24 +7,42 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "./assets";
 import { appImages } from "./assets/appImages";
 
+import { AuthProvider } from "./context/AuthContext";
+import Header from "./components/Header";
+import RequireRole from "./components/auth/RequireRole";
+
 import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
+import Login from "./pages/Login";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/accounts/delete-account" element={<DeleteAccount />} />
-        {/* e.g. https://courtchamps.com/join/league/abc123 */}
-        <Route
-          path="/join/:competitionType/:competitionId"
-          element={<JoinPage />}
-        />
-        <Route path="/videos" element={<VideoPage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/accounts/delete-account" element={<DeleteAccount />} />
+          {/* e.g. https://courtchamps.com/join/league/abc123 */}
+          <Route
+            path="/join/:competitionType/:competitionId"
+            element={<JoinPage />}
+          />
+          <Route path="/videos" element={<VideoPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireRole>
+                <AdminDashboard />
+              </RequireRole>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

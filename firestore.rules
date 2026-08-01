@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// The canonical Firestore rules for scoreboard-app-29148 are owned by the
+// Court Champs mobile app. This file adds only the userRoles rule this website
+// needs — merge this match block into the project's canonical rules rather than
+// deploying this file standalone, so no existing rule is overwritten.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A userRoles/{uid} document exists only for privileged users. A signed-in
+    // user may read their own role document; nobody may write from a client
+    // (roles are granted out of band by the grantRole.js bootstrap script).
+    match /userRoles/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}
