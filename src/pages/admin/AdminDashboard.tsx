@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 
 import { useAuth } from "../../context/AuthContext";
+import RoleBadge from "../../components/auth/RoleBadge";
 
 // Placeholder admin landing page. Reached only through RequireRole, so by the
 // time it renders there is a signed-in user carrying a role.
@@ -18,7 +19,7 @@ export default function AdminDashboard() {
         </DetailRow>
         <DetailRow>
           <DetailLabel>Role</DetailLabel>
-          <DetailValue>{role ?? "—"}</DetailValue>
+          {role !== null ? <RoleBadge role={role} /> : <DetailValue>—</DetailValue>}
         </DetailRow>
         <PlaceholderText>
           Admin tools will live here. This is placeholder content.

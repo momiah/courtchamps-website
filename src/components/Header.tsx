@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 
 import { useAuth } from "../context/AuthContext";
+import RoleBadge from "./auth/RoleBadge";
 
 // Site-wide auth-aware header. Signed out it offers a Sign In link; signed in it
 // shows the display name (falling back to email), a sign-out action, and — only
@@ -24,6 +25,7 @@ export default function Header() {
               <NavLink to="/admin">Admin Panel</NavLink>
             )}
             <IdentityText>{displayIdentity}</IdentityText>
+            {role !== null && <RoleBadge role={role} />}
             <SignOutButton type="button" onClick={() => void signOutUser()}>
               Sign Out
             </SignOutButton>
