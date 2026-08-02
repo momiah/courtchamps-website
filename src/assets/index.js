@@ -1,4 +1,5 @@
 const CourtChampLogo = require("./court-champ-logo.png");
+const CourtChampLogoIcon = require("./court-champ-logo-icon.png");
 
 const GoogleLogo = require("./google-logo.png");
 const FacebookLogo = require("./facebook-logo.png");
@@ -9,6 +10,7 @@ const appStoreBadge = require("./app-store-mobile-download-button.png");
 
 export {
   CourtChampLogo,
+  CourtChampLogoIcon,
   GoogleLogo,
   FacebookLogo,
   AppleLogo,

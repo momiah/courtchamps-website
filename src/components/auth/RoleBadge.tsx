@@ -10,9 +10,6 @@ interface RoleBadgeStyle {
   borderColor: string;
 }
 
-// A blue-family hierarchy: Owner is the most prominent (solid brand blue),
-// Admin is an outlined accent, Moderator is a muted steel-blue. All sit on the
-// navy surfaces without clashing with the accent used elsewhere.
 const ROLE_BADGE_STYLES: Record<UserRole, RoleBadgeStyle> = {
   [USER_ROLES.OWNER]: {
     label: "Owner",

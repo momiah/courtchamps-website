@@ -4,10 +4,6 @@ import styled from "styled-components";
 
 import { useAuth } from "../../context/AuthContext";
 
-// Guards a route so only signed-in users that carry a role may enter.
-// While auth/role are still resolving it shows a spinner; a signed-out visitor
-// is sent to /login with the attempted path preserved in router state; a
-// signed-in visitor without a role is sent back to the marketing home page.
 export default function RequireRole({ children }: { children: React.ReactElement }) {
   const { currentUser, role, loading } = useAuth();
   const location = useLocation();

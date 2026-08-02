@@ -1,24 +1,3 @@
-/*
- * grantRole.js — manual, local-only role bootstrap script.
- *
- * This script is run BY HAND on a trusted machine and is NEVER deployed or
- * bundled with the website. It exists because clients cannot write to the
- * userRoles collection (see firestore.rules), so the first privileged users
- * must be seeded out of band with Admin SDK credentials.
- *
- * Usage:
- *   1. Download a service account key for scoreboard-app-29148 from
- *      Firebase console → Project settings → Service accounts → Generate key.
- *   2. Point GOOGLE_APPLICATION_CREDENTIALS at it, or pass the path inline:
- *
- *        GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json \
- *          node scripts/grantRole.js owner@example.com owner
- *
- *   Roles must be one of: owner, admin, moderator.
- *
- * Never commit the service account key. Keep it out of the repository.
- */
-
 const admin = require("firebase-admin");
 
 const VALID_ROLES = ["owner", "admin", "moderator"];

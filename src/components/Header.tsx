@@ -2,12 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 
+import { CourtChampLogoIcon } from "../assets";
 import { useAuth } from "../context/AuthContext";
 import RoleBadge from "./auth/RoleBadge";
 
-// Site-wide auth-aware header. Signed out it offers a Sign In link; signed in it
-// shows the display name (falling back to email), a sign-out action, and — only
-// when the user carries a role — a link into the admin panel.
 export default function Header() {
   const { currentUser, role, loading, signOutUser } = useAuth();
 
@@ -16,7 +14,10 @@ export default function Header() {
 
   return (
     <HeaderBar>
-      <BrandLink to="/">Court Champs</BrandLink>
+      <BrandLink to="/">
+        <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
+        <BrandText>COURT CHAMPS</BrandText>
+      </BrandLink>
 
       <NavGroup>
         {loading ? null : currentUser ? (
@@ -50,10 +51,23 @@ const HeaderBar = styled.header({
 });
 
 const BrandLink = styled(Link)({
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  textDecoration: "none",
+});
+
+const BrandLogo = styled.img({
+  height: "32px",
+  width: "auto",
+});
+
+const BrandText = styled.span({
   color: "#FFFFFF",
   fontWeight: 700,
   fontSize: "1.05rem",
-  textDecoration: "none",
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
 });
 
 const NavGroup = styled.nav({

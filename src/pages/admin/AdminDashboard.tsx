@@ -4,8 +4,6 @@ import styled from "styled-components";
 import { useAuth } from "../../context/AuthContext";
 import RoleBadge from "../../components/auth/RoleBadge";
 
-// Placeholder admin landing page. Reached only through RequireRole, so by the
-// time it renders there is a signed-in user carrying a role.
 export default function AdminDashboard() {
   const { currentUser, role } = useAuth();
 

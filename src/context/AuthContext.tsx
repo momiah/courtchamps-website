@@ -46,8 +46,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Shape of a userRoles/{uid} document. A document exists only for privileged
-// users — its absence means a normal user with no elevated role.
 interface UserRoleDocument {
   role: UserRole;
   email: string;
@@ -72,8 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (signedInUser) => {
-      // Hold `loading` true until both the auth state and the role read have
-      // resolved, so route guards never evaluate against a half-loaded state.
       setLoading(true);
       setCurrentUser(signedInUser);
 
@@ -87,9 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const resolvedRole = await readRoleForUser(signedInUser);
         setRole(resolvedRole);
       } catch (roleReadError) {
-        // A failed role read must not leave a user silently elevated.
         setRole(null);
-        // eslint-disable-next-line no-console
         console.error("Failed to read user role", roleReadError);
       } finally {
         setLoading(false);
@@ -126,8 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     }: EmailCredentials): Promise<void> => {
-      // The website never creates users/{uid} profile documents — the mobile
-      // app owns profile creation. This only registers the auth credential.
       await createUserWithEmailAndPassword(auth, email, password);
     };
 

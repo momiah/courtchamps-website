@@ -15,8 +15,6 @@ interface LoginRouterState {
   from?: string;
 }
 
-// Firebase's sign-in method identifiers mapped to human-readable provider names,
-// used when an email is already registered with a different provider.
 const PROVIDER_LABELS: Record<string, string> = {
   "google.com": "Google",
   "facebook.com": "Facebook",
@@ -56,8 +54,6 @@ export default function Login() {
 
   const destination = (location.state as LoginRouterState | null)?.from ?? "/";
 
-  // Redirect once a user is signed in — this covers both a successful sign-in
-  // performed here and a visitor who is already signed in reaching /login.
   useEffect(() => {
     if (!loading && currentUser) {
       navigate(destination, { replace: true });
@@ -72,7 +68,6 @@ export default function Login() {
     switch (caughtError.code) {
       case "auth/popup-closed-by-user":
       case "auth/cancelled-popup-request":
-        // The user dismissed the popup themselves — not an error to surface.
         return null;
       case "auth/account-exists-with-different-credential": {
         const conflictingEmail = caughtError.customData?.email;
@@ -247,8 +242,6 @@ export default function Login() {
     </PageContainer>
   );
 }
-
-// ─── Styled Components ────────────────────────────────────────────────────────
 
 const PageContainer = styled.div({
   display: "flex",
