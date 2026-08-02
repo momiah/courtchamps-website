@@ -2,7 +2,14 @@ import React, { useEffect } from "react";
 import styled from "styled-components";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "./assets";
 import { appImages } from "./assets/appImages";
@@ -15,34 +22,106 @@ import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
 import Login from "./pages/Login";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import Courts from "./pages/admin/Courts";
+import LadderList from "./pages/admin/LadderList";
+import LadderEdit from "./pages/admin/LadderEdit";
+import SupportTickets from "./pages/admin/SupportTickets";
+import Feedback from "./pages/admin/Feedback";
+import GameDisputes from "./pages/admin/GameDisputes";
 
 export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Header />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/accounts/delete-account" element={<DeleteAccount />} />
-          {/* e.g. https://courtchamps.com/join/league/abc123 */}
-          <Route
-            path="/join/:competitionType/:competitionId"
-            element={<JoinPage />}
-          />
-          <Route path="/videos" element={<VideoPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/admin"
-            element={
-              <RequireRole>
-                <AdminDashboard />
-              </RequireRole>
-            }
-          />
-        </Routes>
+        <AppShell />
       </Router>
     </AuthProvider>
+  );
+}
+
+function AppShell() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  return (
+    <>
+      {isAdminRoute ? null : <Header />}
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/accounts/delete-account" element={<DeleteAccount />} />
+        {/* e.g. https://courtchamps.com/join/league/abc123 */}
+        <Route
+          path="/join/:competitionType/:competitionId"
+          element={<JoinPage />}
+        />
+        <Route path="/videos" element={<VideoPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireRole>
+              <Navigate to="/admin/ladders" replace />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/ladders"
+          element={
+            <RequireRole>
+              <LadderList />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/ladders/new"
+          element={
+            <RequireRole>
+              <LadderEdit />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/ladders/:ladderId"
+          element={
+            <RequireRole>
+              <LadderEdit />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/courts"
+          element={
+            <RequireRole>
+              <Courts />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/support"
+          element={
+            <RequireRole>
+              <SupportTickets />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/feedback"
+          element={
+            <RequireRole>
+              <Feedback />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/disputes"
+          element={
+            <RequireRole>
+              <GameDisputes />
+            </RequireRole>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
