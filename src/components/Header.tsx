@@ -9,22 +9,18 @@ import RoleBadge from "./auth/RoleBadge";
 export default function Header() {
   const { currentUser, role, loading, signOutUser } = useAuth();
 
-  const displayIdentity =
-    currentUser?.displayName ?? currentUser?.email ?? "";
+  const displayIdentity = currentUser?.displayName ?? currentUser?.email ?? "";
 
   return (
     <HeaderBar>
       <BrandLink to="/">
         <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
-        <BrandText>COURT CHAMPS</BrandText>
       </BrandLink>
 
       <NavGroup>
         {loading ? null : currentUser ? (
           <>
-            {role !== null && (
-              <NavLink to="/admin">Admin Panel</NavLink>
-            )}
+            {role !== null && <NavLink to="/admin">Admin Panel</NavLink>}
             <IdentityText>{displayIdentity}</IdentityText>
             {role !== null && <RoleBadge role={role} />}
             <SignOutButton type="button" onClick={() => void signOutUser()}>
@@ -58,17 +54,8 @@ const BrandLink = styled(Link)({
 });
 
 const BrandLogo = styled.img({
-  height: "32px",
+  height: "42px",
   width: "auto",
-});
-
-const BrandText = styled.span({
-  fontFamily: '"Bai Jamjuree", sans-serif',
-  color: "#FFFFFF",
-  fontWeight: 700,
-  fontSize: "1.05rem",
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
 });
 
 const NavGroup = styled.nav({
