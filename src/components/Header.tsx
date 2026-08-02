@@ -63,6 +63,7 @@ const BrandLogo = styled.img({
 });
 
 const BrandText = styled.span({
+  fontFamily: '"Bai Jamjuree", sans-serif',
   color: "#FFFFFF",
   fontWeight: 700,
   fontSize: "1.05rem",
