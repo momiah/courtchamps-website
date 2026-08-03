@@ -64,37 +64,98 @@ export const geocodeCourt = async (
       longitude: court.location.longitude,
     };
   }
-  return geocodeAddress(buildCourtAddressQuery(court));
+  return geocodeCourtAddress(court);
+};
+
+// Full addresses (unit numbers, mall levels) often miss on Nominatim, so try
+// progressively broader queries and bias to the court's country.
+export const geocodeCourtAddress = async (
+  court: Court,
+): Promise<GeoPoint | null> => {
+  const { address, city, postCode, countryCode } = court.location;
+  const country = court.location.country;
+
+  const candidateQueries = [
+    buildAddressQuery({ address, city, postCode, country }),
+    buildAddressQuery({ address, city, postCode: "", country }),
+    buildAddressQuery({ address: "", city, postCode, country }),
+    buildAddressQuery({ address: "", city, postCode: "", country }),
+  ];
+
+  return geocodeFirstMatch(candidateQueries, countryCode);
+};
+
+const delay = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+
+export const geocodeFirstMatch = async (
+  candidateQueries: string[],
+  countryCode?: string,
+): Promise<GeoPoint | null> => {
+  const seenQueries = new Set<string>();
+  let hasRequested = false;
+
+  for (const candidate of candidateQueries) {
+    const query = candidate.trim();
+    if (query.length === 0 || seenQueries.has(query)) {
+      continue;
+    }
+    seenQueries.add(query);
+
+    // Space out requests to stay within Nominatim's fair-use rate limit.
+    if (hasRequested) {
+      await delay(400);
+    }
+    hasRequested = true;
+
+    const point = await geocodeAddress(query, countryCode);
+    if (point) {
+      return point;
+    }
+  }
+
+  return null;
 };
 
 export const geocodeAddress = async (
   query: string,
+  countryCode?: string,
 ): Promise<GeoPoint | null> => {
   if (query.length === 0) {
     return null;
   }
 
-  const cached = geocodeCache.get(query);
+  const normalizedCountry = countryCode?.trim().toLowerCase() ?? "";
+  const cacheKey = normalizedCountry
+    ? `${normalizedCountry}|${query}`
+    : query;
+
+  const cached = geocodeCache.get(cacheKey);
   if (cached !== undefined) {
     return cached;
   }
 
   try {
+    const countryParam = normalizedCountry
+      ? `&countrycodes=${normalizedCountry}`
+      : "";
     const requestUrl = `${NOMINATIM_ENDPOINT}?format=json&limit=1&q=${encodeURIComponent(
       query,
-    )}`;
+    )}${countryParam}`;
     const response = await fetch(requestUrl, {
       headers: { Accept: "application/json" },
     });
 
     if (!response.ok) {
-      geocodeCache.set(query, null);
+      geocodeCache.set(cacheKey, null);
       return null;
     }
 
     const payload: unknown = await response.json();
     if (!isNominatimResultArray(payload) || payload.length === 0) {
-      geocodeCache.set(query, null);
+      geocodeCache.set(cacheKey, null);
       return null;
     }
 
@@ -104,11 +165,11 @@ export const geocodeAddress = async (
     };
 
     if (Number.isNaN(point.latitude) || Number.isNaN(point.longitude)) {
-      geocodeCache.set(query, null);
+      geocodeCache.set(cacheKey, null);
       return null;
     }
 
-    geocodeCache.set(query, point);
+    geocodeCache.set(cacheKey, point);
     return point;
   } catch (geocodeError) {
     console.error("Failed to geocode court", geocodeError);

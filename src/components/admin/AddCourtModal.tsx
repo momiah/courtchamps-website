@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { createCourt, updateCourt } from "../../services/courts";
 import {
   buildAddressQuery,
-  geocodeAddress,
+  geocodeFirstMatch,
 } from "../../services/geocode";
 import { Court } from "../../types/ladder";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
@@ -106,14 +106,35 @@ function AddCourtModal({
   );
 
   const handleLookup = useCallback(async () => {
-    const query = buildAddressQuery({
-      address: formState.address,
-      city: formState.city,
-      postCode: formState.postCode,
-      country: findCountryName(formState.countryCode),
-    });
+    const country = findCountryName(formState.countryCode);
+    const candidateQueries = [
+      buildAddressQuery({
+        address: formState.address,
+        city: formState.city,
+        postCode: formState.postCode,
+        country,
+      }),
+      buildAddressQuery({
+        address: formState.address,
+        city: formState.city,
+        postCode: "",
+        country,
+      }),
+      buildAddressQuery({
+        address: "",
+        city: formState.city,
+        postCode: formState.postCode,
+        country,
+      }),
+      buildAddressQuery({
+        address: "",
+        city: formState.city,
+        postCode: "",
+        country,
+      }),
+    ];
 
-    if (query.trim().length === 0) {
+    if (candidateQueries.every((candidate) => candidate.trim().length === 0)) {
       setLookupMessage("Enter the address details first.");
       return;
     }
@@ -121,7 +142,10 @@ function AddCourtModal({
     setIsLookingUp(true);
     setLookupMessage(null);
 
-    const point = await geocodeAddress(query);
+    const point = await geocodeFirstMatch(
+      candidateQueries,
+      formState.countryCode,
+    );
     setIsLookingUp(false);
 
     if (!point) {
@@ -136,8 +160,15 @@ function AddCourtModal({
       latitude: String(point.latitude),
       longitude: String(point.longitude),
     }));
-    setLookupMessage("Location found and pinned below.");
-  }, [formState.address, formState.city, formState.postCode, formState.countryCode]);
+    setLookupMessage(
+      "Location found and pinned below. Adjust the coordinates if the pin is off.",
+    );
+  }, [
+    formState.address,
+    formState.city,
+    formState.postCode,
+    formState.countryCode,
+  ]);
 
   const handleSubmit = useCallback(
     async (submitEvent: React.FormEvent<HTMLFormElement>) => {
