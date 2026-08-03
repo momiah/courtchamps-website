@@ -123,6 +123,18 @@ function AddCourtModal({
     [formState, parsedCoordinates],
   );
 
+  const initialForm = useMemo(() => buildInitialForm(court), [court]);
+
+  const isDirty = useMemo(
+    () =>
+      (Object.keys(formState) as (keyof CourtFormState)[]).some(
+        (field) => formState[field] !== initialForm[field],
+      ),
+    [formState, initialForm],
+  );
+
+  const canSubmit = isComplete && (!isEditMode || isDirty);
+
   const handleLookup = useCallback(async () => {
     // The country is applied as a bias via countrycodes, so it is left out of
     // the query text (its verbose name only confuses the geocoder).
@@ -399,7 +411,7 @@ function AddCourtModal({
         </ModalBody>
 
         <SubmitRow>
-          <PrimaryButton type="submit" disabled={!isComplete || submitting}>
+          <PrimaryButton type="submit" disabled={!canSubmit || submitting}>
             {submitting
               ? "Saving…"
               : isEditMode
