@@ -96,8 +96,16 @@ function AdminLayout({
             </NavList>
 
             <SidebarFooter>
-              <FooterEmail title={signedInEmail}>{signedInEmail}</FooterEmail>
-              {role !== null ? <RoleBadge role={role} /> : null}
+              <FooterIdentity>
+                <FooterEmail title={signedInEmail}>
+                  {signedInEmail}
+                </FooterEmail>
+                {role !== null ? (
+                  <PillScale>
+                    <RoleBadge role={role} />
+                  </PillScale>
+                ) : null}
+              </FooterIdentity>
               <SignOutButton type="button" onClick={handleSignOut}>
                 Sign Out
               </SignOutButton>
@@ -282,20 +290,35 @@ const NavItemLink = styled(NavLink)({
 const SidebarFooter = styled.div({
   display: "flex",
   flexDirection: "column",
-  alignItems: "flex-start",
-  gap: "10px",
+  alignItems: "stretch",
+  gap: "12px",
   paddingTop: "16px",
   marginTop: "16px",
   borderTop: "1px solid rgba(255, 255, 255, 0.08)",
 });
 
+const FooterIdentity = styled.div({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  width: "100%",
+});
+
 const FooterEmail = styled.span({
+  flex: "1 1 auto",
+  minWidth: 0,
   color: "#c7d4e1",
   fontSize: "0.8rem",
-  maxWidth: "100%",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
+});
+
+const PillScale = styled.span({
+  flexShrink: 0,
+  display: "inline-flex",
+  transform: "scale(0.82)",
+  transformOrigin: "right center",
 });
 
 const SignOutButton = styled.button({

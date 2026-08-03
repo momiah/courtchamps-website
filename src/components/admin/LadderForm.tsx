@@ -25,6 +25,7 @@ import {
 } from "./formControls";
 
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
+const MAX_PLAYERS_OPTIONS = [32, 64, 128, 256, 512, 1024, 2048];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
 
@@ -233,6 +234,20 @@ function LadderForm({
     () => Number(formState.entryFee) === 0,
     [formState.entryFee],
   );
+
+  const maxPlayersOptions = useMemo(() => {
+    const currentValue = Number(formState.maxPlayers);
+    if (
+      formState.maxPlayers.trim().length > 0 &&
+      !Number.isNaN(currentValue) &&
+      !MAX_PLAYERS_OPTIONS.includes(currentValue)
+    ) {
+      return [currentValue, ...MAX_PLAYERS_OPTIONS].sort(
+        (first, second) => first - second,
+      );
+    }
+    return MAX_PLAYERS_OPTIONS;
+  }, [formState.maxPlayers]);
 
   const toggleCourt = useCallback((courtId: string) => {
     setFormState((previous) => {
@@ -565,15 +580,20 @@ function LadderForm({
             htmlFor="ladder-max-players"
             error={fieldError("maxPlayers")}
           >
-            <TextInput
+            <SelectInput
               id="ladder-max-players"
-              type="number"
-              min={2}
               value={formState.maxPlayers}
               onChange={(changeEvent) =>
                 updateField("maxPlayers", changeEvent.target.value)
               }
-            />
+            >
+              <option value="">Select</option>
+              {maxPlayersOptions.map((option) => (
+                <option key={option} value={String(option)}>
+                  {option}
+                </option>
+              ))}
+            </SelectInput>
           </FormField>
         </FeeRow>
       </Section>
