@@ -5,6 +5,7 @@ import styled from "styled-components";
 import AdminLayout from "../../components/admin/AdminLayout";
 import LadderForm from "../../components/admin/LadderForm";
 import { useAuth } from "../../context/AuthContext";
+import { uploadLadderImage } from "../../services/ladderImages";
 import {
   createLadder,
   fetchLadder,
@@ -66,7 +67,10 @@ function LadderEdit() {
   }, [ladderId]);
 
   const handleSubmit = useCallback(
-    async (input: LadderInput): Promise<void> => {
+    async (
+      input: LadderInput,
+      { imageFile }: { imageFile: File | null },
+    ): Promise<void> => {
       const actorUserId = currentUser?.uid;
       if (!actorUserId) {
         setSubmitError("You must be signed in to save a ladder.");
@@ -77,18 +81,22 @@ function LadderEdit() {
       setSubmitError(null);
 
       try {
+        const inputToSave: LadderInput = imageFile
+          ? { ...input, image: await uploadLadderImage({ file: imageFile }) }
+          : input;
+
         if (ladderId && initialLadder) {
           const seasonStartChanged =
-            input.seasonStartsAt.getTime() !==
+            inputToSave.seasonStartsAt.getTime() !==
             initialLadder.seasonStartsAt.getTime();
           await updateLadder({
             ladderId,
-            input,
+            input: inputToSave,
             actorUserId,
             seasonStartChanged,
           });
         } else {
-          await createLadder({ input, actorUserId });
+          await createLadder({ input: inputToSave, actorUserId });
         }
         navigate("/admin/ladders");
       } catch (saveError) {

@@ -382,12 +382,14 @@ const ActionButtons = styled.div({
 
 const TableActionButton = styled.button<{ variant: "primary" | "ghost" }>(
   ({ variant }) => ({
+    minWidth: "84px",
     padding: "6px 12px",
     borderRadius: "7px",
     fontSize: "0.78rem",
     fontWeight: 600,
     cursor: "pointer",
     whiteSpace: "nowrap",
+    textAlign: "center",
     transition: "background-color 0.2s, opacity 0.2s",
     ...(variant === "primary"
       ? {

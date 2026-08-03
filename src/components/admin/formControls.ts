@@ -20,7 +20,17 @@ const baseControlStyles = {
   },
 };
 
-export const TextInput = styled.input(baseControlStyles);
+export const TextInput = styled.input({
+  ...baseControlStyles,
+  "&[type=date]": {
+    cursor: "pointer",
+  },
+  "&::-webkit-calendar-picker-indicator": {
+    filter: "invert(0.85)",
+    cursor: "pointer",
+    opacity: 0.85,
+  },
+});
 
 export const TextArea = styled.textarea({
   ...baseControlStyles,

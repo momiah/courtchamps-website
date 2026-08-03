@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Link } from "react-router-dom";
@@ -19,6 +20,7 @@ import FormField from "./FormField";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
 import {
   PrimaryButton,
+  SecondaryButton,
   SelectInput,
   TextArea,
   TextInput,
@@ -82,7 +84,21 @@ const buildInitialState = (
   maxPlayers: initialLadder ? String(initialLadder.maxPlayers) : "",
 });
 
-const formatPreviewDate = (date: Date): string => format(date, "d MMM yyyy");
+const formatPreviewDate = (date: Date): string =>
+  format(date, "EEE d MMM yyyy");
+
+const openDatePicker = (
+  clickEvent: React.MouseEvent<HTMLInputElement>,
+): void => {
+  const inputElement = clickEvent.currentTarget;
+  if (typeof inputElement.showPicker === "function") {
+    try {
+      inputElement.showPicker();
+    } catch {
+      // Some browsers disallow showPicker outside a user gesture; ignore.
+    }
+  }
+};
 
 function LadderForm({
   initialLadder,
@@ -90,7 +106,10 @@ function LadderForm({
   submitting,
 }: {
   initialLadder?: Ladder | null;
-  onSubmit: (input: LadderInput) => void;
+  onSubmit: (
+    input: LadderInput,
+    options: { imageFile: File | null },
+  ) => void;
   submitting: boolean;
 }) {
   const [formState, setFormState] = useState<LadderFormState>(() =>
@@ -100,6 +119,19 @@ function LadderForm({
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
   const [showErrors, setShowErrors] = useState<boolean>(false);
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [imageFile]);
 
   useEffect(() => {
     let isActive = true;
@@ -279,6 +311,33 @@ function LadderForm({
     setIsCourtModalOpen(false);
   }, []);
 
+  const handleImageFileChange = useCallback(
+    (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = changeEvent.target.files?.[0] ?? null;
+      setImageFile(selectedFile);
+    },
+    [],
+  );
+
+  const openImagePicker = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const clearImage = useCallback(() => {
+    setImageFile(null);
+    setFormState((previous) => ({ ...previous, image: "" }));
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  }, []);
+
+  const imagePreviewSource = useMemo(() => {
+    if (imagePreviewUrl) {
+      return imagePreviewUrl;
+    }
+    return formState.image.trim().length > 0 ? formState.image : null;
+  }, [imagePreviewUrl, formState.image]);
+
   const handleSubmit = useCallback(
     (submitEvent: React.FormEvent<HTMLFormElement>) => {
       submitEvent.preventDefault();
@@ -296,22 +355,25 @@ function LadderForm({
         return;
       }
 
-      onSubmit({
-        name: formState.name.trim(),
-        description: formState.description.trim(),
-        image: formState.image.trim(),
-        region: formState.region.trim(),
-        countryCode: formState.countryCode,
-        courtIds: formState.courtIds,
-        registrationOpensAt: registrationOpens,
-        seasonStartsAt: seasonStarts,
-        entryFee: Number(formState.entryFee),
-        currencyType: formState.currencyType,
-        minRank: Number(formState.minRank),
-        maxPlayers: Number(formState.maxPlayers),
-      });
+      onSubmit(
+        {
+          name: formState.name.trim(),
+          description: formState.description.trim(),
+          image: formState.image.trim(),
+          region: formState.region.trim(),
+          countryCode: formState.countryCode,
+          courtIds: formState.courtIds,
+          registrationOpensAt: registrationOpens,
+          seasonStartsAt: seasonStarts,
+          entryFee: Number(formState.entryFee),
+          currencyType: formState.currencyType,
+          minRank: Number(formState.minRank),
+          maxPlayers: Number(formState.maxPlayers),
+        },
+        { imageFile },
+      );
     },
-    [errors, formState, onSubmit, submitting],
+    [errors, formState, imageFile, onSubmit, submitting],
   );
 
   const fieldError = useCallback(
@@ -350,29 +412,32 @@ function LadderForm({
           />
         </FormField>
 
-        <FormField label="Image URL" htmlFor="ladder-image">
-          <TextInput
+        <FormField
+          label="Image"
+          hint="Uploaded to storage when the ladder is saved."
+        >
+          <HiddenFileInput
+            ref={imageInputRef}
             id="ladder-image"
-            type="url"
-            placeholder="https://…"
-            value={formState.image}
-            onChange={(changeEvent) =>
-              updateField("image", changeEvent.target.value)
-            }
+            type="file"
+            accept="image/*"
+            onChange={handleImageFileChange}
           />
+          <ImageUploadRow>
+            <SecondaryButton type="button" onClick={openImagePicker}>
+              {imagePreviewSource ? "Change image" : "Upload image"}
+            </SecondaryButton>
+            {imageFile ? <FileNameText>{imageFile.name}</FileNameText> : null}
+            {imagePreviewSource ? (
+              <RemoveImageButton type="button" onClick={clearImage}>
+                Remove
+              </RemoveImageButton>
+            ) : null}
+          </ImageUploadRow>
+          {imagePreviewSource ? (
+            <ImagePreview src={imagePreviewSource} alt="Ladder preview" />
+          ) : null}
         </FormField>
-        {formState.image.trim().length > 0 ? (
-          <ImagePreview
-            src={formState.image}
-            alt="Ladder preview"
-            onError={(imageEvent) => {
-              imageEvent.currentTarget.style.display = "none";
-            }}
-            onLoad={(imageEvent) => {
-              imageEvent.currentTarget.style.display = "block";
-            }}
-          />
-        ) : null}
       </Section>
 
       <SectionRow>
@@ -459,6 +524,7 @@ function LadderForm({
               id="ladder-registration-opens"
               type="date"
               value={formState.registrationOpensAt}
+              onClick={openDatePicker}
               onChange={(changeEvent) =>
                 updateField("registrationOpensAt", changeEvent.target.value)
               }
@@ -474,6 +540,7 @@ function LadderForm({
               id="ladder-season-starts"
               type="date"
               value={formState.seasonStartsAt}
+              onClick={openDatePicker}
               onChange={(changeEvent) =>
                 updateField("seasonStartsAt", changeEvent.target.value)
               }
@@ -653,12 +720,46 @@ const SectionTitle = styled.h2({
   margin: 0,
 });
 
+const HiddenFileInput = styled.input({
+  display: "none",
+});
+
+const ImageUploadRow = styled.div({
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  flexWrap: "wrap",
+});
+
+const FileNameText = styled.span({
+  color: "#c7d4e1",
+  fontSize: "0.82rem",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  maxWidth: "220px",
+});
+
+const RemoveImageButton = styled.button({
+  border: "none",
+  background: "none",
+  color: "#ff9a9a",
+  fontSize: "0.82rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  padding: "4px 0",
+  ":hover": {
+    textDecoration: "underline",
+  },
+});
+
 const ImagePreview = styled.img({
   width: "160px",
   height: "100px",
   objectFit: "cover",
   borderRadius: "10px",
   border: "1px solid rgba(255, 255, 255, 0.12)",
+  marginTop: "12px",
 });
 
 const EmptyCourtsState = styled.div({

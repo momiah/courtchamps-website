@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -15,4 +16,8 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
+export const storage = getStorage(
+  firebaseApp,
+  "gs://scoreboard-app-29148.firebasestorage.app",
+);
 export default firebaseApp;
