@@ -598,7 +598,7 @@ const Form = styled.form({
   display: "flex",
   flexDirection: "column",
   gap: "28px",
-  maxWidth: "720px",
+  width: "100%",
 });
 
 const Section = styled.section({

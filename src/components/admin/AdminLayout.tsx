@@ -13,8 +13,6 @@ import {
 import type { IconType } from "react-icons";
 
 import { CourtChampLogoIcon } from "../../assets";
-import { useAuth } from "../../context/AuthContext";
-import RoleBadge from "../auth/RoleBadge";
 
 interface AdminNavItem {
   label: string;
@@ -37,57 +35,45 @@ function AdminLayout({
   title: string;
   children: React.ReactNode;
 }) {
-  const { currentUser, role, signOutUser } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
   const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
-  const handleSignOut = useCallback(() => {
-    void signOutUser();
-  }, [signOutUser]);
-
-  const signedInEmail = currentUser?.email ?? "";
 
   return (
     <LayoutRoot>
       <Sidebar open={isDrawerOpen}>
-        <SidebarTop>
-          <BrandRow>
-            <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
-            <BrandText>Admin</BrandText>
-          </BrandRow>
-          <DrawerCloseButton
-            type="button"
-            aria-label="Close menu"
-            onClick={closeDrawer}
-          >
-            <FaTimes />
-          </DrawerCloseButton>
-        </SidebarTop>
+        <SidebarInner>
+          <SidebarTop>
+            <BrandRow>
+              <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
+              <BrandText>Admin</BrandText>
+            </BrandRow>
+            <DrawerCloseButton
+              type="button"
+              aria-label="Close menu"
+              onClick={closeDrawer}
+            >
+              <FaTimes />
+            </DrawerCloseButton>
+          </SidebarTop>
 
-        <NavList>
-          {NAV_ITEMS.map((navItem) => {
-            const NavIcon = navItem.icon;
-            return (
-              <NavItemLink
-                key={navItem.to}
-                to={navItem.to}
-                onClick={closeDrawer}
-              >
-                <NavIcon aria-hidden />
-                <span>{navItem.label}</span>
-              </NavItemLink>
-            );
-          })}
-        </NavList>
-
-        <SidebarFooter>
-          <FooterEmail title={signedInEmail}>{signedInEmail}</FooterEmail>
-          {role !== null ? <RoleBadge role={role} /> : null}
-          <SignOutButton type="button" onClick={handleSignOut}>
-            Sign Out
-          </SignOutButton>
-        </SidebarFooter>
+          <NavList>
+            {NAV_ITEMS.map((navItem) => {
+              const NavIcon = navItem.icon;
+              return (
+                <NavItemLink
+                  key={navItem.to}
+                  to={navItem.to}
+                  onClick={closeDrawer}
+                >
+                  <NavIcon aria-hidden />
+                  <span>{navItem.label}</span>
+                </NavItemLink>
+              );
+            })}
+          </NavList>
+        </SidebarInner>
       </Sidebar>
 
       {isDrawerOpen ? <DrawerBackdrop onClick={closeDrawer} /> : null}
@@ -116,32 +102,46 @@ function AdminLayout({
 export default memo(AdminLayout);
 
 const SIDEBAR_WIDTH = 240;
+const HEADER_HEIGHT = 71;
 const MOBILE_BREAKPOINT = "@media (max-width: 900px)";
 
 const LayoutRoot = styled.div({
-  minHeight: "100vh",
+  display: "flex",
+  alignItems: "stretch",
+  minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
   backgroundColor: "#07111f",
 });
 
 const Sidebar = styled.aside<{ open: boolean }>(({ open }) => ({
-  position: "fixed",
-  top: 0,
-  left: 0,
-  zIndex: 200,
-  display: "flex",
-  flexDirection: "column",
   width: `${SIDEBAR_WIDTH}px`,
-  height: "100vh",
-  boxSizing: "border-box",
-  padding: "20px 16px",
+  flexShrink: 0,
   backgroundColor: "#0a1929",
   borderRight: "1px solid rgba(255, 255, 255, 0.08)",
   [MOBILE_BREAKPOINT]: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    zIndex: 200,
+    height: "100vh",
     transform: open ? "translateX(0)" : "translateX(-100%)",
     transition: "transform 0.25s ease",
     boxShadow: open ? "8px 0 32px rgba(0, 0, 0, 0.5)" : "none",
   },
 }));
+
+const SidebarInner = styled.div({
+  position: "sticky",
+  top: 0,
+  height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+  display: "flex",
+  flexDirection: "column",
+  boxSizing: "border-box",
+  padding: "20px 16px",
+  [MOBILE_BREAKPOINT]: {
+    position: "static",
+    height: "100vh",
+  },
+});
 
 const SidebarTop = styled.div({
   display: "flex",
@@ -157,7 +157,7 @@ const BrandRow = styled.div({
 });
 
 const BrandLogo = styled.img({
-  height: "36px",
+  height: "34px",
   width: "auto",
 });
 
@@ -209,41 +209,6 @@ const NavItemLink = styled(NavLink)({
   },
 });
 
-const SidebarFooter = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-start",
-  gap: "10px",
-  paddingTop: "16px",
-  marginTop: "16px",
-  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-});
-
-const FooterEmail = styled.span({
-  color: "#c7d4e1",
-  fontSize: "0.8rem",
-  maxWidth: "100%",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-});
-
-const SignOutButton = styled.button({
-  width: "100%",
-  padding: "9px 14px",
-  borderRadius: "8px",
-  border: "1px solid rgba(255, 255, 255, 0.2)",
-  background: "none",
-  color: "#FFFFFF",
-  fontSize: "0.85rem",
-  fontWeight: 600,
-  cursor: "pointer",
-  transition: "background-color 0.2s",
-  ":hover": {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-});
-
 const DrawerBackdrop = styled.div({
   display: "none",
   [MOBILE_BREAKPOINT]: {
@@ -256,13 +221,10 @@ const DrawerBackdrop = styled.div({
 });
 
 const ContentColumn = styled.div({
-  marginLeft: `${SIDEBAR_WIDTH}px`,
-  minHeight: "100vh",
+  flex: 1,
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
-  [MOBILE_BREAKPOINT]: {
-    marginLeft: 0,
-  },
 });
 
 const MobileTopBar = styled.div({
@@ -299,11 +261,10 @@ const MobileTitle = styled.span({
 const MainContent = styled.main({
   flex: 1,
   boxSizing: "border-box",
-  padding: "32px 40px",
-  maxWidth: "1200px",
   width: "100%",
+  padding: "32px 40px 48px",
   "@media (max-width: 600px)": {
-    padding: "24px 20px",
+    padding: "24px 20px 40px",
   },
 });
 

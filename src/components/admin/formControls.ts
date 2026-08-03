@@ -32,6 +32,15 @@ export const TextArea = styled.textarea({
 export const SelectInput = styled.select({
   ...baseControlStyles,
   cursor: "pointer",
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+  paddingRight: "38px",
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%238fa3b8'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'/%3E%3C/svg%3E\")",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  backgroundSize: "16px",
 });
 
 export const PrimaryButton = styled.button({

@@ -163,5 +163,4 @@ const SubmitError = styled.div({
   color: "#ff9a9a",
   fontSize: "0.85rem",
   marginBottom: "20px",
-  maxWidth: "720px",
 });
