@@ -8,6 +8,7 @@ import {
   Route,
   Link,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "./assets";
@@ -32,8 +33,20 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Header />
-        <Routes>
+        <AppShell />
+      </Router>
+    </AuthProvider>
+  );
+}
+
+function AppShell() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  return (
+    <>
+      {isAdminRoute ? null : <Header />}
+      <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/accounts/delete-account" element={<DeleteAccount />} />
         {/* e.g. https://courtchamps.com/join/league/abc123 */}
@@ -107,9 +120,8 @@ export default function App() {
             </RequireRole>
           }
         />
-        </Routes>
-      </Router>
-    </AuthProvider>
+      </Routes>
+    </>
   );
 }
 

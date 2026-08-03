@@ -13,6 +13,8 @@ import {
 import type { IconType } from "react-icons";
 
 import { CourtChampLogoIcon } from "../../assets";
+import { useAuth } from "../../context/AuthContext";
+import RoleBadge from "../auth/RoleBadge";
 
 interface AdminNavItem {
   label: string;
@@ -35,51 +37,25 @@ function AdminLayout({
   title: string;
   children: React.ReactNode;
 }) {
+  const { currentUser, role, signOutUser } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
   const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
+  const handleSignOut = useCallback(() => {
+    void signOutUser();
+  }, [signOutUser]);
+
+  const signedInEmail = currentUser?.email ?? "";
 
   return (
     <LayoutRoot>
-      <Sidebar open={isDrawerOpen}>
-        <SidebarInner>
-          <SidebarTop>
-            <BrandRow>
-              <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
-              <BrandText>Admin</BrandText>
-            </BrandRow>
-            <DrawerCloseButton
-              type="button"
-              aria-label="Close menu"
-              onClick={closeDrawer}
-            >
-              <FaTimes />
-            </DrawerCloseButton>
-          </SidebarTop>
-
-          <NavList>
-            {NAV_ITEMS.map((navItem) => {
-              const NavIcon = navItem.icon;
-              return (
-                <NavItemLink
-                  key={navItem.to}
-                  to={navItem.to}
-                  onClick={closeDrawer}
-                >
-                  <NavIcon aria-hidden />
-                  <span>{navItem.label}</span>
-                </NavItemLink>
-              );
-            })}
-          </NavList>
-        </SidebarInner>
-      </Sidebar>
-
-      {isDrawerOpen ? <DrawerBackdrop onClick={closeDrawer} /> : null}
-
-      <ContentColumn>
-        <MobileTopBar>
+      <TopHeader>
+        <HeaderBrand to="/">
+          <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
+        </HeaderBrand>
+        <HeaderRight>
+          <HeaderTitle>{title}</HeaderTitle>
           <HamburgerButton
             type="button"
             aria-label="Open menu"
@@ -87,14 +63,58 @@ function AdminLayout({
           >
             <FaBars />
           </HamburgerButton>
-          <MobileTitle>{title}</MobileTitle>
-        </MobileTopBar>
+        </HeaderRight>
+      </TopHeader>
 
-        <MainContent>
-          <PageTitle>{title}</PageTitle>
-          {children}
-        </MainContent>
-      </ContentColumn>
+      <BodyRow>
+        <Sidebar open={isDrawerOpen}>
+          <SidebarInner>
+            <SidebarTop>
+              <SidebarHeading>Admin</SidebarHeading>
+              <DrawerCloseButton
+                type="button"
+                aria-label="Close menu"
+                onClick={closeDrawer}
+              >
+                <FaTimes />
+              </DrawerCloseButton>
+            </SidebarTop>
+
+            <NavList>
+              {NAV_ITEMS.map((navItem) => {
+                const NavIcon = navItem.icon;
+                return (
+                  <NavItemLink
+                    key={navItem.to}
+                    to={navItem.to}
+                    onClick={closeDrawer}
+                  >
+                    <NavIcon aria-hidden />
+                    <span>{navItem.label}</span>
+                  </NavItemLink>
+                );
+              })}
+            </NavList>
+
+            <SidebarFooter>
+              <FooterEmail title={signedInEmail}>{signedInEmail}</FooterEmail>
+              {role !== null ? <RoleBadge role={role} /> : null}
+              <SignOutButton type="button" onClick={handleSignOut}>
+                Sign Out
+              </SignOutButton>
+            </SidebarFooter>
+          </SidebarInner>
+        </Sidebar>
+
+        {isDrawerOpen ? <DrawerBackdrop onClick={closeDrawer} /> : null}
+
+        <ContentColumn>
+          <MainContent>
+            <PageTitle>{title}</PageTitle>
+            {children}
+          </MainContent>
+        </ContentColumn>
+      </BodyRow>
     </LayoutRoot>
   );
 }
@@ -106,10 +126,81 @@ const HEADER_HEIGHT = 71;
 const MOBILE_BREAKPOINT = "@media (max-width: 900px)";
 
 const LayoutRoot = styled.div({
+  minHeight: "100vh",
+  backgroundColor: "#07111f",
+});
+
+const TopHeader = styled.header({
+  position: "sticky",
+  top: 0,
+  zIndex: 120,
+  display: "flex",
+  alignItems: "center",
+  height: `${HEADER_HEIGHT}px`,
+  boxSizing: "border-box",
+  backgroundColor: "#0a1929",
+  borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+});
+
+const HeaderBrand = styled(NavLink)({
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  width: `${SIDEBAR_WIDTH}px`,
+  height: "100%",
+  padding: "0 16px",
+  boxSizing: "border-box",
+  textDecoration: "none",
+  borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+  [MOBILE_BREAKPOINT]: {
+    width: "auto",
+    borderRight: "none",
+  },
+});
+
+const BrandLogo = styled.img({
+  height: "42px",
+  width: "auto",
+});
+
+const HeaderRight = styled.div({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flex: 1,
+  padding: "0 40px",
+  "@media (max-width: 600px)": {
+    padding: "0 20px",
+  },
+});
+
+const HeaderTitle = styled.span({
+  color: "#FFFFFF",
+  fontSize: "1.1rem",
+  fontWeight: 700,
+  [MOBILE_BREAKPOINT]: {
+    display: "none",
+  },
+});
+
+const HamburgerButton = styled.button({
+  display: "none",
+  border: "none",
+  background: "none",
+  color: "#FFFFFF",
+  fontSize: "1.3rem",
+  cursor: "pointer",
+  padding: "4px",
+  [MOBILE_BREAKPOINT]: {
+    display: "inline-flex",
+    marginLeft: "auto",
+  },
+});
+
+const BodyRow = styled.div({
   display: "flex",
   alignItems: "stretch",
   minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
-  backgroundColor: "#07111f",
 });
 
 const Sidebar = styled.aside<{ open: boolean }>(({ open }) => ({
@@ -131,7 +222,7 @@ const Sidebar = styled.aside<{ open: boolean }>(({ open }) => ({
 
 const SidebarInner = styled.div({
   position: "sticky",
-  top: 0,
+  top: `${HEADER_HEIGHT}px`,
   height: `calc(100vh - ${HEADER_HEIGHT}px)`,
   display: "flex",
   flexDirection: "column",
@@ -147,25 +238,15 @@ const SidebarTop = styled.div({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  marginBottom: "28px",
+  marginBottom: "16px",
 });
 
-const BrandRow = styled.div({
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-});
-
-const BrandLogo = styled.img({
-  height: "34px",
-  width: "auto",
-});
-
-const BrandText = styled.span({
-  color: "#FFFFFF",
-  fontSize: "1rem",
+const SidebarHeading = styled.span({
+  color: "#8fa3b8",
+  fontSize: "0.72rem",
   fontWeight: 700,
-  letterSpacing: "0.02em",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
 });
 
 const DrawerCloseButton = styled.button({
@@ -209,6 +290,41 @@ const NavItemLink = styled(NavLink)({
   },
 });
 
+const SidebarFooter = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "10px",
+  paddingTop: "16px",
+  marginTop: "16px",
+  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+});
+
+const FooterEmail = styled.span({
+  color: "#c7d4e1",
+  fontSize: "0.8rem",
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+const SignOutButton = styled.button({
+  width: "100%",
+  padding: "9px 14px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255, 255, 255, 0.2)",
+  background: "none",
+  color: "#FFFFFF",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  transition: "background-color 0.2s",
+  ":hover": {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  },
+});
+
 const DrawerBackdrop = styled.div({
   display: "none",
   [MOBILE_BREAKPOINT]: {
@@ -227,37 +343,6 @@ const ContentColumn = styled.div({
   flexDirection: "column",
 });
 
-const MobileTopBar = styled.div({
-  display: "none",
-  [MOBILE_BREAKPOINT]: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    padding: "14px 20px",
-    backgroundColor: "#0a1929",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-  },
-});
-
-const HamburgerButton = styled.button({
-  border: "none",
-  background: "none",
-  color: "#FFFFFF",
-  fontSize: "1.3rem",
-  cursor: "pointer",
-  padding: "4px",
-  display: "inline-flex",
-});
-
-const MobileTitle = styled.span({
-  color: "#FFFFFF",
-  fontSize: "1.05rem",
-  fontWeight: 700,
-});
-
 const MainContent = styled.main({
   flex: 1,
   boxSizing: "border-box",
@@ -270,10 +355,10 @@ const MainContent = styled.main({
 
 const PageTitle = styled.h1({
   color: "#FFFFFF",
-  fontSize: "1.6rem",
+  fontSize: "1.35rem",
   fontWeight: 700,
   margin: "0 0 24px",
-  "@media (max-width: 900px)": {
+  "@media (min-width: 901px)": {
     display: "none",
   },
 });
