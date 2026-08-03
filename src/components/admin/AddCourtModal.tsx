@@ -241,13 +241,19 @@ function AddCourtModal({
   );
 
   return (
-    <Modal title={isEditMode ? "Edit court" : "Add court"} onClose={onClose} width={520}>
+    <Modal
+      title={isEditMode ? "Edit court" : "Add court"}
+      onClose={onClose}
+      width={880}
+    >
       <GuidanceNote>
         Court details help other players find the location, so please make sure
         they are correct.
       </GuidanceNote>
 
       <Form onSubmit={handleSubmit}>
+        <ModalBody>
+          <FormColumn>
         <FormField label="Court name" htmlFor="court-name">
           <TextInput
             id="court-name"
@@ -348,15 +354,23 @@ function AddCourtModal({
         </CoordinatesRow>
 
         {lookupMessage ? <LookupNote>{lookupMessage}</LookupNote> : null}
-
-        {parsedCoordinates ? (
-          <LocationPreviewMap
-            latitude={parsedCoordinates.latitude}
-            longitude={parsedCoordinates.longitude}
-          />
-        ) : null}
-
         {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
+          </FormColumn>
+
+          <MapColumn>
+            {parsedCoordinates ? (
+              <LocationPreviewMap
+                latitude={parsedCoordinates.latitude}
+                longitude={parsedCoordinates.longitude}
+              />
+            ) : (
+              <MapPlaceholder>
+                Look up or enter coordinates to preview the court location on
+                the map.
+              </MapPlaceholder>
+            )}
+          </MapColumn>
+        </ModalBody>
 
         <SubmitRow>
           <PrimaryButton type="submit" disabled={!isComplete || submitting}>
@@ -389,6 +403,45 @@ const Form = styled.form({
   display: "flex",
   flexDirection: "column",
   gap: "16px",
+});
+
+const ModalBody = styled.div({
+  display: "flex",
+  gap: "24px",
+  alignItems: "stretch",
+  "@media (max-width: 720px)": {
+    flexDirection: "column",
+  },
+});
+
+const FormColumn = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+  flex: "1 1 0",
+  minWidth: 0,
+});
+
+const MapColumn = styled.div({
+  display: "flex",
+  flex: "1 1 0",
+  minWidth: 0,
+  minHeight: "300px",
+});
+
+const MapPlaceholder = styled.div({
+  display: "flex",
+  flex: 1,
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "24px",
+  textAlign: "center",
+  borderRadius: "12px",
+  border: "1px dashed rgba(255, 255, 255, 0.16)",
+  backgroundColor: "#07111f",
+  color: "#8fa3b8",
+  fontSize: "0.85rem",
+  lineHeight: 1.5,
 });
 
 const CoordinatesHeader = styled.div({

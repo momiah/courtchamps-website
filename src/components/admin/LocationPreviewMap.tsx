@@ -51,8 +51,9 @@ export default memo(LocationPreviewMap);
 
 const PreviewShell = styled.div({
   width: "100%",
-  height: "200px",
-  borderRadius: "10px",
+  height: "100%",
+  minHeight: "300px",
+  borderRadius: "12px",
   overflow: "hidden",
   border: "1px solid rgba(255, 255, 255, 0.12)",
 });
