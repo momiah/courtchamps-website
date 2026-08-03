@@ -11,13 +11,26 @@ const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 // geocoded repeatedly as the modal opens and closes.
 const geocodeCache = new Map<string, GeoPoint | null>();
 
-const buildQuery = (court: Court): string =>
-  [
-    court.location.address,
-    court.location.city,
-    court.location.postCode,
-    court.location.country,
-  ]
+export const buildCourtAddressQuery = (court: Court): string =>
+  buildAddressQuery({
+    address: court.location.address,
+    city: court.location.city,
+    postCode: court.location.postCode,
+    country: court.location.country,
+  });
+
+export const buildAddressQuery = ({
+  address,
+  city,
+  postCode,
+  country,
+}: {
+  address: string;
+  city: string;
+  postCode: string;
+  country: string;
+}): string =>
+  [address, city, postCode, country]
     .map((part) => part.trim())
     .filter((part) => part.length > 0)
     .join(", ");
@@ -42,7 +55,21 @@ const isNominatimResultArray = (
 export const geocodeCourt = async (
   court: Court,
 ): Promise<GeoPoint | null> => {
-  const query = buildQuery(court);
+  if (
+    typeof court.location.latitude === "number" &&
+    typeof court.location.longitude === "number"
+  ) {
+    return {
+      latitude: court.location.latitude,
+      longitude: court.location.longitude,
+    };
+  }
+  return geocodeAddress(buildCourtAddressQuery(court));
+};
+
+export const geocodeAddress = async (
+  query: string,
+): Promise<GeoPoint | null> => {
   if (query.length === 0) {
     return null;
   }

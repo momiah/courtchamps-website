@@ -40,6 +40,14 @@ const mapCourtDocument = (
     country: data.location?.country ?? "",
     countryCode: data.location?.countryCode ?? "",
     postCode: data.location?.postCode ?? "",
+    latitude:
+      typeof data.location?.latitude === "number"
+        ? data.location.latitude
+        : null,
+    longitude:
+      typeof data.location?.longitude === "number"
+        ? data.location.longitude
+        : null,
   },
   verified: data.verified === true,
   submittedBy: data.submittedBy ?? "",

@@ -4,6 +4,8 @@ export interface CourtLocation {
   country: string;
   countryCode: string;
   postCode: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface Court {
