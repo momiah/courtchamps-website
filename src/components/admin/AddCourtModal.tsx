@@ -2,7 +2,7 @@ import React, { memo, useCallback, useMemo, useState } from "react";
 import styled from "styled-components";
 
 import { useAuth } from "../../context/AuthContext";
-import { createCourt } from "../../services/courts";
+import { createCourt, updateCourt } from "../../services/courts";
 import { Court } from "../../types/ladder";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import FormField from "./FormField";
@@ -17,23 +17,28 @@ interface CourtFormState {
   address: string;
 }
 
-const EMPTY_FORM: CourtFormState = {
-  courtName: "",
-  countryCode: "",
-  city: "",
-  postCode: "",
-  address: "",
-};
+const buildInitialForm = (court: Court | undefined): CourtFormState => ({
+  courtName: court?.courtName ?? "",
+  countryCode: court?.location.countryCode ?? "",
+  city: court?.location.city ?? "",
+  postCode: court?.location.postCode ?? "",
+  address: court?.location.address ?? "",
+});
 
 function AddCourtModal({
   onClose,
-  onCreated,
+  onSaved,
+  court,
 }: {
   onClose: () => void;
-  onCreated: (court: Court) => void;
+  onSaved: (court: Court) => void;
+  court?: Court;
 }) {
   const { currentUser } = useAuth();
-  const [formState, setFormState] = useState<CourtFormState>(EMPTY_FORM);
+  const isEditMode = court !== undefined;
+  const [formState, setFormState] = useState<CourtFormState>(() =>
+    buildInitialForm(court),
+  );
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -63,42 +68,57 @@ function AddCourtModal({
 
       const actorUserId = currentUser?.uid;
       if (!actorUserId) {
-        setErrorMessage("You must be signed in to add a court.");
+        setErrorMessage("You must be signed in to save a court.");
         return;
       }
 
       setSubmitting(true);
       setErrorMessage(null);
 
+      const courtInput = {
+        courtName: formState.courtName.trim(),
+        location: {
+          country: findCountryName(formState.countryCode),
+          countryCode: formState.countryCode,
+          city: formState.city.trim(),
+          postCode: formState.postCode.trim(),
+          address: formState.address.trim(),
+        },
+      };
+
       try {
-        const createdCourt = await createCourt({
-          actorUserId,
-          court: {
-            courtName: formState.courtName.trim(),
-            location: {
-              country: findCountryName(formState.countryCode),
-              countryCode: formState.countryCode,
-              city: formState.city.trim(),
-              postCode: formState.postCode.trim(),
-              address: formState.address.trim(),
-            },
-          },
-        });
-        onCreated(createdCourt);
-      } catch (createError) {
-        console.error("Failed to create court", createError);
+        if (court) {
+          await updateCourt({
+            courtId: court.courtId,
+            court: courtInput,
+            actorUserId,
+          });
+          onSaved({
+            ...court,
+            courtName: courtInput.courtName,
+            location: courtInput.location,
+          });
+        } else {
+          const createdCourt = await createCourt({
+            actorUserId,
+            court: courtInput,
+          });
+          onSaved(createdCourt);
+        }
+      } catch (saveError) {
+        console.error("Failed to save court", saveError);
         setErrorMessage("Could not save the court. Please try again.");
         setSubmitting(false);
       }
     },
-    [currentUser, formState, isComplete, onCreated, submitting],
+    [court, currentUser, formState, isComplete, onSaved, submitting],
   );
 
   return (
-    <Modal title="Add court" onClose={onClose} width={520}>
+    <Modal title={isEditMode ? "Edit court" : "Add court"} onClose={onClose} width={520}>
       <GuidanceNote>
-        Adding a court helps other players find the location, so please make
-        sure the details are correct.
+        Court details help other players find the location, so please make sure
+        they are correct.
       </GuidanceNote>
 
       <Form onSubmit={handleSubmit}>
@@ -167,7 +187,11 @@ function AddCourtModal({
 
         <SubmitRow>
           <PrimaryButton type="submit" disabled={!isComplete || submitting}>
-            {submitting ? "Saving…" : "Add court"}
+            {submitting
+              ? "Saving…"
+              : isEditMode
+                ? "Save changes"
+                : "Add court"}
           </PrimaryButton>
         </SubmitRow>
       </Form>

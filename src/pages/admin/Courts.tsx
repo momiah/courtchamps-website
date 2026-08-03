@@ -11,11 +11,7 @@ import FilterTabs, {
   FilterTabItem,
 } from "../../components/admin/FilterTabs";
 import StatusPill from "../../components/admin/StatusPill";
-import {
-  PrimaryButton,
-  SecondaryButton,
-  TextInput,
-} from "../../components/admin/formControls";
+import { PrimaryButton, TextInput } from "../../components/admin/formControls";
 import { useAuth } from "../../context/AuthContext";
 import { fetchAllCourts, setCourtVerified } from "../../services/courts";
 import { Court } from "../../types/ladder";
@@ -30,6 +26,7 @@ function Courts() {
   const [activeTab, setActiveTab] = useState<CourtFilterTab>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [courtBeingEdited, setCourtBeingEdited] = useState<Court | null>(null);
   const [courtPendingUnverify, setCourtPendingUnverify] =
     useState<Court | null>(null);
   const [busyCourtId, setBusyCourtId] = useState<string | null>(null);
@@ -171,13 +168,22 @@ function Courts() {
     void applyVerified(target, false);
   }, [applyVerified, courtPendingUnverify]);
 
-  const handleCourtCreated = useCallback((createdCourt: Court) => {
-    setCourts((previous) =>
-      [...previous, createdCourt].sort((first, second) =>
+  const handleCourtSaved = useCallback((savedCourt: Court) => {
+    setCourts((previous) => {
+      const withoutSaved = previous.filter(
+        (existing) => existing.courtId !== savedCourt.courtId,
+      );
+      return [...withoutSaved, savedCourt].sort((first, second) =>
         first.courtName.localeCompare(second.courtName),
-      ),
-    );
+      );
+    });
     setIsAddModalOpen(false);
+    setCourtBeingEdited(null);
+  }, []);
+
+  const closeCourtModal = useCallback(() => {
+    setIsAddModalOpen(false);
+    setCourtBeingEdited(null);
   }, []);
 
   const columns = useMemo<AdminTableColumn<Court>[]>(
@@ -219,23 +225,34 @@ function Courts() {
         align: "right",
         render: (court) => (
           <ActionCell>
-            {court.verified === true ? (
-              <SecondaryButton
+            <ActionButtons>
+              <TableActionButton
                 type="button"
-                disabled={busyCourtId === court.courtId}
-                onClick={() => setCourtPendingUnverify(court)}
+                variant="ghost"
+                onClick={() => setCourtBeingEdited(court)}
               >
-                Unverify
-              </SecondaryButton>
-            ) : (
-              <PrimaryButton
-                type="button"
-                disabled={busyCourtId === court.courtId}
-                onClick={() => handleVerify(court)}
-              >
-                Verify
-              </PrimaryButton>
-            )}
+                Edit
+              </TableActionButton>
+              {court.verified === true ? (
+                <TableActionButton
+                  type="button"
+                  variant="ghost"
+                  disabled={busyCourtId === court.courtId}
+                  onClick={() => setCourtPendingUnverify(court)}
+                >
+                  Unverify
+                </TableActionButton>
+              ) : (
+                <TableActionButton
+                  type="button"
+                  variant="primary"
+                  disabled={busyCourtId === court.courtId}
+                  onClick={() => handleVerify(court)}
+                >
+                  Verify
+                </TableActionButton>
+              )}
+            </ActionButtons>
             {rowErrors[court.courtId] ? (
               <RowError>{rowErrors[court.courtId]}</RowError>
             ) : null}
@@ -277,6 +294,7 @@ function Courts() {
         <LoadingText>Loading courts…</LoadingText>
       ) : (
         <AdminTable
+          compact
           columns={columns}
           rows={visibleCourts}
           rowKey={(court) => court.courtId}
@@ -301,10 +319,11 @@ function Courts() {
         />
       )}
 
-      {isAddModalOpen ? (
+      {isAddModalOpen || courtBeingEdited ? (
         <AddCourtModal
-          onClose={() => setIsAddModalOpen(false)}
-          onCreated={handleCourtCreated}
+          court={courtBeingEdited ?? undefined}
+          onClose={closeCourtModal}
+          onSaved={handleCourtSaved}
         />
       ) : null}
 
@@ -354,6 +373,41 @@ const ActionCell = styled.div({
   alignItems: "flex-end",
   gap: "6px",
 });
+
+const ActionButtons = styled.div({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "6px",
+});
+
+const TableActionButton = styled.button<{ variant: "primary" | "ghost" }>(
+  ({ variant }) => ({
+    padding: "6px 12px",
+    borderRadius: "7px",
+    fontSize: "0.78rem",
+    fontWeight: 600,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    transition: "background-color 0.2s, opacity 0.2s",
+    ...(variant === "primary"
+      ? {
+          border: "none",
+          backgroundColor: "#0099f0",
+          color: "#FFFFFF",
+          ":hover": { opacity: 0.9 },
+        }
+      : {
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          background: "none",
+          color: "#FFFFFF",
+          ":hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
+        }),
+    ":disabled": {
+      opacity: 0.5,
+      cursor: "not-allowed",
+    },
+  }),
+);
 
 const RowError = styled.span({
   color: "#ff7a7a",

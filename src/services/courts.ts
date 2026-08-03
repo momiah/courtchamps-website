@@ -92,6 +92,25 @@ export const createCourt = async ({
   };
 };
 
+export const updateCourt = async ({
+  courtId,
+  court,
+  actorUserId,
+}: {
+  courtId: string;
+  court: CourtInput;
+  actorUserId: string;
+}): Promise<void> => {
+  const courtReference = doc(db, COURTS_COLLECTION, courtId);
+
+  await updateDoc(courtReference, {
+    courtName: court.courtName,
+    location: court.location,
+    updatedBy: actorUserId,
+    updatedAt: serverTimestamp(),
+  });
+};
+
 export const setCourtVerified = async ({
   courtId,
   verified,

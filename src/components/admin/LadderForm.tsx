@@ -360,6 +360,7 @@ function LadderForm({
         ) : null}
       </Section>
 
+      <SectionRow>
       <Section>
         <SectionTitle>Region and courts</SectionTitle>
 
@@ -501,6 +502,7 @@ function LadderForm({
           )}
         </DerivedPreview>
       </Section>
+      </SectionRow>
 
       <Section>
         <SectionTitle>Access and fees</SectionTitle>
@@ -585,7 +587,7 @@ function LadderForm({
       {isCourtModalOpen ? (
         <AddCourtModal
           onClose={() => setIsCourtModalOpen(false)}
-          onCreated={handleCourtCreated}
+          onSaved={handleCourtCreated}
         />
       ) : null}
     </Form>
@@ -609,6 +611,19 @@ const Section = styled.section({
   borderRadius: "16px",
   backgroundColor: "#0a1929",
   border: "1px solid rgba(255, 255, 255, 0.08)",
+});
+
+const SectionRow = styled.div({
+  display: "flex",
+  gap: "28px",
+  alignItems: "stretch",
+  "& > section": {
+    flex: "1 1 0",
+    minWidth: 0,
+  },
+  "@media (max-width: 900px)": {
+    flexDirection: "column",
+  },
 });
 
 const SectionTitle = styled.h2({

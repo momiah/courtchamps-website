@@ -17,8 +17,8 @@ function FormField({
   return (
     <FieldContainer>
       <FieldLabel htmlFor={htmlFor}>{label}</FieldLabel>
-      {hint ? <FieldHint>{hint}</FieldHint> : null}
       {children}
+      {hint ? <FieldHint>{hint}</FieldHint> : null}
       {error ? <FieldError>{error}</FieldError> : null}
     </FieldContainer>
   );
