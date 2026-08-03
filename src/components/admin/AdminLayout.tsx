@@ -55,7 +55,6 @@ function AdminLayout({
           <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
         </HeaderBrand>
         <HeaderRight>
-          <HeaderTitle>{title}</HeaderTitle>
           <HamburgerButton
             type="button"
             aria-label="Open menu"
@@ -151,7 +150,6 @@ const HeaderBrand = styled(NavLink)({
   padding: "0 16px",
   boxSizing: "border-box",
   textDecoration: "none",
-  borderRight: "1px solid rgba(255, 255, 255, 0.08)",
   [MOBILE_BREAKPOINT]: {
     width: "auto",
     borderRight: "none",
@@ -171,15 +169,6 @@ const HeaderRight = styled.div({
   padding: "0 40px",
   "@media (max-width: 600px)": {
     padding: "0 20px",
-  },
-});
-
-const HeaderTitle = styled.span({
-  color: "#FFFFFF",
-  fontSize: "1.1rem",
-  fontWeight: 700,
-  [MOBILE_BREAKPOINT]: {
-    display: "none",
   },
 });
 
