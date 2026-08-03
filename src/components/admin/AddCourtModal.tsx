@@ -94,6 +94,24 @@ function AddCourtModal({
     return { latitude, longitude };
   }, [formState.latitude, formState.longitude]);
 
+  const latitudeError = useMemo(() => {
+    if (formState.latitude.trim().length === 0) {
+      return null;
+    }
+    return parseCoordinate(formState.latitude, 90) === null
+      ? "Enter a latitude between -90 and 90."
+      : null;
+  }, [formState.latitude]);
+
+  const longitudeError = useMemo(() => {
+    if (formState.longitude.trim().length === 0) {
+      return null;
+    }
+    return parseCoordinate(formState.longitude, 180) === null
+      ? "Enter a longitude between -180 and 180."
+      : null;
+  }, [formState.longitude]);
+
   const isComplete = useMemo(
     () =>
       formState.courtName.trim().length > 0 &&
@@ -106,31 +124,27 @@ function AddCourtModal({
   );
 
   const handleLookup = useCallback(async () => {
-    const country = findCountryName(formState.countryCode);
+    // The country is applied as a bias via countrycodes, so it is left out of
+    // the query text (its verbose name only confuses the geocoder).
     const candidateQueries = [
       buildAddressQuery({
         address: formState.address,
         city: formState.city,
         postCode: formState.postCode,
-        country,
+        country: "",
       }),
       buildAddressQuery({
         address: formState.address,
         city: formState.city,
         postCode: "",
-        country,
+        country: "",
       }),
-      buildAddressQuery({
-        address: "",
-        city: formState.city,
-        postCode: formState.postCode,
-        country,
-      }),
+      formState.postCode.trim(),
       buildAddressQuery({
         address: "",
         city: formState.city,
         postCode: "",
-        country,
+        country: "",
       }),
     ];
 
@@ -327,7 +341,11 @@ function AddCourtModal({
         </CoordinatesHeader>
 
         <CoordinatesRow>
-          <FormField label="Latitude" htmlFor="court-latitude">
+          <FormField
+            label="Latitude"
+            htmlFor="court-latitude"
+            error={latitudeError}
+          >
             <TextInput
               id="court-latitude"
               type="number"
@@ -339,7 +357,11 @@ function AddCourtModal({
               }
             />
           </FormField>
-          <FormField label="Longitude" htmlFor="court-longitude">
+          <FormField
+            label="Longitude"
+            htmlFor="court-longitude"
+            error={longitudeError}
+          >
             <TextInput
               id="court-longitude"
               type="number"
@@ -353,6 +375,10 @@ function AddCourtModal({
           </FormField>
         </CoordinatesRow>
 
+        <LookupNote>
+          The map updates automatically once both coordinates are valid — no
+          need to save first.
+        </LookupNote>
         {lookupMessage ? <LookupNote>{lookupMessage}</LookupNote> : null}
         {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
           </FormColumn>

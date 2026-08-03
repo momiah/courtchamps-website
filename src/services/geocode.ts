@@ -73,13 +73,13 @@ export const geocodeCourtAddress = async (
   court: Court,
 ): Promise<GeoPoint | null> => {
   const { address, city, postCode, countryCode } = court.location;
-  const country = court.location.country;
 
+  // Country is applied via countrycodes, so it is kept out of the query text.
   const candidateQueries = [
-    buildAddressQuery({ address, city, postCode, country }),
-    buildAddressQuery({ address, city, postCode: "", country }),
-    buildAddressQuery({ address: "", city, postCode, country }),
-    buildAddressQuery({ address: "", city, postCode: "", country }),
+    buildAddressQuery({ address, city, postCode, country: "" }),
+    buildAddressQuery({ address, city, postCode: "", country: "" }),
+    postCode.trim(),
+    buildAddressQuery({ address: "", city, postCode: "", country: "" }),
   ];
 
   return geocodeFirstMatch(candidateQueries, countryCode);
