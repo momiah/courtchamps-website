@@ -16,6 +16,7 @@ import { Court, Ladder, LadderInput } from "../../types/ladder";
 import { COUNTRY_OPTIONS } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
 import AddCourtModal from "./AddCourtModal";
+import CourtsMap from "./CourtsMap";
 import FormField from "./FormField";
 import Modal from "./Modal";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
@@ -191,6 +192,16 @@ function LadderForm({
   );
 
   const selectedCourtCount = formState.courtIds.length;
+
+  const selectedCourts = useMemo(
+    () =>
+      formState.courtIds
+        .map((courtId) =>
+          courts.find((court) => court.courtId === courtId),
+        )
+        .filter((court): court is Court => court !== undefined),
+    [formState.courtIds, courts],
+  );
 
   const derivedDatesPreview = useMemo(() => {
     const seasonStart = parseDateInputValue(formState.seasonStartsAt);
@@ -694,29 +705,45 @@ function LadderForm({
         <Modal
           title="Select courts"
           onClose={() => setIsCourtsModalOpen(false)}
-          width={560}
+          width={920}
         >
-          {verifiedCourtOptions.length === 0 ? (
-            <EmptyCourtsState>
-              <span>No verified courts yet.</span>
-              <Link to="/admin/courts">Manage courts</Link>
-            </EmptyCourtsState>
-          ) : (
-            <MultiSelect
-              options={verifiedCourtOptions}
-              selectedIds={formState.courtIds}
-              onToggle={toggleCourt}
-              onRemove={removeCourt}
-              searchPlaceholder="Search courts…"
-            />
-          )}
+          <CourtsModalBody>
+            <CourtsModalColumn>
+              {verifiedCourtOptions.length === 0 ? (
+                <EmptyCourtsState>
+                  <span>No verified courts yet.</span>
+                  <Link to="/admin/courts">Manage courts</Link>
+                </EmptyCourtsState>
+              ) : (
+                <MultiSelect
+                  options={verifiedCourtOptions}
+                  selectedIds={formState.courtIds}
+                  onToggle={toggleCourt}
+                  onRemove={removeCourt}
+                  searchPlaceholder="Search courts…"
+                />
+              )}
+              <AddCourtInline
+                type="button"
+                onClick={() => setIsCourtModalOpen(true)}
+              >
+                + Add a new court
+              </AddCourtInline>
+            </CourtsModalColumn>
+
+            <CourtsMapColumn>
+              <CourtsMap courts={selectedCourts} />
+            </CourtsMapColumn>
+          </CourtsModalBody>
+
           <CourtsModalActions>
-            <AddCourtInline
-              type="button"
-              onClick={() => setIsCourtModalOpen(true)}
-            >
-              + Add a new court
-            </AddCourtInline>
+            <SelectedSummary>
+              {selectedCourtCount === 0
+                ? "No courts selected"
+                : `${selectedCourtCount} ${
+                    selectedCourtCount === 1 ? "court" : "courts"
+                  } selected`}
+            </SelectedSummary>
             <PrimaryButton
               type="button"
               onClick={() => setIsCourtsModalOpen(false)}
@@ -876,6 +903,33 @@ const CourtsSelectChevron = styled.span({
 const SelectedSummary = styled.span({
   color: "#8fa3b8",
   fontSize: "0.8rem",
+});
+
+const CourtsModalBody = styled.div({
+  display: "flex",
+  gap: "20px",
+  alignItems: "stretch",
+  "@media (max-width: 760px)": {
+    flexDirection: "column",
+  },
+});
+
+const CourtsModalColumn = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  flex: "1 1 0",
+  minWidth: 0,
+});
+
+const CourtsMapColumn = styled.div({
+  flex: "1 1 0",
+  minWidth: 0,
+  minHeight: "360px",
+  display: "flex",
+  "@media (max-width: 760px)": {
+    minHeight: "300px",
+  },
 });
 
 const CourtsModalActions = styled.div({
