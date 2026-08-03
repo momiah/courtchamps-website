@@ -17,6 +17,7 @@ import { COUNTRY_OPTIONS } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
 import AddCourtModal from "./AddCourtModal";
 import FormField from "./FormField";
+import Modal from "./Modal";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
 import {
   PrimaryButton,
@@ -119,6 +120,7 @@ function LadderForm({
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
   const [showErrors, setShowErrors] = useState<boolean>(false);
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
+  const [isCourtsModalOpen, setIsCourtsModalOpen] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -188,6 +190,8 @@ function LadderForm({
     [courts],
   );
 
+  const selectedCourtCount = formState.courtIds.length;
+
   const derivedDatesPreview = useMemo(() => {
     const seasonStart = parseDateInputValue(formState.seasonStartsAt);
     if (!seasonStart) {
@@ -195,6 +199,20 @@ function LadderForm({
     }
     return deriveLadderDates({ seasonStartsAt: seasonStart });
   }, [formState.seasonStartsAt]);
+
+  const minScheduleDate = useMemo(() => {
+    const todayInputValue = format(new Date(), "yyyy-MM-dd");
+    if (!initialLadder) {
+      return todayInputValue;
+    }
+    // Keep an already-scheduled ladder editable even if its dates have passed.
+    const initialRegistration = toDateInputValue(
+      initialLadder.registrationOpensAt,
+    );
+    return initialRegistration && initialRegistration < todayInputValue
+      ? initialRegistration
+      : todayInputValue;
+  }, [initialLadder]);
 
   const errors = useMemo<LadderFormErrors>(() => {
     const nextErrors: LadderFormErrors = {};
@@ -219,9 +237,14 @@ function LadderForm({
     const seasonStarts = parseDateInputValue(formState.seasonStartsAt);
     if (!registrationOpens) {
       nextErrors.registrationOpensAt = "Registration opening date is required.";
+    } else if (formState.registrationOpensAt < minScheduleDate) {
+      nextErrors.registrationOpensAt =
+        "Registration opening date cannot be in the past.";
     }
     if (!seasonStarts) {
       nextErrors.seasonStartsAt = "Season start date is required.";
+    } else if (formState.seasonStartsAt < minScheduleDate) {
+      nextErrors.seasonStartsAt = "Season start date cannot be in the past.";
     }
     if (
       registrationOpens &&
@@ -260,7 +283,7 @@ function LadderForm({
     }
 
     return nextErrors;
-  }, [formState]);
+  }, [formState, minScheduleDate]);
 
   const isEntryFeeZero = useMemo(
     () => Number(formState.entryFee) === 0,
@@ -488,26 +511,20 @@ function LadderForm({
         </FormField>
 
         <FormField label="Courts" error={fieldError("courtIds")}>
-          {verifiedCourtOptions.length === 0 ? (
-            <EmptyCourtsState>
-              <span>No verified courts yet.</span>
-              <Link to="/admin/courts">Manage courts</Link>
-            </EmptyCourtsState>
-          ) : (
-            <MultiSelect
-              options={verifiedCourtOptions}
-              selectedIds={formState.courtIds}
-              onToggle={toggleCourt}
-              onRemove={removeCourt}
-              searchPlaceholder="Search courts…"
-            />
-          )}
-          <AddCourtInline
+          <CourtsSelectButton
             type="button"
-            onClick={() => setIsCourtModalOpen(true)}
+            onClick={() => setIsCourtsModalOpen(true)}
           >
-            + Add a new court
-          </AddCourtInline>
+            <span>Select courts</span>
+            <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
+          </CourtsSelectButton>
+          <SelectedSummary>
+            {selectedCourtCount === 0
+              ? "No courts selected"
+              : `${selectedCourtCount} ${
+                  selectedCourtCount === 1 ? "court" : "courts"
+                } selected`}
+          </SelectedSummary>
         </FormField>
       </Section>
 
@@ -523,6 +540,7 @@ function LadderForm({
             <TextInput
               id="ladder-registration-opens"
               type="date"
+              min={minScheduleDate}
               value={formState.registrationOpensAt}
               onClick={openDatePicker}
               onChange={(changeEvent) =>
@@ -539,6 +557,7 @@ function LadderForm({
             <TextInput
               id="ladder-season-starts"
               type="date"
+              min={minScheduleDate}
               value={formState.seasonStartsAt}
               onClick={openDatePicker}
               onChange={(changeEvent) =>
@@ -671,6 +690,43 @@ function LadderForm({
         </PrimaryButton>
       </SubmitRow>
 
+      {isCourtsModalOpen ? (
+        <Modal
+          title="Select courts"
+          onClose={() => setIsCourtsModalOpen(false)}
+          width={560}
+        >
+          {verifiedCourtOptions.length === 0 ? (
+            <EmptyCourtsState>
+              <span>No verified courts yet.</span>
+              <Link to="/admin/courts">Manage courts</Link>
+            </EmptyCourtsState>
+          ) : (
+            <MultiSelect
+              options={verifiedCourtOptions}
+              selectedIds={formState.courtIds}
+              onToggle={toggleCourt}
+              onRemove={removeCourt}
+              searchPlaceholder="Search courts…"
+            />
+          )}
+          <CourtsModalActions>
+            <AddCourtInline
+              type="button"
+              onClick={() => setIsCourtModalOpen(true)}
+            >
+              + Add a new court
+            </AddCourtInline>
+            <PrimaryButton
+              type="button"
+              onClick={() => setIsCourtsModalOpen(false)}
+            >
+              Done
+            </PrimaryButton>
+          </CourtsModalActions>
+        </Modal>
+      ) : null}
+
       {isCourtModalOpen ? (
         <AddCourtModal
           onClose={() => setIsCourtModalOpen(false)}
@@ -790,6 +846,44 @@ const AddCourtInline = styled.button({
   ":hover": {
     textDecoration: "underline",
   },
+});
+
+const CourtsSelectButton = styled.button({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  backgroundColor: "#07111f",
+  color: "#FFFFFF",
+  fontSize: "0.9rem",
+  cursor: "pointer",
+  transition: "border-color 0.2s",
+  ":hover": {
+    borderColor: "#0099f0",
+  },
+});
+
+const CourtsSelectChevron = styled.span({
+  color: "#8fa3b8",
+  fontSize: "1.3rem",
+  lineHeight: 1,
+});
+
+const SelectedSummary = styled.span({
+  color: "#8fa3b8",
+  fontSize: "0.8rem",
+});
+
+const CourtsModalActions = styled.div({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  marginTop: "20px",
 });
 
 const DateRow = styled.div({
