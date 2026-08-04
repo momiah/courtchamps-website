@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import { FaPencilAlt, FaTrashAlt } from "react-icons/fa";
 
 import AddCourtModal from "../../components/admin/AddCourtModal";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -206,15 +207,19 @@ function Courts() {
           <ActionCell>
             <TableActionButton
               type="button"
+              aria-label={`Edit ${court.courtName}`}
+              title="Edit court"
               onClick={() => setCourtBeingEdited(court)}
             >
-              Edit
+              <FaPencilAlt aria-hidden />
             </TableActionButton>
             <DeleteActionButton
               type="button"
+              aria-label={`Delete ${court.courtName}`}
+              title="Delete court"
               onClick={() => requestDeleteCourt(court)}
             >
-              Delete
+              <FaTrashAlt aria-hidden />
             </DeleteActionButton>
           </ActionCell>
         ),
@@ -335,35 +340,41 @@ const ActionCell = styled.div({
 });
 
 const TableActionButton = styled.button({
-  minWidth: "72px",
-  padding: "6px 12px",
-  borderRadius: "7px",
-  fontSize: "0.78rem",
-  fontWeight: 600,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "34px",
+  height: "34px",
+  borderRadius: "8px",
+  fontSize: "0.82rem",
   cursor: "pointer",
-  whiteSpace: "nowrap",
-  textAlign: "center",
   border: "1px solid rgba(255, 255, 255, 0.2)",
   background: "none",
-  color: "#FFFFFF",
-  transition: "background-color 0.2s",
-  ":hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
+  color: "#c7d4e1",
+  transition: "background-color 0.2s, color 0.2s",
+  ":hover": {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    color: "#FFFFFF",
+  },
 });
 
 const DeleteActionButton = styled.button({
-  minWidth: "72px",
-  padding: "6px 12px",
-  borderRadius: "7px",
-  fontSize: "0.78rem",
-  fontWeight: 600,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "34px",
+  height: "34px",
+  borderRadius: "8px",
+  fontSize: "0.82rem",
   cursor: "pointer",
-  whiteSpace: "nowrap",
-  textAlign: "center",
-  border: "1px solid rgba(224, 85, 85, 0.5)",
+  border: "1px solid rgba(224, 85, 85, 0.45)",
   background: "none",
   color: "#ff8f8f",
-  transition: "background-color 0.2s",
-  ":hover": { backgroundColor: "rgba(224, 85, 85, 0.14)" },
+  transition: "background-color 0.2s, color 0.2s",
+  ":hover": {
+    backgroundColor: "rgba(224, 85, 85, 0.16)",
+    color: "#ffb3b3",
+  },
 });
 
 const LoadError = styled.div({
