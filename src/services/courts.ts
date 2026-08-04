@@ -68,6 +68,10 @@ export const fetchAllCourts = async (): Promise<Court[]> => {
   );
 };
 
+const hasCoordinates = (location: CourtLocation): boolean =>
+  typeof location.latitude === "number" &&
+  typeof location.longitude === "number";
+
 export const createCourt = async ({
   court,
   actorUserId,
@@ -76,14 +80,17 @@ export const createCourt = async ({
   actorUserId: string;
 }): Promise<Court> => {
   const createdAt = new Date();
-  const verifiedAt = new Date();
+  // A court is verified purely by having coordinates.
+  const isVerified = hasCoordinates(court.location);
+  const verifiedAt = isVerified ? new Date() : null;
+  const verifiedBy = isVerified ? actorUserId : null;
 
   const courtReference = await addDoc(collection(db, COURTS_COLLECTION), {
     courtName: court.courtName,
     location: court.location,
-    verified: true,
+    verified: isVerified,
     submittedBy: actorUserId,
-    verifiedBy: actorUserId,
+    verifiedBy,
     verifiedAt,
     createdAt,
   });
@@ -92,9 +99,9 @@ export const createCourt = async ({
     courtId: courtReference.id,
     courtName: court.courtName,
     location: court.location,
-    verified: true,
+    verified: isVerified,
     submittedBy: actorUserId,
-    verifiedBy: actorUserId,
+    verifiedBy,
     verifiedAt,
     createdAt,
   };
@@ -111,42 +118,17 @@ export const updateCourt = async ({
 }): Promise<void> => {
   const courtReference = doc(db, COURTS_COLLECTION, courtId);
 
-  // An admin save always includes coordinates (the form requires them), so
-  // saving verifies the court in the same step.
+  // Coordinates are the single source of truth for verification: a court with
+  // coordinates is verified, one without is not.
+  const isVerified = hasCoordinates(court.location);
+
   await updateDoc(courtReference, {
     courtName: court.courtName,
     location: court.location,
-    verified: true,
-    verifiedBy: actorUserId,
-    verifiedAt: serverTimestamp(),
+    verified: isVerified,
+    verifiedBy: isVerified ? actorUserId : null,
+    verifiedAt: isVerified ? serverTimestamp() : null,
     updatedBy: actorUserId,
     updatedAt: serverTimestamp(),
-  });
-};
-
-export const setCourtVerified = async ({
-  courtId,
-  verified,
-  actorUserId,
-}: {
-  courtId: string;
-  verified: boolean;
-  actorUserId: string;
-}): Promise<void> => {
-  const courtReference = doc(db, COURTS_COLLECTION, courtId);
-
-  if (verified) {
-    await updateDoc(courtReference, {
-      verified: true,
-      verifiedBy: actorUserId,
-      verifiedAt: serverTimestamp(),
-    });
-    return;
-  }
-
-  await updateDoc(courtReference, {
-    verified: false,
-    verifiedBy: null,
-    verifiedAt: null,
   });
 };

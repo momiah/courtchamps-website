@@ -94,23 +94,37 @@ function AddCourtModal({
     return { latitude, longitude };
   }, [formState.latitude, formState.longitude]);
 
+  // Coordinates are optional, but must be provided as a valid pair. Both empty
+  // is allowed (the court stays unverified); one filled or out of range is not.
+  const coordinatesBothEmpty =
+    formState.latitude.trim().length === 0 &&
+    formState.longitude.trim().length === 0;
+
+  const coordinatesValid = coordinatesBothEmpty || parsedCoordinates !== null;
+
   const latitudeError = useMemo(() => {
-    if (formState.latitude.trim().length === 0) {
-      return null;
+    const latitudeFilled = formState.latitude.trim().length > 0;
+    const longitudeFilled = formState.longitude.trim().length > 0;
+    if (latitudeFilled && parseCoordinate(formState.latitude, 90) === null) {
+      return "Enter a latitude between -90 and 90.";
     }
-    return parseCoordinate(formState.latitude, 90) === null
-      ? "Enter a latitude between -90 and 90."
-      : null;
-  }, [formState.latitude]);
+    if (!latitudeFilled && longitudeFilled) {
+      return "Enter a latitude too, or clear both.";
+    }
+    return null;
+  }, [formState.latitude, formState.longitude]);
 
   const longitudeError = useMemo(() => {
-    if (formState.longitude.trim().length === 0) {
-      return null;
+    const latitudeFilled = formState.latitude.trim().length > 0;
+    const longitudeFilled = formState.longitude.trim().length > 0;
+    if (longitudeFilled && parseCoordinate(formState.longitude, 180) === null) {
+      return "Enter a longitude between -180 and 180.";
     }
-    return parseCoordinate(formState.longitude, 180) === null
-      ? "Enter a longitude between -180 and 180."
-      : null;
-  }, [formState.longitude]);
+    if (!longitudeFilled && latitudeFilled) {
+      return "Enter a longitude too, or clear both.";
+    }
+    return null;
+  }, [formState.latitude, formState.longitude]);
 
   const isComplete = useMemo(
     () =>
@@ -119,8 +133,8 @@ function AddCourtModal({
       formState.city.trim().length > 0 &&
       formState.postCode.trim().length > 0 &&
       formState.address.trim().length > 0 &&
-      parsedCoordinates !== null,
-    [formState, parsedCoordinates],
+      coordinatesValid,
+    [formState, coordinatesValid],
   );
 
   const initialForm = useMemo(() => buildInitialForm(court), [court]);
@@ -209,11 +223,6 @@ function AddCourtModal({
         return;
       }
 
-      if (!parsedCoordinates) {
-        setErrorMessage("Add a valid latitude and longitude for the court.");
-        return;
-      }
-
       setSubmitting(true);
       setErrorMessage(null);
 
@@ -225,10 +234,12 @@ function AddCourtModal({
           city: formState.city.trim(),
           postCode: formState.postCode.trim(),
           address: formState.address.trim(),
-          latitude: parsedCoordinates.latitude,
-          longitude: parsedCoordinates.longitude,
+          latitude: parsedCoordinates ? parsedCoordinates.latitude : null,
+          longitude: parsedCoordinates ? parsedCoordinates.longitude : null,
         },
       };
+
+      const isVerified = parsedCoordinates !== null;
 
       try {
         if (court) {
@@ -241,9 +252,9 @@ function AddCourtModal({
             ...court,
             courtName: courtInput.courtName,
             location: courtInput.location,
-            verified: true,
-            verifiedBy: actorUserId,
-            verifiedAt: new Date(),
+            verified: isVerified,
+            verifiedBy: isVerified ? actorUserId : null,
+            verifiedAt: isVerified ? new Date() : null,
           });
         } else {
           const createdCourt = await createCourt({
@@ -273,7 +284,7 @@ function AddCourtModal({
     <Modal
       title={isEditMode ? "Edit court" : "Add court"}
       onClose={onClose}
-      width={880}
+      width={980}
     >
       <GuidanceNote>
         Court details help other players find the location, so please make sure
@@ -391,8 +402,9 @@ function AddCourtModal({
         </CoordinatesRow>
 
         <LookupNote>
-          The map updates automatically once both coordinates are valid — no
-          need to save first.
+          A court is verified only once it has latitude and longitude. Add
+          coordinates to verify it; clear both to unverify. The map preview
+          updates live — no need to save first.
         </LookupNote>
         {lookupMessage ? <LookupNote>{lookupMessage}</LookupNote> : null}
         {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
@@ -465,7 +477,7 @@ const FormColumn = styled.div({
 
 const MapColumn = styled.div({
   display: "flex",
-  flex: "1 1 0",
+  flex: "1.5 1 0",
   minWidth: 0,
   minHeight: "300px",
 });

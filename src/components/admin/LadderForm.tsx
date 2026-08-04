@@ -705,7 +705,7 @@ function LadderForm({
         <Modal
           title="Select courts"
           onClose={() => setIsCourtsModalOpen(false)}
-          width={920}
+          width={1040}
         >
           <CourtsModalBody>
             <CourtsModalColumn>
@@ -923,7 +923,7 @@ const CourtsModalColumn = styled.div({
 });
 
 const CourtsMapColumn = styled.div({
-  flex: "1 1 0",
+  flex: "1.6 1 0",
   minWidth: 0,
   minHeight: "360px",
   display: "flex",
