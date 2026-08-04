@@ -18,6 +18,10 @@ import { Court } from "../../types/ladder";
 
 type CourtFilterTab = "all" | "unverified" | "verified";
 
+const hasCoordinates = (court: Court): boolean =>
+  typeof court.location.latitude === "number" &&
+  typeof court.location.longitude === "number";
+
 function Courts() {
   const { currentUser } = useAuth();
   const [courts, setCourts] = useState<Court[]>([]);
@@ -242,7 +246,7 @@ function Courts() {
                 >
                   Unverify
                 </TableActionButton>
-              ) : (
+              ) : hasCoordinates(court) ? (
                 <TableActionButton
                   type="button"
                   variant="primary"
@@ -251,6 +255,10 @@ function Courts() {
                 >
                   Verify
                 </TableActionButton>
+              ) : (
+                <NeedsLocation title="Add coordinates via Edit to verify this court.">
+                  Needs location
+                </NeedsLocation>
               )}
             </ActionButtons>
             {rowErrors[court.courtId] ? (
@@ -410,6 +418,18 @@ const TableActionButton = styled.button<{ variant: "primary" | "ghost" }>(
     },
   }),
 );
+
+const NeedsLocation = styled.span({
+  display: "inline-flex",
+  alignItems: "center",
+  minWidth: "84px",
+  justifyContent: "center",
+  padding: "6px 12px",
+  fontSize: "0.72rem",
+  fontStyle: "italic",
+  color: "#8fa3b8",
+  cursor: "default",
+});
 
 const RowError = styled.span({
   color: "#ff7a7a",

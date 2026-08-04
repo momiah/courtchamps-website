@@ -241,6 +241,9 @@ function AddCourtModal({
             ...court,
             courtName: courtInput.courtName,
             location: courtInput.location,
+            verified: true,
+            verifiedBy: actorUserId,
+            verifiedAt: new Date(),
           });
         } else {
           const createdCourt = await createCourt({

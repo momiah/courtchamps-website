@@ -111,9 +111,14 @@ export const updateCourt = async ({
 }): Promise<void> => {
   const courtReference = doc(db, COURTS_COLLECTION, courtId);
 
+  // An admin save always includes coordinates (the form requires them), so
+  // saving verifies the court in the same step.
   await updateDoc(courtReference, {
     courtName: court.courtName,
     location: court.location,
+    verified: true,
+    verifiedBy: actorUserId,
+    verifiedAt: serverTimestamp(),
     updatedBy: actorUserId,
     updatedAt: serverTimestamp(),
   });
