@@ -85,6 +85,17 @@ function AddCourtModal({
     [],
   );
 
+  const handleMapPointChange = useCallback(
+    (latitude: number, longitude: number) => {
+      setFormState((previous) => ({
+        ...previous,
+        latitude: String(Number(latitude.toFixed(6))),
+        longitude: String(Number(longitude.toFixed(6))),
+      }));
+    },
+    [],
+  );
+
   const parsedCoordinates = useMemo(() => {
     const latitude = parseCoordinate(formState.latitude, 90);
     const longitude = parseCoordinate(formState.longitude, 180);
@@ -375,7 +386,7 @@ function AddCourtModal({
             <TextInput
               id="court-latitude"
               type="number"
-              step="any"
+              step="0.0001"
               placeholder="51.5074"
               value={formState.latitude}
               onChange={(changeEvent) =>
@@ -391,7 +402,7 @@ function AddCourtModal({
             <TextInput
               id="court-longitude"
               type="number"
-              step="any"
+              step="0.0001"
               placeholder="-0.1278"
               value={formState.longitude}
               onChange={(changeEvent) =>
@@ -415,6 +426,7 @@ function AddCourtModal({
               <LocationPreviewMap
                 latitude={parsedCoordinates.latitude}
                 longitude={parsedCoordinates.longitude}
+                onChange={handleMapPointChange}
               />
             ) : (
               <MapPlaceholder>
