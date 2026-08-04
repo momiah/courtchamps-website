@@ -1,0 +1,18 @@
+{
+  "dedupeRadiusMeters": 200,
+  "searches": [
+    {
+      "textQuery": "badminton courts in North London, UK",
+      "includedType": "sports_complex",
+      "maxPages": 3
+    },
+    {
+      "textQuery": "badminton clubs in Birmingham, UK",
+      "maxPages": 3
+    },
+    {
+      "textQuery": "leisure centres in Cheshunt, UK",
+      "maxPages": 2
+    }
+  ]
+}

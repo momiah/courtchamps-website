@@ -13,6 +13,10 @@
 # production
 /build
 
+# court import (local secrets / config)
+/serviceAccountKey.json
+/scripts/courts-import.json
+
 # misc
 .DS_Store
 .env.local
