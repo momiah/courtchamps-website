@@ -1,48 +1,71 @@
 import React, { memo, useEffect, useState } from "react";
 import {
-  MapContainer,
-  Marker,
-  TileLayer,
-  Tooltip,
+  AdvancedMarker,
+  Map as GoogleMap,
   useMap,
-} from "react-leaflet";
-import L from "leaflet";
+} from "@vis.gl/react-google-maps";
 import styled from "styled-components";
-import "leaflet/dist/leaflet.css";
 
-import { GeoPoint, geocodeCourt } from "../../services/geocode";
+import CourtPin from "../../maps/CourtPin";
+import { GOOGLE_MAPS_MAP_ID } from "../../maps/googleMapsConfig";
+import { useGeocoder } from "../../maps/useGeocoder";
+import {
+  buildCourtCandidatesFromCourt,
+  GeoPoint,
+} from "../../services/geocode";
 import { Court } from "../../types/ladder";
-import { courtPinIcon } from "./courtMapIcon";
 
 interface CourtMapPoint {
   court: Court;
   point: GeoPoint;
 }
 
+const courtPointFromCourt = (court: Court): CourtMapPoint | null => {
+  if (
+    typeof court.location.latitude === "number" &&
+    typeof court.location.longitude === "number"
+  ) {
+    return {
+      court,
+      point: {
+        latitude: court.location.latitude,
+        longitude: court.location.longitude,
+      },
+    };
+  }
+  return null;
+};
+
 function FitBounds({ points }: { points: CourtMapPoint[] }) {
   const map = useMap();
 
   useEffect(() => {
-    if (points.length === 0) {
+    if (!map || points.length === 0) {
       return;
     }
     if (points.length === 1) {
-      map.setView(
-        [points[0].point.latitude, points[0].point.longitude],
-        12,
-      );
+      map.setCenter({
+        lat: points[0].point.latitude,
+        lng: points[0].point.longitude,
+      });
+      map.setZoom(13);
       return;
     }
-    const bounds = L.latLngBounds(
-      points.map((entry) => [entry.point.latitude, entry.point.longitude]),
+    const bounds = new google.maps.LatLngBounds();
+    points.forEach((entry) =>
+      bounds.extend({
+        lat: entry.point.latitude,
+        lng: entry.point.longitude,
+      }),
     );
-    map.fitBounds(bounds, { padding: [48, 48] });
+    map.fitBounds(bounds, 64);
   }, [points, map]);
 
   return null;
 }
 
 function CourtsMap({ courts }: { courts: Court[] }) {
+  const { ready, geocodeFirstMatch } = useGeocoder();
   const [points, setPoints] = useState<CourtMapPoint[]>([]);
   const [isLocating, setIsLocating] = useState<boolean>(false);
 
@@ -50,16 +73,30 @@ function CourtsMap({ courts }: { courts: Court[] }) {
     let isActive = true;
 
     const resolvePoints = async (): Promise<void> => {
-      if (courts.length === 0) {
-        setPoints([]);
+      const immediate: CourtMapPoint[] = [];
+      const needsGeocode: Court[] = [];
+      courts.forEach((court) => {
+        const known = courtPointFromCourt(court);
+        if (known) {
+          immediate.push(known);
+        } else {
+          needsGeocode.push(court);
+        }
+      });
+
+      setPoints(immediate);
+
+      if (needsGeocode.length === 0 || !ready) {
         return;
       }
 
       setIsLocating(true);
-      const resolved: CourtMapPoint[] = [];
-
-      for (const court of courts) {
-        const point = await geocodeCourt(court);
+      const resolved = [...immediate];
+      for (const court of needsGeocode) {
+        const point = await geocodeFirstMatch(
+          buildCourtCandidatesFromCourt(court),
+          court.location.countryCode,
+        );
         if (!isActive) {
           return;
         }
@@ -68,9 +105,7 @@ function CourtsMap({ courts }: { courts: Court[] }) {
           setPoints([...resolved]);
         }
       }
-
       if (isActive) {
-        setPoints([...resolved]);
         setIsLocating(false);
       }
     };
@@ -80,7 +115,7 @@ function CourtsMap({ courts }: { courts: Court[] }) {
     return () => {
       isActive = false;
     };
-  }, [courts]);
+  }, [courts, ready, geocodeFirstMatch]);
 
   const showEmptyState = courts.length === 0;
   const showNoneLocated =
@@ -88,36 +123,38 @@ function CourtsMap({ courts }: { courts: Court[] }) {
 
   return (
     <MapShell>
-      <MapContainer
-        center={[20, 0]}
-        zoom={2}
-        scrollWheelZoom
-        style={{ height: "100%", width: "100%" }}
+      <GoogleMap
+        mapId={GOOGLE_MAPS_MAP_ID}
+        defaultCenter={{ lat: 20, lng: 0 }}
+        defaultZoom={2}
+        gestureHandling="greedy"
+        style={{ width: "100%", height: "100%" }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
         {points.map((entry) => (
-          <Marker
+          <AdvancedMarker
             key={entry.court.courtId}
-            position={[entry.point.latitude, entry.point.longitude]}
-            icon={courtPinIcon}
+            position={{
+              lat: entry.point.latitude,
+              lng: entry.point.longitude,
+            }}
           >
-            <Tooltip direction="top" offset={[0, -6]}>
-              <TooltipName>{entry.court.courtName}</TooltipName>
-              <TooltipLine>{entry.court.location.address}</TooltipLine>
-              <TooltipLine>
-                {[entry.court.location.city, entry.court.location.postCode]
-                  .filter((part) => part.trim().length > 0)
-                  .join(", ")}
-              </TooltipLine>
-              <TooltipLine>{entry.court.location.country}</TooltipLine>
-            </Tooltip>
-          </Marker>
+            <MarkerContent>
+              <CourtPin />
+              <Tooltip className="court-tooltip">
+                <TooltipName>{entry.court.courtName}</TooltipName>
+                <TooltipLine>{entry.court.location.address}</TooltipLine>
+                <TooltipLine>
+                  {[entry.court.location.city, entry.court.location.postCode]
+                    .filter((part) => part.trim().length > 0)
+                    .join(", ")}
+                </TooltipLine>
+                <TooltipLine>{entry.court.location.country}</TooltipLine>
+              </Tooltip>
+            </MarkerContent>
+          </AdvancedMarker>
         ))}
         <FitBounds points={points} />
-      </MapContainer>
+      </GoogleMap>
 
       {showEmptyState ? (
         <MapOverlay>Select courts to see them on the map.</MapOverlay>
@@ -144,10 +181,51 @@ const MapShell = styled.div({
   border: "1px solid rgba(255, 255, 255, 0.12)",
 });
 
+const MarkerContent = styled.div({
+  position: "relative",
+  display: "flex",
+  justifyContent: "center",
+  "&:hover .court-tooltip": {
+    opacity: 1,
+    visibility: "visible",
+  },
+});
+
+const Tooltip = styled.div({
+  position: "absolute",
+  bottom: "40px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: "200px",
+  padding: "8px 10px",
+  borderRadius: "8px",
+  backgroundColor: "#0a1929",
+  border: "1px solid rgba(255, 255, 255, 0.16)",
+  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
+  opacity: 0,
+  visibility: "hidden",
+  transition: "opacity 0.15s",
+  pointerEvents: "none",
+  zIndex: 10,
+});
+
+const TooltipName = styled.div({
+  color: "#FFFFFF",
+  fontWeight: 700,
+  fontSize: "0.8rem",
+  marginBottom: "2px",
+});
+
+const TooltipLine = styled.div({
+  color: "#8fa3b8",
+  fontSize: "0.72rem",
+  lineHeight: 1.35,
+});
+
 const MapOverlay = styled.div({
   position: "absolute",
   inset: 0,
-  zIndex: 500,
+  zIndex: 5,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -157,15 +235,4 @@ const MapOverlay = styled.div({
   color: "#c7d4e1",
   fontSize: "0.88rem",
   pointerEvents: "none",
-});
-
-const TooltipName = styled.div({
-  fontWeight: 700,
-  fontSize: "0.82rem",
-  marginBottom: "2px",
-});
-
-const TooltipLine = styled.div({
-  fontSize: "0.75rem",
-  color: "#33475b",
 });

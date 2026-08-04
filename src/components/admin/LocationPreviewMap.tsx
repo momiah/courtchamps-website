@@ -1,16 +1,13 @@
 import React, { memo, useEffect } from "react";
 import {
-  MapContainer,
-  Marker,
-  TileLayer,
+  AdvancedMarker,
+  Map as GoogleMap,
   useMap,
-  useMapEvents,
-} from "react-leaflet";
-import L from "leaflet";
+} from "@vis.gl/react-google-maps";
 import styled from "styled-components";
-import "leaflet/dist/leaflet.css";
 
-import { courtPinIcon } from "./courtMapIcon";
+import CourtPin from "../../maps/CourtPin";
+import { GOOGLE_MAPS_MAP_ID } from "../../maps/googleMapsConfig";
 
 function Recenter({
   latitude,
@@ -22,27 +19,17 @@ function Recenter({
   const map = useMap();
 
   useEffect(() => {
-    // Only recenter when the point moves out of view (e.g. a typed value or a
-    // fresh lookup), so dragging the pin within view does not jump the map.
-    const target = L.latLng(latitude, longitude);
-    if (!map.getBounds().contains(target)) {
-      map.setView(target, map.getZoom());
+    if (!map) {
+      return;
+    }
+    // Only recenter when the point leaves the current view, so dragging the
+    // pin within view does not jump the map.
+    const bounds = map.getBounds();
+    const target = { lat: latitude, lng: longitude };
+    if (!bounds || !bounds.contains(target)) {
+      map.setCenter(target);
     }
   }, [latitude, longitude, map]);
-
-  return null;
-}
-
-function ClickToPlace({
-  onChange,
-}: {
-  onChange?: (latitude: number, longitude: number) => void;
-}) {
-  useMapEvents({
-    click(clickEvent) {
-      onChange?.(clickEvent.latlng.lat, clickEvent.latlng.lng);
-    },
-  });
 
   return null;
 }
@@ -60,31 +47,39 @@ function LocationPreviewMap({
 
   return (
     <PreviewShell>
-      <MapContainer
-        center={[latitude, longitude]}
-        zoom={14}
-        scrollWheelZoom
-        style={{ height: "100%", width: "100%" }}
+      <GoogleMap
+        mapId={GOOGLE_MAPS_MAP_ID}
+        defaultCenter={{ lat: latitude, lng: longitude }}
+        defaultZoom={14}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+        style={{ width: "100%", height: "100%" }}
+        onClick={(mapEvent) => {
+          const clicked = mapEvent.detail.latLng;
+          if (clicked && onChange) {
+            onChange(clicked.lat, clicked.lng);
+          }
+        }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker
-          position={[latitude, longitude]}
-          icon={courtPinIcon}
+        <AdvancedMarker
+          position={{ lat: latitude, lng: longitude }}
           draggable={isEditable}
-          eventHandlers={{
-            dragend: (dragEvent) => {
-              const marker = dragEvent.target as L.Marker;
-              const position = marker.getLatLng();
-              onChange?.(position.lat, position.lng);
-            },
+          onDragEnd={(dragEvent) => {
+            const nextLat = dragEvent.latLng?.lat();
+            const nextLng = dragEvent.latLng?.lng();
+            if (
+              typeof nextLat === "number" &&
+              typeof nextLng === "number" &&
+              onChange
+            ) {
+              onChange(nextLat, nextLng);
+            }
           }}
-        />
+        >
+          <CourtPin />
+        </AdvancedMarker>
         <Recenter latitude={latitude} longitude={longitude} />
-        <ClickToPlace onChange={onChange} />
-      </MapContainer>
+      </GoogleMap>
       {isEditable ? (
         <MapHint>Drag the pin or click the map to fine-tune the location</MapHint>
       ) : null}
@@ -109,7 +104,7 @@ const MapHint = styled.div({
   left: "12px",
   right: "12px",
   bottom: "12px",
-  zIndex: 500,
+  zIndex: 5,
   padding: "6px 10px",
   borderRadius: "8px",
   backgroundColor: "rgba(7, 17, 31, 0.82)",

@@ -11,9 +11,11 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import type { IconType } from "react-icons";
+import { APIProvider } from "@vis.gl/react-google-maps";
 
 import { CourtChampLogoIcon } from "../../assets";
 import { useAuth } from "../../context/AuthContext";
+import { GOOGLE_MAPS_API_KEY } from "../../maps/googleMapsConfig";
 import RoleBadge from "../auth/RoleBadge";
 
 interface AdminNavItem {
@@ -49,6 +51,7 @@ function AdminLayout({
   const signedInEmail = currentUser?.email ?? "";
 
   return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
     <LayoutRoot>
       <TopHeader>
         <HeaderBrand to="/">
@@ -123,6 +126,7 @@ function AdminLayout({
         </ContentColumn>
       </BodyRow>
     </LayoutRoot>
+    </APIProvider>
   );
 }
 

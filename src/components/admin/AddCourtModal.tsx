@@ -2,11 +2,9 @@ import React, { memo, useCallback, useMemo, useState } from "react";
 import styled from "styled-components";
 
 import { useAuth } from "../../context/AuthContext";
+import { useGeocoder } from "../../maps/useGeocoder";
 import { createCourt, updateCourt } from "../../services/courts";
-import {
-  buildAddressQuery,
-  geocodeFirstMatch,
-} from "../../services/geocode";
+import { buildCourtSearchCandidates } from "../../services/geocode";
 import { Court } from "../../types/ladder";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import FormField from "./FormField";
@@ -69,6 +67,7 @@ function AddCourtModal({
   court?: Court;
 }) {
   const { currentUser } = useAuth();
+  const { ready: geocoderReady, geocodeFirstMatch } = useGeocoder();
   const isEditMode = court !== undefined;
   const [formState, setFormState] = useState<CourtFormState>(() =>
     buildInitialForm(court),
@@ -161,32 +160,19 @@ function AddCourtModal({
   const canSubmit = isComplete && (!isEditMode || isDirty);
 
   const handleLookup = useCallback(async () => {
-    // The country is applied as a bias via countrycodes, so it is left out of
-    // the query text (its verbose name only confuses the geocoder).
-    const candidateQueries = [
-      buildAddressQuery({
-        address: formState.address,
-        city: formState.city,
-        postCode: formState.postCode,
-        country: "",
-      }),
-      buildAddressQuery({
-        address: formState.address,
-        city: formState.city,
-        postCode: "",
-        country: "",
-      }),
-      formState.postCode.trim(),
-      buildAddressQuery({
-        address: "",
-        city: formState.city,
-        postCode: "",
-        country: "",
-      }),
-    ];
+    // Country is applied separately as a bias, so it stays out of the query.
+    const candidateQueries = buildCourtSearchCandidates({
+      address: formState.address,
+      city: formState.city,
+      postCode: formState.postCode,
+    });
 
-    if (candidateQueries.every((candidate) => candidate.trim().length === 0)) {
+    if (candidateQueries.length === 0) {
       setLookupMessage("Enter the address details first.");
+      return;
+    }
+    if (!geocoderReady) {
+      setLookupMessage("Map is still loading — try again in a moment.");
       return;
     }
 
@@ -219,6 +205,8 @@ function AddCourtModal({
     formState.city,
     formState.postCode,
     formState.countryCode,
+    geocoderReady,
+    geocodeFirstMatch,
   ]);
 
   const handleSubmit = useCallback(
