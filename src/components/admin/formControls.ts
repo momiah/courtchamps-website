@@ -66,12 +66,13 @@ export const PrimaryButton = styled.button({
   fontSize: "0.9rem",
   fontWeight: 700,
   cursor: "pointer",
-  transition: "opacity 0.2s",
-  ":hover": {
+  transition: "opacity 0.2s, background-color 0.2s",
+  "&:hover:not(:disabled)": {
     opacity: 0.9,
   },
   ":disabled": {
-    opacity: 0.45,
+    backgroundColor: "#1b2b3b",
+    color: "#5f7183",
     cursor: "not-allowed",
   },
 });
@@ -90,11 +91,12 @@ export const SecondaryButton = styled.button({
   fontWeight: 600,
   cursor: "pointer",
   transition: "background-color 0.2s",
-  ":hover": {
+  "&:hover:not(:disabled)": {
     backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   ":disabled": {
-    opacity: 0.45,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    color: "#5f7183",
     cursor: "not-allowed",
   },
 });

@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -131,4 +132,12 @@ export const updateCourt = async ({
     updatedBy: actorUserId,
     updatedAt: serverTimestamp(),
   });
+};
+
+export const deleteCourt = async ({
+  courtId,
+}: {
+  courtId: string;
+}): Promise<void> => {
+  await deleteDoc(doc(db, COURTS_COLLECTION, courtId));
 };

@@ -10,6 +10,7 @@ function ConfirmDialog({
   cancelLabel,
   destructive,
   busy,
+  error,
   onConfirm,
   onCancel,
 }: {
@@ -19,12 +20,14 @@ function ConfirmDialog({
   cancelLabel?: string;
   destructive?: boolean;
   busy?: boolean;
+  error?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
     <Modal title={title} onClose={onCancel} width={420}>
       <Message>{message}</Message>
+      {error ? <DialogError>{error}</DialogError> : null}
       <ActionRow>
         <CancelButton type="button" onClick={onCancel} disabled={busy}>
           {cancelLabel ?? "Cancel"}
@@ -49,6 +52,12 @@ const Message = styled.p({
   fontSize: "0.95rem",
   lineHeight: 1.5,
   margin: "0 0 24px",
+});
+
+const DialogError = styled.p({
+  color: "#ff9a9a",
+  fontSize: "0.85rem",
+  margin: "0 0 16px",
 });
 
 const ActionRow = styled.div({

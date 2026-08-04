@@ -6,12 +6,14 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import AdminTable, {
   AdminTableColumn,
 } from "../../components/admin/AdminTable";
+import ConfirmDialog from "../../components/admin/ConfirmDialog";
 import FilterTabs, {
   FilterTabItem,
 } from "../../components/admin/FilterTabs";
 import StatusPill from "../../components/admin/StatusPill";
 import { PrimaryButton, TextInput } from "../../components/admin/formControls";
-import { fetchAllCourts } from "../../services/courts";
+import { deleteCourt, fetchAllCourts } from "../../services/courts";
+import { countLaddersUsingCourt } from "../../services/ladders";
 import { Court } from "../../types/ladder";
 
 type CourtFilterTab = "all" | "unverified" | "verified";
@@ -24,6 +26,14 @@ function Courts() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [courtBeingEdited, setCourtBeingEdited] = useState<Court | null>(null);
+  const [courtPendingDelete, setCourtPendingDelete] = useState<Court | null>(
+    null,
+  );
+  const [referencingLadderCount, setReferencingLadderCount] = useState<
+    number | null
+  >(null);
+  const [deleteBusy, setDeleteBusy] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -111,6 +121,50 @@ function Courts() {
     setCourtBeingEdited(null);
   }, []);
 
+  const requestDeleteCourt = useCallback((court: Court) => {
+    setCourtPendingDelete(court);
+    setDeleteError(null);
+    setReferencingLadderCount(null);
+    countLaddersUsingCourt({ courtId: court.courtId })
+      .then((count) => setReferencingLadderCount(count))
+      .catch((countError) => {
+        console.error("Failed to count ladders using court", countError);
+        setReferencingLadderCount(null);
+      });
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!courtPendingDelete) {
+      return;
+    }
+    const target = courtPendingDelete;
+
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await deleteCourt({ courtId: target.courtId });
+      setCourts((previous) =>
+        previous.filter((existing) => existing.courtId !== target.courtId),
+      );
+      setCourtPendingDelete(null);
+    } catch (deleteFailure) {
+      console.error("Failed to delete court", deleteFailure);
+      setDeleteError("Could not delete this court. Please try again.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [courtPendingDelete]);
+
+  const deleteMessage = useMemo(() => {
+    const courtName = courtPendingDelete?.courtName ?? "this court";
+    const base = `Delete "${courtName}"? This permanently removes the court and cannot be undone.`;
+    if (referencingLadderCount && referencingLadderCount > 0) {
+      const ladderWord = referencingLadderCount === 1 ? "ladder" : "ladders";
+      return `${base} It is currently used by ${referencingLadderCount} ${ladderWord}, which will be left referencing a court that no longer exists.`;
+    }
+    return base;
+  }, [courtPendingDelete, referencingLadderCount]);
+
   const columns = useMemo<AdminTableColumn<Court>[]>(
     () => [
       {
@@ -156,11 +210,17 @@ function Courts() {
             >
               Edit
             </TableActionButton>
+            <DeleteActionButton
+              type="button"
+              onClick={() => requestDeleteCourt(court)}
+            >
+              Delete
+            </DeleteActionButton>
           </ActionCell>
         ),
       },
     ],
-    [],
+    [requestDeleteCourt],
   );
 
   return (
@@ -226,6 +286,19 @@ function Courts() {
           onSaved={handleCourtSaved}
         />
       ) : null}
+
+      {courtPendingDelete ? (
+        <ConfirmDialog
+          title="Delete court"
+          message={deleteMessage}
+          confirmLabel="Delete court"
+          destructive
+          busy={deleteBusy}
+          error={deleteError}
+          onConfirm={() => void handleConfirmDelete()}
+          onCancel={() => setCourtPendingDelete(null)}
+        />
+      ) : null}
     </AdminLayout>
   );
 }
@@ -258,10 +331,11 @@ const ResultCount = styled.span({
 const ActionCell = styled.div({
   display: "flex",
   justifyContent: "flex-end",
+  gap: "6px",
 });
 
 const TableActionButton = styled.button({
-  minWidth: "84px",
+  minWidth: "72px",
   padding: "6px 12px",
   borderRadius: "7px",
   fontSize: "0.78rem",
@@ -274,6 +348,22 @@ const TableActionButton = styled.button({
   color: "#FFFFFF",
   transition: "background-color 0.2s",
   ":hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
+});
+
+const DeleteActionButton = styled.button({
+  minWidth: "72px",
+  padding: "6px 12px",
+  borderRadius: "7px",
+  fontSize: "0.78rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  textAlign: "center",
+  border: "1px solid rgba(224, 85, 85, 0.5)",
+  background: "none",
+  color: "#ff8f8f",
+  transition: "background-color 0.2s",
+  ":hover": { backgroundColor: "rgba(224, 85, 85, 0.14)" },
 });
 
 const LoadError = styled.div({

@@ -2,12 +2,14 @@ import {
   addDoc,
   collection,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   orderBy,
   query,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
@@ -88,6 +90,19 @@ export const fetchLadders = async (): Promise<Ladder[]> => {
       ladderDocument.data() as LadderDocumentData,
     ),
   );
+};
+
+export const countLaddersUsingCourt = async ({
+  courtId,
+}: {
+  courtId: string;
+}): Promise<number> => {
+  const laddersQuery = query(
+    collection(db, LADDERS_COLLECTION),
+    where("courtIds", "array-contains", courtId),
+  );
+  const snapshot = await getCountFromServer(laddersQuery);
+  return snapshot.data().count;
 };
 
 export const fetchLadder = async ({
