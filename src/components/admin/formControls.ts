@@ -71,8 +71,8 @@ export const PrimaryButton = styled.button({
     opacity: 0.9,
   },
   ":disabled": {
-    backgroundColor: "#1b2b3b",
-    color: "#5f7183",
+    backgroundColor: "#33475c",
+    color: "#8296a8",
     cursor: "not-allowed",
   },
 });
