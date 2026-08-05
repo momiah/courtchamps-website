@@ -8,9 +8,7 @@ import AdminTable, {
   AdminTableColumn,
 } from "../../components/admin/AdminTable";
 import ConfirmDialog from "../../components/admin/ConfirmDialog";
-import FilterTabs, {
-  FilterTabItem,
-} from "../../components/admin/FilterTabs";
+import FilterTabs, { FilterTabItem } from "../../components/admin/FilterTabs";
 import StatusPill from "../../components/admin/StatusPill";
 import {
   PrimaryButton,
@@ -86,9 +84,9 @@ function Courts() {
     () => [
       { id: "all", label: "All" },
       { id: "unverified", label: "Unverified", count: unverifiedCount },
-      { id: "verified", label: "Verified" },
+      { id: "verified", label: "Verified", count: verifiedCount },
     ],
-    [unverifiedCount],
+    [unverifiedCount, verifiedCount],
   );
 
   const availableCountries = useMemo(() => {
@@ -277,7 +275,9 @@ function Courts() {
           <CountrySelect
             aria-label="Filter by country"
             value={countryFilter}
-            onChange={(changeEvent) => setCountryFilter(changeEvent.target.value)}
+            onChange={(changeEvent) =>
+              setCountryFilter(changeEvent.target.value)
+            }
           >
             <option value="">All countries</option>
             {availableCountries.map((country) => (
@@ -287,9 +287,6 @@ function Courts() {
             ))}
           </CountrySelect>
         ) : null}
-        <ResultCount>
-          {verifiedCount} verified · {unverifiedCount} unverified
-        </ResultCount>
       </SearchRow>
 
       {loadError ? <LoadError>{loadError}</LoadError> : null}
@@ -376,12 +373,6 @@ const CountrySelect = styled(SelectInput)({
   flex: "0 0 auto",
   width: "auto",
   minWidth: "200px",
-});
-
-const ResultCount = styled.span({
-  color: "#8fa3b8",
-  fontSize: "0.82rem",
-  whiteSpace: "nowrap",
 });
 
 const ActionCell = styled.div({

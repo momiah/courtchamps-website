@@ -24,16 +24,6 @@ function MultiSelect({
 }) {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const selectedOptions = useMemo(
-    () =>
-      selectedIds
-        .map((selectedId) =>
-          options.find((option) => option.id === selectedId),
-        )
-        .filter((option): option is MultiSelectOption => option !== undefined),
-    [selectedIds, options],
-  );
-
   const filteredOptions = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     if (normalizedSearch.length === 0) {
@@ -49,28 +39,6 @@ function MultiSelect({
 
   return (
     <Container>
-      {selectedOptions.length > 0 ? (
-        <ChipRow>
-          {selectedOptions.map((option) => (
-            <Chip key={option.id}>
-              <ChipLabel>
-                {option.label}
-                {option.sublabel ? (
-                  <ChipSublabel> · {option.sublabel}</ChipSublabel>
-                ) : null}
-              </ChipLabel>
-              <ChipRemove
-                type="button"
-                aria-label={`Remove ${option.label}`}
-                onClick={() => onRemove(option.id)}
-              >
-                ×
-              </ChipRemove>
-            </Chip>
-          ))}
-        </ChipRow>
-      ) : null}
-
       <SearchInput
         type="text"
         value={searchTerm}
@@ -116,50 +84,6 @@ const Container = styled.div({
   flexDirection: "column",
   gap: "10px",
   width: "100%",
-});
-
-const ChipRow = styled.div({
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "8px",
-});
-
-const Chip = styled.span({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "8px",
-  padding: "5px 6px 5px 12px",
-  borderRadius: "999px",
-  backgroundColor: "rgba(0, 153, 240, 0.16)",
-  border: "1px solid rgba(0, 153, 240, 0.55)",
-  color: "#e4ecf3",
-  fontSize: "0.8rem",
-});
-
-const ChipLabel = styled.span({
-  fontWeight: 600,
-});
-
-const ChipSublabel = styled.span({
-  color: "#8fa3b8",
-  fontWeight: 400,
-});
-
-const ChipRemove = styled.button({
-  border: "none",
-  background: "none",
-  color: "#8fa3b8",
-  fontSize: "1.1rem",
-  lineHeight: 1,
-  cursor: "pointer",
-  padding: 0,
-  width: "20px",
-  height: "20px",
-  borderRadius: "999px",
-  ":hover": {
-    color: "#FFFFFF",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
 });
 
 const SearchInput = styled.input({
