@@ -12,10 +12,15 @@ import FilterTabs, {
   FilterTabItem,
 } from "../../components/admin/FilterTabs";
 import StatusPill from "../../components/admin/StatusPill";
-import { PrimaryButton, TextInput } from "../../components/admin/formControls";
+import {
+  PrimaryButton,
+  SelectInput,
+  TextInput,
+} from "../../components/admin/formControls";
 import { deleteCourt, fetchAllCourts } from "../../services/courts";
 import { countLaddersUsingCourt } from "../../services/ladders";
 import { Court } from "../../types/ladder";
+import { findCountryName } from "../../utils/countries";
 
 type CourtFilterTab = "all" | "unverified" | "verified";
 
@@ -25,6 +30,7 @@ function Courts() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CourtFilterTab>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [countryFilter, setCountryFilter] = useState<string>("");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [courtBeingEdited, setCourtBeingEdited] = useState<Court | null>(null);
   const [courtPendingDelete, setCourtPendingDelete] = useState<Court | null>(
@@ -85,6 +91,19 @@ function Courts() {
     [unverifiedCount],
   );
 
+  const availableCountries = useMemo(() => {
+    const codes = new Set<string>();
+    courts.forEach((court) => {
+      const code = court.location.countryCode.trim();
+      if (code.length > 0) {
+        codes.add(code);
+      }
+    });
+    return Array.from(codes)
+      .map((code) => ({ code, name: findCountryName(code) || code }))
+      .sort((first, second) => first.name.localeCompare(second.name));
+  }, [courts]);
+
   const visibleCourts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     return courts.filter((court) => {
@@ -95,6 +114,12 @@ function Courts() {
       if (!matchesTab) {
         return false;
       }
+      if (
+        countryFilter.length > 0 &&
+        court.location.countryCode !== countryFilter
+      ) {
+        return false;
+      }
       if (normalizedSearch.length === 0) {
         return true;
       }
@@ -102,7 +127,7 @@ function Courts() {
         `${court.courtName} ${court.location.city}`.toLowerCase();
       return haystack.includes(normalizedSearch);
     });
-  }, [courts, activeTab, searchTerm]);
+  }, [courts, activeTab, searchTerm, countryFilter]);
 
   const handleCourtSaved = useCallback((savedCourt: Court) => {
     setCourts((previous) => {
@@ -242,12 +267,26 @@ function Courts() {
       </HeaderRow>
 
       <SearchRow>
-        <TextInput
+        <SearchInput
           type="text"
           placeholder="Search by court name or city…"
           value={searchTerm}
           onChange={(changeEvent) => setSearchTerm(changeEvent.target.value)}
         />
+        {availableCountries.length >= 2 ? (
+          <CountrySelect
+            aria-label="Filter by country"
+            value={countryFilter}
+            onChange={(changeEvent) => setCountryFilter(changeEvent.target.value)}
+          >
+            <option value="">All countries</option>
+            {availableCountries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name} ({country.code})
+              </option>
+            ))}
+          </CountrySelect>
+        ) : null}
         <ResultCount>
           {verifiedCount} verified · {unverifiedCount} unverified
         </ResultCount>
@@ -325,6 +364,18 @@ const SearchRow = styled.div({
   gap: "16px",
   marginBottom: "20px",
   flexWrap: "wrap",
+});
+
+const SearchInput = styled(TextInput)({
+  flex: "1 1 240px",
+  width: "auto",
+  minWidth: 0,
+});
+
+const CountrySelect = styled(SelectInput)({
+  flex: "0 0 auto",
+  width: "auto",
+  minWidth: "200px",
 });
 
 const ResultCount = styled.span({
