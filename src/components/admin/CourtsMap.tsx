@@ -1,13 +1,13 @@
 import React, { memo, useEffect, useState } from "react";
 import {
-  AdvancedMarker,
+  InfoWindow,
   Map as GoogleMap,
+  Marker,
   useMap,
 } from "@vis.gl/react-google-maps";
 import styled from "styled-components";
 
-import CourtPin from "../../maps/CourtPin";
-import { GOOGLE_MAPS_MAP_ID } from "../../maps/googleMapsConfig";
+import { buildCourtPinIcon } from "../../maps/courtMarkerIcon";
 import { useGeocoder } from "../../maps/useGeocoder";
 import {
   buildCourtCandidatesFromCourt,
@@ -68,6 +68,7 @@ function CourtsMap({ courts }: { courts: Court[] }) {
   const { ready, geocodeFirstMatch } = useGeocoder();
   const [points, setPoints] = useState<CourtMapPoint[]>([]);
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [hoveredCourtId, setHoveredCourtId] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -120,39 +121,55 @@ function CourtsMap({ courts }: { courts: Court[] }) {
   const showEmptyState = courts.length === 0;
   const showNoneLocated =
     !showEmptyState && !isLocating && points.length === 0;
+  const hoveredEntry = points.find(
+    (entry) => entry.court.courtId === hoveredCourtId,
+  );
 
   return (
     <MapShell>
       <GoogleMap
-        mapId={GOOGLE_MAPS_MAP_ID}
         defaultCenter={{ lat: 20, lng: 0 }}
         defaultZoom={2}
         gestureHandling="greedy"
         style={{ width: "100%", height: "100%" }}
       >
         {points.map((entry) => (
-          <AdvancedMarker
+          <Marker
             key={entry.court.courtId}
             position={{
               lat: entry.point.latitude,
               lng: entry.point.longitude,
             }}
-          >
-            <MarkerContent>
-              <CourtPin />
-              <Tooltip className="court-tooltip">
-                <TooltipName>{entry.court.courtName}</TooltipName>
-                <TooltipLine>{entry.court.location.address}</TooltipLine>
-                <TooltipLine>
-                  {[entry.court.location.city, entry.court.location.postCode]
-                    .filter((part) => part.trim().length > 0)
-                    .join(", ")}
-                </TooltipLine>
-                <TooltipLine>{entry.court.location.country}</TooltipLine>
-              </Tooltip>
-            </MarkerContent>
-          </AdvancedMarker>
+            icon={buildCourtPinIcon()}
+            onMouseOver={() => setHoveredCourtId(entry.court.courtId)}
+            onMouseOut={() => setHoveredCourtId(null)}
+          />
         ))}
+
+        {hoveredEntry ? (
+          <InfoWindow
+            position={{
+              lat: hoveredEntry.point.latitude,
+              lng: hoveredEntry.point.longitude,
+            }}
+            pixelOffset={[0, -34]}
+            headerDisabled
+            disableAutoPan
+          >
+            <TooltipName>{hoveredEntry.court.courtName}</TooltipName>
+            <TooltipLine>{hoveredEntry.court.location.address}</TooltipLine>
+            <TooltipLine>
+              {[
+                hoveredEntry.court.location.city,
+                hoveredEntry.court.location.postCode,
+              ]
+                .filter((part) => part.trim().length > 0)
+                .join(", ")}
+            </TooltipLine>
+            <TooltipLine>{hoveredEntry.court.location.country}</TooltipLine>
+          </InfoWindow>
+        ) : null}
+
         <FitBounds points={points} />
       </GoogleMap>
 
@@ -181,44 +198,16 @@ const MapShell = styled.div({
   border: "1px solid rgba(255, 255, 255, 0.12)",
 });
 
-const MarkerContent = styled.div({
-  position: "relative",
-  display: "flex",
-  justifyContent: "center",
-  "&:hover .court-tooltip": {
-    opacity: 1,
-    visibility: "visible",
-  },
-});
-
-const Tooltip = styled.div({
-  position: "absolute",
-  bottom: "40px",
-  left: "50%",
-  transform: "translateX(-50%)",
-  width: "200px",
-  padding: "8px 10px",
-  borderRadius: "8px",
-  backgroundColor: "#0a1929",
-  border: "1px solid rgba(255, 255, 255, 0.16)",
-  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
-  opacity: 0,
-  visibility: "hidden",
-  transition: "opacity 0.15s",
-  pointerEvents: "none",
-  zIndex: 10,
-});
-
 const TooltipName = styled.div({
-  color: "#FFFFFF",
+  color: "#0a1929",
   fontWeight: 700,
-  fontSize: "0.8rem",
+  fontSize: "0.82rem",
   marginBottom: "2px",
 });
 
 const TooltipLine = styled.div({
-  color: "#8fa3b8",
-  fontSize: "0.72rem",
+  color: "#33475b",
+  fontSize: "0.74rem",
   lineHeight: 1.35,
 });
 

@@ -1,13 +1,8 @@
 import React, { memo, useEffect } from "react";
-import {
-  AdvancedMarker,
-  Map as GoogleMap,
-  useMap,
-} from "@vis.gl/react-google-maps";
+import { Map as GoogleMap, Marker, useMap } from "@vis.gl/react-google-maps";
 import styled from "styled-components";
 
-import CourtPin from "../../maps/CourtPin";
-import { GOOGLE_MAPS_MAP_ID } from "../../maps/googleMapsConfig";
+import { buildCourtPinIcon } from "../../maps/courtMarkerIcon";
 
 function Recenter({
   latitude,
@@ -48,7 +43,6 @@ function LocationPreviewMap({
   return (
     <PreviewShell>
       <GoogleMap
-        mapId={GOOGLE_MAPS_MAP_ID}
         defaultCenter={{ lat: latitude, lng: longitude }}
         defaultZoom={14}
         gestureHandling="greedy"
@@ -61,8 +55,9 @@ function LocationPreviewMap({
           }
         }}
       >
-        <AdvancedMarker
+        <Marker
           position={{ lat: latitude, lng: longitude }}
+          icon={buildCourtPinIcon()}
           draggable={isEditable}
           onDragEnd={(dragEvent) => {
             const nextLat = dragEvent.latLng?.lat();
@@ -75,9 +70,7 @@ function LocationPreviewMap({
               onChange(nextLat, nextLng);
             }
           }}
-        >
-          <CourtPin />
-        </AdvancedMarker>
+        />
         <Recenter latitude={latitude} longitude={longitude} />
       </GoogleMap>
       {isEditable ? (
