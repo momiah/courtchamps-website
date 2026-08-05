@@ -53,7 +53,7 @@ export const SelectInput = styled.select({
   backgroundSize: "16px",
 });
 
-export const PrimaryButton = styled.button({
+export const PrimaryButton = styled.button(({ disabled }) => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -61,42 +61,30 @@ export const PrimaryButton = styled.button({
   padding: "10px 18px",
   borderRadius: "8px",
   border: "none",
-  backgroundColor: "#0099f0",
-  color: "#FFFFFF",
+  backgroundColor: disabled ? "#33475c" : "#0099f0",
+  color: disabled ? "#8296a8" : "#FFFFFF",
   fontSize: "0.9rem",
   fontWeight: 700,
-  cursor: "pointer",
+  cursor: disabled ? "not-allowed" : "pointer",
   transition: "opacity 0.2s, background-color 0.2s",
-  "&:hover:not(:disabled)": {
-    opacity: 0.9,
-  },
-  ":disabled": {
-    backgroundColor: "#33475c",
-    color: "#8296a8",
-    cursor: "not-allowed",
-  },
-});
+  ":hover": disabled ? {} : { opacity: 0.9 },
+}));
 
-export const SecondaryButton = styled.button({
+export const SecondaryButton = styled.button(({ disabled }) => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   gap: "8px",
   padding: "10px 18px",
   borderRadius: "8px",
-  border: "1px solid rgba(255, 255, 255, 0.2)",
+  border: `1px solid ${
+    disabled ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.2)"
+  }`,
   background: "none",
-  color: "#FFFFFF",
+  color: disabled ? "#5f7183" : "#FFFFFF",
   fontSize: "0.9rem",
   fontWeight: 600,
-  cursor: "pointer",
+  cursor: disabled ? "not-allowed" : "pointer",
   transition: "background-color 0.2s",
-  "&:hover:not(:disabled)": {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-  ":disabled": {
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    color: "#5f7183",
-    cursor: "not-allowed",
-  },
-});
+  ":hover": disabled ? {} : { backgroundColor: "rgba(255, 255, 255, 0.08)" },
+}));
