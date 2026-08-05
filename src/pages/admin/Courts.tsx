@@ -70,14 +70,24 @@ function Courts() {
     };
   }, []);
 
+  const countryScopedCourts = useMemo(
+    () =>
+      countryFilter.length > 0
+        ? courts.filter(
+            (court) => court.location.countryCode === countryFilter,
+          )
+        : courts,
+    [courts, countryFilter],
+  );
+
   const unverifiedCount = useMemo(
-    () => courts.filter((court) => court.verified !== true).length,
-    [courts],
+    () => countryScopedCourts.filter((court) => court.verified !== true).length,
+    [countryScopedCourts],
   );
 
   const verifiedCount = useMemo(
-    () => courts.filter((court) => court.verified === true).length,
-    [courts],
+    () => countryScopedCourts.filter((court) => court.verified === true).length,
+    [countryScopedCourts],
   );
 
   const filterTabs = useMemo<FilterTabItem<CourtFilterTab>[]>(
