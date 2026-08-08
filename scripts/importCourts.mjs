@@ -97,15 +97,14 @@ const isExcludedName = (courtName) => {
 // Google has no "badminton court" type, so exclude place types that are clearly
 // not indoor court venues. Type-based (not name-based) so a venue with e.g.
 // "Park" in its name is only dropped if Google actually types it as a park.
+// Only genuinely-non-court types. Note: leisure centres are multi-sport and are
+// often typed swimming_pool/stadium/gym alongside their badminton courts, so
+// those types are NOT excluded — otherwise real badminton venues get dropped.
 const DEFAULT_EXCLUDE_TYPES = [
   "park",
   "national_park",
   "dog_park",
   "playground",
-  "stadium",
-  "arena",
-  "athletic_field",
-  "swimming_pool",
   "tourist_attraction",
   "store",
   "sporting_goods_store",
@@ -113,6 +112,7 @@ const DEFAULT_EXCLUDE_TYPES = [
   "historical_landmark",
   "lodging",
   "hotel",
+  "place_of_worship",
 ];
 const excludeTypes = new Set(
   (Array.isArray(config.excludePlaceTypes)
