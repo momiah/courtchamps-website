@@ -417,7 +417,8 @@ function LadderForm({
   );
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <>
+      <Form onSubmit={handleSubmit}>
       <Section>
         <SectionTitle>Details</SectionTitle>
 
@@ -700,6 +701,7 @@ function LadderForm({
           {submitting ? "Saving…" : initialLadder ? "Save changes" : "Create ladder"}
         </PrimaryButton>
       </SubmitRow>
+      </Form>
 
       {isCourtsModalOpen ? (
         <Modal
@@ -761,7 +763,7 @@ function LadderForm({
           onSaved={handleCourtCreated}
         />
       ) : null}
-    </Form>
+    </>
   );
 }
 
