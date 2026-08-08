@@ -212,6 +212,11 @@ function AddCourtModal({
   const handleSubmit = useCallback(
     async (submitEvent: React.FormEvent<HTMLFormElement>) => {
       submitEvent.preventDefault();
+      // This modal can be rendered inside another form (the ladder Court
+      // Selector). Stop the submit event bubbling so it never triggers the
+      // outer form's submit, which would close the selector and drop the
+      // courts already chosen.
+      submitEvent.stopPropagation();
       if (!isComplete || submitting) {
         return;
       }
