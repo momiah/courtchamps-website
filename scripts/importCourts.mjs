@@ -130,6 +130,30 @@ if (searches.length === 0) {
   process.exit(1);
 }
 
+// Build a human-readable court document id matching the Court Champs mobile app
+// convention (`courtName-city-country-uniqueId`). Firestore ids may not contain
+// "/", so runs of whitespace/path characters collapse to a single hyphen.
+const ID_SUFFIX_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const toIdSegment = (value) =>
+  String(value ?? "")
+    .trim()
+    .replace(/[/\\\s]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+const randomSuffix = () =>
+  Array.from({ length: 5 }, () =>
+    ID_SUFFIX_CHARS.charAt(Math.floor(Math.random() * ID_SUFFIX_CHARS.length)),
+  ).join("");
+const generateCourtId = ({ courtName, location }) =>
+  [
+    toIdSegment(courtName),
+    toIdSegment(location.city),
+    toIdSegment(location.country),
+  ]
+    .filter((segment) => segment.length > 0)
+    .concat(randomSuffix())
+    .join("-");
+
 const findComponent = (components, type) =>
   (components ?? []).find((component) =>
     (component.types ?? []).includes(type),
@@ -296,7 +320,9 @@ const run = async () => {
   let batch = db.batch();
   let pending = 0;
   for (const court of toCreate) {
-    const courtRef = db.collection(COURTS_COLLECTION).doc();
+    const courtRef = db
+      .collection(COURTS_COLLECTION)
+      .doc(generateCourtId(court));
     batch.set(courtRef, {
       courtName: court.courtName,
       location: court.location,

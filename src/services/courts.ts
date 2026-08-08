@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -7,12 +6,14 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
 import { Court, CourtInput, CourtLocation } from "../types/ladder";
+import { generateCourtId } from "../utils/generateCourtId";
 
 const COURTS_COLLECTION = "courts";
 
@@ -86,7 +87,9 @@ export const createCourt = async ({
   const verifiedAt = isVerified ? new Date() : null;
   const verifiedBy = isVerified ? actorUserId : null;
 
-  const courtReference = await addDoc(collection(db, COURTS_COLLECTION), {
+  const courtId = generateCourtId(court);
+  const courtReference = doc(db, COURTS_COLLECTION, courtId);
+  await setDoc(courtReference, {
     courtName: court.courtName,
     location: court.location,
     verified: isVerified,
@@ -97,7 +100,7 @@ export const createCourt = async ({
   });
 
   return {
-    courtId: courtReference.id,
+    courtId,
     courtName: court.courtName,
     location: court.location,
     verified: isVerified,
