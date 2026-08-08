@@ -705,7 +705,7 @@ function LadderForm({
         <Modal
           title="Select courts"
           onClose={() => setIsCourtsModalOpen(false)}
-          width={1040}
+          width={1240}
         >
           <CourtsModalBody>
             <CourtsModalColumn>
@@ -721,6 +721,7 @@ function LadderForm({
                   onToggle={toggleCourt}
                   onRemove={removeCourt}
                   searchPlaceholder="Search courts…"
+                  listMaxHeight={520}
                 />
               )}
               <AddCourtInline
@@ -925,10 +926,10 @@ const CourtsModalColumn = styled.div({
 const CourtsMapColumn = styled.div({
   flex: "1.6 1 0",
   minWidth: 0,
-  minHeight: "360px",
+  minHeight: "580px",
   display: "flex",
   "@media (max-width: 760px)": {
-    minHeight: "300px",
+    minHeight: "320px",
   },
 });
 

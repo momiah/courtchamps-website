@@ -14,6 +14,7 @@ function MultiSelect({
   onRemove,
   searchPlaceholder,
   footer,
+  listMaxHeight,
 }: {
   options: MultiSelectOption[];
   selectedIds: string[];
@@ -21,6 +22,7 @@ function MultiSelect({
   onRemove: (optionId: string) => void;
   searchPlaceholder?: string;
   footer?: React.ReactNode;
+  listMaxHeight?: number;
 }) {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -46,7 +48,7 @@ function MultiSelect({
         onChange={(changeEvent) => setSearchTerm(changeEvent.target.value)}
       />
 
-      <OptionList>
+      <OptionList $maxHeight={listMaxHeight ?? 220}>
         {filteredOptions.length === 0 ? (
           <NoResults>No matches</NoResults>
         ) : (
@@ -101,15 +103,15 @@ const SearchInput = styled.input({
   },
 });
 
-const OptionList = styled.div({
+const OptionList = styled.div<{ $maxHeight: number }>(({ $maxHeight }) => ({
   display: "flex",
   flexDirection: "column",
-  maxHeight: "220px",
+  maxHeight: `${$maxHeight}px`,
   overflowY: "auto",
   borderRadius: "8px",
   border: "1px solid rgba(255, 255, 255, 0.1)",
   backgroundColor: "#07111f",
-});
+}));
 
 const OptionRow = styled.label({
   display: "flex",
