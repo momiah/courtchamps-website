@@ -32,6 +32,11 @@ verified automatically.
    an optional `includedType` (e.g. `sports_complex`), and `maxPages` (each page
    is up to 20 results, max 3 pages ≈ 60 results per query).
 
+   Optionally set `excludeNameKeywords` (top-level array) to skip results whose
+   name contains any of those terms — shops, stringing services, street names,
+   etc. If omitted, a sensible default list is used (stringing, restring,
+   decathlon, sports direct, padel, mews, …).
+
 ## Running
 
 Preview what would be imported (no writes):

@@ -61,6 +61,33 @@ const dedupeRadiusMeters =
     ? config.dedupeRadiusMeters
     : 200;
 
+// Names containing any of these (case-insensitive) are skipped: shops,
+// stringing/retail services, street names and non-badminton venues. Override
+// via "excludeNameKeywords" in courts-import.json.
+const DEFAULT_EXCLUDE_KEYWORDS = [
+  "stringing",
+  "restring",
+  "stringer",
+  "racket service",
+  "racket players",
+  "decathlon",
+  "sports direct",
+  "padel",
+  "mews",
+  "badminton close",
+  "badminton group",
+];
+const excludeKeywords = (
+  Array.isArray(config.excludeNameKeywords)
+    ? config.excludeNameKeywords
+    : DEFAULT_EXCLUDE_KEYWORDS
+).map((keyword) => String(keyword).toLowerCase());
+
+const isExcludedName = (courtName) => {
+  const normalized = courtName.toLowerCase();
+  return excludeKeywords.some((keyword) => normalized.includes(keyword));
+};
+
 if (searches.length === 0) {
   console.error("No searches configured in scripts/courts-import.json.");
   process.exit(1);
@@ -191,6 +218,9 @@ const run = async () => {
         typeof location.latitude !== "number" ||
         typeof location.longitude !== "number"
       ) {
+        continue;
+      }
+      if (isExcludedName(courtName)) {
         continue;
       }
       if (seenPlaceIds.has(placeId) || existingPlaceIds.has(placeId)) {
