@@ -81,7 +81,6 @@ const DEFAULT_EXCLUDE_KEYWORDS = [
   "lido",
   "stadium",
   "athletics",
-  "swimming",
 ];
 const excludeKeywords = (
   Array.isArray(config.excludeNameKeywords)
