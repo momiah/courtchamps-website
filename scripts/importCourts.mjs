@@ -41,6 +41,7 @@ const FIELD_MASK = [
   "places.formattedAddress",
   "places.location",
   "places.addressComponents",
+  "places.types",
 ].join(",");
 
 const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -76,6 +77,11 @@ const DEFAULT_EXCLUDE_KEYWORDS = [
   "mews",
   "badminton close",
   "badminton group",
+  "tennis",
+  "lido",
+  "stadium",
+  "athletics",
+  "swimming",
 ];
 const excludeKeywords = (
   Array.isArray(config.excludeNameKeywords)
@@ -87,6 +93,38 @@ const isExcludedName = (courtName) => {
   const normalized = courtName.toLowerCase();
   return excludeKeywords.some((keyword) => normalized.includes(keyword));
 };
+
+// Google has no "badminton court" type, so exclude place types that are clearly
+// not indoor court venues. Type-based (not name-based) so a venue with e.g.
+// "Park" in its name is only dropped if Google actually types it as a park.
+const DEFAULT_EXCLUDE_TYPES = [
+  "park",
+  "national_park",
+  "dog_park",
+  "playground",
+  "stadium",
+  "arena",
+  "athletic_field",
+  "swimming_pool",
+  "tourist_attraction",
+  "store",
+  "sporting_goods_store",
+  "shopping_mall",
+  "historical_landmark",
+  "lodging",
+  "hotel",
+];
+const excludeTypes = new Set(
+  (Array.isArray(config.excludePlaceTypes)
+    ? config.excludePlaceTypes
+    : DEFAULT_EXCLUDE_TYPES
+  ).map((placeType) => String(placeType).toLowerCase()),
+);
+
+const hasExcludedType = (types) =>
+  (types ?? []).some((placeType) =>
+    excludeTypes.has(String(placeType).toLowerCase()),
+  );
 
 if (searches.length === 0) {
   console.error("No searches configured in scripts/courts-import.json.");
@@ -220,7 +258,7 @@ const run = async () => {
       ) {
         continue;
       }
-      if (isExcludedName(courtName)) {
+      if (isExcludedName(courtName) || hasExcludedType(place.types)) {
         continue;
       }
       if (seenPlaceIds.has(placeId) || existingPlaceIds.has(placeId)) {
@@ -237,14 +275,14 @@ const run = async () => {
       }
 
       seenPlaceIds.add(placeId);
-      toCreate.push({ courtName, location, placeId });
+      toCreate.push({ courtName, location, placeId, types: place.types ?? [] });
     }
   }
 
   console.log(`\n${toCreate.length} new courts to import.`);
   toCreate.forEach((court) =>
     console.log(
-      `  • ${court.courtName} — ${court.location.city} (${court.location.latitude}, ${court.location.longitude})`,
+      `  • ${court.courtName} — ${court.location.city}  [${court.types.join(", ")}]`,
     ),
   );
 
