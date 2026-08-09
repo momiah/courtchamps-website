@@ -37,7 +37,7 @@ import {
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
 const MAX_PLAYERS_OPTIONS = [32, 64, 128, 256, 512, 1024, 2048];
 const TEAM_TYPE_OPTIONS: TeamType[] = ["Singles", "Doubles"];
-const GENDER_TYPE_OPTIONS: GenderType[] = ["Male", "Female", "Mixed"];
+const GENDER_TYPE_OPTIONS: GenderType[] = ["Mens", "Womens", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
 
@@ -120,10 +120,7 @@ function LadderForm({
   submitting,
 }: {
   initialLadder?: Ladder | null;
-  onSubmit: (
-    input: LadderInput,
-    options: { imageFile: File | null },
-  ) => void;
+  onSubmit: (input: LadderInput, options: { imageFile: File | null }) => void;
   submitting: boolean;
 }) {
   const [formState, setFormState] = useState<LadderFormState>(() =>
@@ -231,9 +228,7 @@ function LadderForm({
   const selectedCourts = useMemo(
     () =>
       formState.courtIds
-        .map((courtId) =>
-          courts.find((court) => court.courtId === courtId),
-        )
+        .map((courtId) => courts.find((court) => court.courtId === courtId))
         .filter((court): court is Court => court !== undefined),
     [formState.courtIds, courts],
   );
@@ -279,7 +274,9 @@ function LadderForm({
       nextErrors.courtIds = "Select at least one court.";
     }
 
-    const registrationOpens = parseDateInputValue(formState.registrationOpensAt);
+    const registrationOpens = parseDateInputValue(
+      formState.registrationOpensAt,
+    );
     const seasonStarts = parseDateInputValue(formState.seasonStartsAt);
     if (!registrationOpens) {
       nextErrors.registrationOpensAt = "Registration opening date is required.";
@@ -365,7 +362,9 @@ function LadderForm({
   const removeCourt = useCallback((courtId: string) => {
     setFormState((previous) => ({
       ...previous,
-      courtIds: previous.courtIds.filter((existingId) => existingId !== courtId),
+      courtIds: previous.courtIds.filter(
+        (existingId) => existingId !== courtId,
+      ),
     }));
   }, []);
 
@@ -449,343 +448,355 @@ function LadderForm({
 
   const fieldError = useCallback(
     (field: keyof LadderFormState): string | null =>
-      showErrors ? errors[field] ?? null : null,
+      showErrors ? (errors[field] ?? null) : null,
     [errors, showErrors],
   );
 
   return (
     <>
       <Form onSubmit={handleSubmit}>
-      <Section>
-        <DetailsRow>
-          <DetailsColumn>
-        <SectionTitle>Details</SectionTitle>
+        <Section>
+          <DetailsRow>
+            <DetailsColumn>
+              <SectionTitle>Details</SectionTitle>
 
-        <FormField label="Name" htmlFor="ladder-name" error={fieldError("name")}>
-          <TextInput
-            id="ladder-name"
-            type="text"
-            value={formState.name}
-            onChange={(changeEvent) =>
-              updateField("name", changeEvent.target.value)
-            }
-          />
-        </FormField>
-
-        <FormField
-          label="Description"
-          htmlFor="ladder-description"
-          error={fieldError("description")}
-        >
-          <TextArea
-            id="ladder-description"
-            value={formState.description}
-            onChange={(changeEvent) =>
-              updateField("description", changeEvent.target.value)
-            }
-          />
-        </FormField>
-
-        <FormField
-          label="Image"
-          hint="Uploaded to storage when the ladder is saved."
-        >
-          <HiddenFileInput
-            ref={imageInputRef}
-            id="ladder-image"
-            type="file"
-            accept="image/*"
-            onChange={handleImageFileChange}
-          />
-          <ImageUploadRow>
-            <SecondaryButton type="button" onClick={openImagePicker}>
-              {imagePreviewSource ? "Change image" : "Upload image"}
-            </SecondaryButton>
-            {imageFile ? <FileNameText>{imageFile.name}</FileNameText> : null}
-            {imagePreviewSource ? (
-              <RemoveImageButton type="button" onClick={clearImage}>
-                Remove
-              </RemoveImageButton>
-            ) : null}
-          </ImageUploadRow>
-          {imagePreviewSource ? (
-            <ImagePreview src={imagePreviewSource} alt="Ladder preview" />
-          ) : null}
-        </FormField>
-          </DetailsColumn>
-
-          <TeamTypeColumn>
-        <SectionTitle>Team type</SectionTitle>
-
-        <FormField label="Format">
-          <RadioRow role="radiogroup" aria-label="Team type">
-            {TEAM_TYPE_OPTIONS.map((option) => (
-              <RadioChip
-                key={option}
-                $selected={formState.teamType === option}
+              <FormField
+                label="Name"
+                htmlFor="ladder-name"
+                error={fieldError("name")}
               >
-                <HiddenRadio
-                  type="radio"
-                  name="ladder-team-type"
-                  value={option}
-                  checked={formState.teamType === option}
-                  onChange={() => updateField("teamType", option)}
+                <TextInput
+                  id="ladder-name"
+                  type="text"
+                  value={formState.name}
+                  onChange={(changeEvent) =>
+                    updateField("name", changeEvent.target.value)
+                  }
                 />
-                {option}
-              </RadioChip>
-            ))}
-          </RadioRow>
-        </FormField>
+              </FormField>
 
-        <FormField label="Gender">
-          <RadioRow role="radiogroup" aria-label="Gender type">
-            {GENDER_TYPE_OPTIONS.map((option) => (
-              <RadioChip
-                key={option}
-                $selected={formState.genderType === option}
+              <FormField
+                label="Description"
+                htmlFor="ladder-description"
+                error={fieldError("description")}
               >
-                <HiddenRadio
-                  type="radio"
-                  name="ladder-gender-type"
-                  value={option}
-                  checked={formState.genderType === option}
-                  onChange={() => updateField("genderType", option)}
+                <TextArea
+                  id="ladder-description"
+                  value={formState.description}
+                  onChange={(changeEvent) =>
+                    updateField("description", changeEvent.target.value)
+                  }
                 />
-                {option}
-              </RadioChip>
-            ))}
-          </RadioRow>
-        </FormField>
-          </TeamTypeColumn>
-        </DetailsRow>
-      </Section>
+              </FormField>
 
-      <SectionRow>
-      <Section>
-        <SectionTitle>Region and courts</SectionTitle>
+              <FormField
+                label="Image"
+                hint="Uploaded to storage when the ladder is saved."
+              >
+                <HiddenFileInput
+                  ref={imageInputRef}
+                  id="ladder-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                />
+                <ImageUploadRow>
+                  <SecondaryButton type="button" onClick={openImagePicker}>
+                    {imagePreviewSource ? "Change image" : "Upload image"}
+                  </SecondaryButton>
+                  {imageFile ? (
+                    <FileNameText>{imageFile.name}</FileNameText>
+                  ) : null}
+                  {imagePreviewSource ? (
+                    <RemoveImageButton type="button" onClick={clearImage}>
+                      Remove
+                    </RemoveImageButton>
+                  ) : null}
+                </ImageUploadRow>
+                {imagePreviewSource ? (
+                  <ImagePreview src={imagePreviewSource} alt="Ladder preview" />
+                ) : null}
+              </FormField>
+            </DetailsColumn>
 
-        <FormField
-          label="Region"
-          htmlFor="ladder-region"
-          hint="e.g. North London"
-          error={fieldError("region")}
-        >
-          <TextInput
-            id="ladder-region"
-            type="text"
-            list={REGION_DATALIST_ID}
-            value={formState.region}
-            onChange={(changeEvent) =>
-              updateField("region", changeEvent.target.value)
-            }
-          />
-          <datalist id={REGION_DATALIST_ID}>
-            {existingRegions.map((region) => (
-              <option key={region} value={region} />
-            ))}
-          </datalist>
-        </FormField>
+            <TeamTypeColumn>
+              <SectionTitle>Team type</SectionTitle>
 
-        <FormField
-          label="Country"
-          htmlFor="ladder-country"
-          error={fieldError("countryCode")}
-        >
-          <SelectInput
-            id="ladder-country"
-            value={formState.countryCode}
-            onChange={(changeEvent) =>
-              updateField("countryCode", changeEvent.target.value)
-            }
-          >
-            <option value="">Select a country</option>
-            {COUNTRY_OPTIONS.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </SelectInput>
-        </FormField>
+              <FormField label="Format">
+                <RadioRow role="radiogroup" aria-label="Team type">
+                  {TEAM_TYPE_OPTIONS.map((option) => (
+                    <RadioChip
+                      key={option}
+                      $selected={formState.teamType === option}
+                    >
+                      <HiddenRadio
+                        type="radio"
+                        name="ladder-team-type"
+                        value={option}
+                        checked={formState.teamType === option}
+                        onChange={() => updateField("teamType", option)}
+                      />
+                      {option}
+                    </RadioChip>
+                  ))}
+                </RadioRow>
+              </FormField>
 
-        <FormField label="Courts" error={fieldError("courtIds")}>
-          <CourtsSelectButton
-            type="button"
-            onClick={() => setIsCourtsModalOpen(true)}
-          >
-            <span>Select courts</span>
-            <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
-          </CourtsSelectButton>
-          <SelectedSummary>
-            {selectedCourtCount === 0
-              ? "No courts selected"
-              : `${selectedCourtCount} ${
-                  selectedCourtCount === 1 ? "court" : "courts"
-                } selected`}
-          </SelectedSummary>
-        </FormField>
-      </Section>
+              <FormField label="Gender">
+                <RadioRow role="radiogroup" aria-label="Gender type">
+                  {GENDER_TYPE_OPTIONS.map((option) => (
+                    <RadioChip
+                      key={option}
+                      $selected={formState.genderType === option}
+                    >
+                      <HiddenRadio
+                        type="radio"
+                        name="ladder-gender-type"
+                        value={option}
+                        checked={formState.genderType === option}
+                        onChange={() => updateField("genderType", option)}
+                      />
+                      {option}
+                    </RadioChip>
+                  ))}
+                </RadioRow>
+              </FormField>
+            </TeamTypeColumn>
+          </DetailsRow>
+        </Section>
 
-      <Section>
-        <SectionTitle>Schedule</SectionTitle>
+        <SectionRow>
+          <Section>
+            <SectionTitle>Region and courts</SectionTitle>
 
-        <DateRow>
-          <FormField
-            label="Registration opens"
-            htmlFor="ladder-registration-opens"
-            error={fieldError("registrationOpensAt")}
-          >
-            <TextInput
-              id="ladder-registration-opens"
-              type="date"
-              min={minScheduleDate}
-              value={formState.registrationOpensAt}
-              onClick={openDatePicker}
-              onChange={(changeEvent) =>
-                updateField("registrationOpensAt", changeEvent.target.value)
-              }
-            />
-          </FormField>
-
-          <FormField
-            label="Season starts"
-            htmlFor="ladder-season-starts"
-            error={fieldError("seasonStartsAt")}
-          >
-            <TextInput
-              id="ladder-season-starts"
-              type="date"
-              min={minScheduleDate}
-              value={formState.seasonStartsAt}
-              onClick={openDatePicker}
-              onChange={(changeEvent) =>
-                updateField("seasonStartsAt", changeEvent.target.value)
-              }
-            />
-          </FormField>
-        </DateRow>
-
-        <DerivedPreview>
-          <DerivedTitle>Derived schedule</DerivedTitle>
-          {derivedDatesPreview ? (
-            <DerivedGrid>
-              <DerivedItem>
-                <DerivedLabel>Registration closes</DerivedLabel>
-                <DerivedValue>
-                  {formatPreviewDate(derivedDatesPreview.registrationClosesAt)}
-                </DerivedValue>
-              </DerivedItem>
-              <DerivedItem>
-                <DerivedLabel>Season ends</DerivedLabel>
-                <DerivedValue>
-                  {formatPreviewDate(derivedDatesPreview.seasonEndsAt)}
-                </DerivedValue>
-              </DerivedItem>
-              <DerivedItem>
-                <DerivedLabel>Playoffs start</DerivedLabel>
-                <DerivedValue>
-                  {formatPreviewDate(derivedDatesPreview.playoffStartsAt)}
-                </DerivedValue>
-              </DerivedItem>
-              <DerivedItem>
-                <DerivedLabel>Playoffs end</DerivedLabel>
-                <DerivedValue>
-                  {formatPreviewDate(derivedDatesPreview.playoffEndsAt)}
-                </DerivedValue>
-              </DerivedItem>
-            </DerivedGrid>
-          ) : (
-            <DerivedEmpty>
-              Set a season start date to preview the derived schedule.
-            </DerivedEmpty>
-          )}
-        </DerivedPreview>
-      </Section>
-      </SectionRow>
-
-      <Section>
-        <SectionTitle>Access and fees</SectionTitle>
-
-        <FeeRow>
-          <FormField
-            label="Entry fee"
-            htmlFor="ladder-entry-fee"
-            hint="0 means a free ladder"
-            error={fieldError("entryFee")}
-          >
-            <TextInput
-              id="ladder-entry-fee"
-              type="number"
-              min={0}
-              value={formState.entryFee}
-              onChange={(changeEvent) =>
-                updateField("entryFee", changeEvent.target.value)
-              }
-            />
-          </FormField>
-
-          <FormField label="Currency" htmlFor="ladder-currency">
-            <SelectInput
-              id="ladder-currency"
-              value={formState.currencyType}
-              disabled={isEntryFeeZero}
-              onChange={(changeEvent) =>
-                updateField("currencyType", changeEvent.target.value)
-              }
+            <FormField
+              label="Region"
+              htmlFor="ladder-region"
+              hint="e.g. North London"
+              error={fieldError("region")}
             >
-              {CURRENCY_OPTIONS.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </SelectInput>
-          </FormField>
-        </FeeRow>
+              <TextInput
+                id="ladder-region"
+                type="text"
+                list={REGION_DATALIST_ID}
+                value={formState.region}
+                onChange={(changeEvent) =>
+                  updateField("region", changeEvent.target.value)
+                }
+              />
+              <datalist id={REGION_DATALIST_ID}>
+                {existingRegions.map((region) => (
+                  <option key={region} value={region} />
+                ))}
+              </datalist>
+            </FormField>
 
-        <FeeRow>
-          <FormField
-            label="Minimum rank to enter (0 = open to all)"
-            htmlFor="ladder-min-rank"
-            error={fieldError("minRank")}
-          >
-            <TextInput
-              id="ladder-min-rank"
-              type="number"
-              min={0}
-              value={formState.minRank}
-              onChange={(changeEvent) =>
-                updateField("minRank", changeEvent.target.value)
-              }
-            />
-          </FormField>
-
-          <FormField
-            label="Maximum players"
-            htmlFor="ladder-max-players"
-            error={fieldError("maxPlayers")}
-          >
-            <SelectInput
-              id="ladder-max-players"
-              value={formState.maxPlayers}
-              onChange={(changeEvent) =>
-                updateField("maxPlayers", changeEvent.target.value)
-              }
+            <FormField
+              label="Country"
+              htmlFor="ladder-country"
+              error={fieldError("countryCode")}
             >
-              <option value="">Select</option>
-              {maxPlayersOptions.map((option) => (
-                <option key={option} value={String(option)}>
-                  {option}
-                </option>
-              ))}
-            </SelectInput>
-          </FormField>
-        </FeeRow>
-      </Section>
+              <SelectInput
+                id="ladder-country"
+                value={formState.countryCode}
+                onChange={(changeEvent) =>
+                  updateField("countryCode", changeEvent.target.value)
+                }
+              >
+                <option value="">Select a country</option>
+                {COUNTRY_OPTIONS.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </FormField>
 
-      <SubmitRow>
-        <PrimaryButton type="submit" disabled={submitting}>
-          {submitting ? "Saving…" : initialLadder ? "Save changes" : "Create ladder"}
-        </PrimaryButton>
-      </SubmitRow>
+            <FormField label="Courts" error={fieldError("courtIds")}>
+              <CourtsSelectButton
+                type="button"
+                onClick={() => setIsCourtsModalOpen(true)}
+              >
+                <span>Select courts</span>
+                <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
+              </CourtsSelectButton>
+              <SelectedSummary>
+                {selectedCourtCount === 0
+                  ? "No courts selected"
+                  : `${selectedCourtCount} ${
+                      selectedCourtCount === 1 ? "court" : "courts"
+                    } selected`}
+              </SelectedSummary>
+            </FormField>
+          </Section>
+
+          <Section>
+            <SectionTitle>Schedule</SectionTitle>
+
+            <DateRow>
+              <FormField
+                label="Registration opens"
+                htmlFor="ladder-registration-opens"
+                error={fieldError("registrationOpensAt")}
+              >
+                <TextInput
+                  id="ladder-registration-opens"
+                  type="date"
+                  min={minScheduleDate}
+                  value={formState.registrationOpensAt}
+                  onClick={openDatePicker}
+                  onChange={(changeEvent) =>
+                    updateField("registrationOpensAt", changeEvent.target.value)
+                  }
+                />
+              </FormField>
+
+              <FormField
+                label="Season starts"
+                htmlFor="ladder-season-starts"
+                error={fieldError("seasonStartsAt")}
+              >
+                <TextInput
+                  id="ladder-season-starts"
+                  type="date"
+                  min={minScheduleDate}
+                  value={formState.seasonStartsAt}
+                  onClick={openDatePicker}
+                  onChange={(changeEvent) =>
+                    updateField("seasonStartsAt", changeEvent.target.value)
+                  }
+                />
+              </FormField>
+            </DateRow>
+
+            <DerivedPreview>
+              <DerivedTitle>Derived schedule</DerivedTitle>
+              {derivedDatesPreview ? (
+                <DerivedGrid>
+                  <DerivedItem>
+                    <DerivedLabel>Registration closes</DerivedLabel>
+                    <DerivedValue>
+                      {formatPreviewDate(
+                        derivedDatesPreview.registrationClosesAt,
+                      )}
+                    </DerivedValue>
+                  </DerivedItem>
+                  <DerivedItem>
+                    <DerivedLabel>Season ends</DerivedLabel>
+                    <DerivedValue>
+                      {formatPreviewDate(derivedDatesPreview.seasonEndsAt)}
+                    </DerivedValue>
+                  </DerivedItem>
+                  <DerivedItem>
+                    <DerivedLabel>Playoffs start</DerivedLabel>
+                    <DerivedValue>
+                      {formatPreviewDate(derivedDatesPreview.playoffStartsAt)}
+                    </DerivedValue>
+                  </DerivedItem>
+                  <DerivedItem>
+                    <DerivedLabel>Playoffs end</DerivedLabel>
+                    <DerivedValue>
+                      {formatPreviewDate(derivedDatesPreview.playoffEndsAt)}
+                    </DerivedValue>
+                  </DerivedItem>
+                </DerivedGrid>
+              ) : (
+                <DerivedEmpty>
+                  Set a season start date to preview the derived schedule.
+                </DerivedEmpty>
+              )}
+            </DerivedPreview>
+          </Section>
+        </SectionRow>
+
+        <Section>
+          <SectionTitle>Access and fees</SectionTitle>
+
+          <FeeRow>
+            <FormField
+              label="Entry fee"
+              htmlFor="ladder-entry-fee"
+              hint="0 means a free ladder"
+              error={fieldError("entryFee")}
+            >
+              <TextInput
+                id="ladder-entry-fee"
+                type="number"
+                min={0}
+                value={formState.entryFee}
+                onChange={(changeEvent) =>
+                  updateField("entryFee", changeEvent.target.value)
+                }
+              />
+            </FormField>
+
+            <FormField label="Currency" htmlFor="ladder-currency">
+              <SelectInput
+                id="ladder-currency"
+                value={formState.currencyType}
+                disabled={isEntryFeeZero}
+                onChange={(changeEvent) =>
+                  updateField("currencyType", changeEvent.target.value)
+                }
+              >
+                {CURRENCY_OPTIONS.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </SelectInput>
+            </FormField>
+          </FeeRow>
+
+          <FeeRow>
+            <FormField
+              label="Minimum rank to enter (0 = open to all)"
+              htmlFor="ladder-min-rank"
+              error={fieldError("minRank")}
+            >
+              <TextInput
+                id="ladder-min-rank"
+                type="number"
+                min={0}
+                value={formState.minRank}
+                onChange={(changeEvent) =>
+                  updateField("minRank", changeEvent.target.value)
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Maximum players"
+              htmlFor="ladder-max-players"
+              error={fieldError("maxPlayers")}
+            >
+              <SelectInput
+                id="ladder-max-players"
+                value={formState.maxPlayers}
+                onChange={(changeEvent) =>
+                  updateField("maxPlayers", changeEvent.target.value)
+                }
+              >
+                <option value="">Select</option>
+                {maxPlayersOptions.map((option) => (
+                  <option key={option} value={String(option)}>
+                    {option}
+                  </option>
+                ))}
+              </SelectInput>
+            </FormField>
+          </FeeRow>
+        </Section>
+
+        <SubmitRow>
+          <PrimaryButton type="submit" disabled={submitting}>
+            {submitting
+              ? "Saving…"
+              : initialLadder
+                ? "Save changes"
+                : "Create ladder"}
+          </PrimaryButton>
+        </SubmitRow>
       </Form>
 
       {isCourtsModalOpen ? (
@@ -910,7 +921,7 @@ const SectionTitle = styled.h2({
 
 const DetailsRow = styled.div({
   display: "flex",
-  gap: "28px",
+  gap: "50px",
   alignItems: "flex-start",
   "@media (max-width: 900px)": {
     flexDirection: "column",
@@ -945,9 +956,7 @@ const RadioChip = styled.label<{ $selected: boolean }>(({ $selected }) => ({
   justifyContent: "center",
   padding: "10px 18px",
   borderRadius: "8px",
-  border: `1px solid ${
-    $selected ? "#0099f0" : "rgba(255, 255, 255, 0.14)"
-  }`,
+  border: `1px solid ${$selected ? "#0099f0" : "rgba(255, 255, 255, 0.14)"}`,
   backgroundColor: $selected ? "rgba(0, 153, 240, 0.14)" : "#07111f",
   color: $selected ? "#FFFFFF" : "#c7d4e1",
   fontSize: "0.9rem",

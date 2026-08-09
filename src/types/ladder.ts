@@ -31,8 +31,7 @@ export const LADDER_STATUS = {
   CANCELLED: "cancelled",
 } as const;
 
-export type LadderStatus =
-  (typeof LADDER_STATUS)[keyof typeof LADDER_STATUS];
+export type LadderStatus = (typeof LADDER_STATUS)[keyof typeof LADDER_STATUS];
 
 export const TEAM_TYPE = {
   SINGLES: "Singles",
@@ -42,8 +41,8 @@ export const TEAM_TYPE = {
 export type TeamType = (typeof TEAM_TYPE)[keyof typeof TEAM_TYPE];
 
 export const GENDER_TYPE = {
-  MALE: "Male",
-  FEMALE: "Female",
+  MENS: "Mens",
+  WOMENS: "Womens",
   MIXED: "Mixed",
 } as const;
 
