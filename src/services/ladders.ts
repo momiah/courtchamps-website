@@ -13,7 +13,16 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
-import { Ladder, LadderInput, LADDER_STATUS, LadderStatus } from "../types/ladder";
+import {
+  GenderType,
+  GENDER_TYPE,
+  Ladder,
+  LadderInput,
+  LADDER_STATUS,
+  LadderStatus,
+  TeamType,
+  TEAM_TYPE,
+} from "../types/ladder";
 import { deriveLadderDates } from "../utils/ladderDates";
 
 const LADDERS_COLLECTION = "ladders";
@@ -24,6 +33,8 @@ interface LadderDocumentData {
   image?: string;
   region?: string;
   countryCode?: string;
+  teamType?: string;
+  genderType?: string;
   courtIds?: string[];
   status?: LadderStatus;
   registrationOpensAt?: Timestamp | null;
@@ -57,6 +68,8 @@ const mapLadderDocument = (
   image: data.image ?? "",
   region: data.region ?? "",
   countryCode: data.countryCode ?? "",
+  teamType: (data.teamType as TeamType) ?? TEAM_TYPE.SINGLES,
+  genderType: (data.genderType as GenderType) ?? GENDER_TYPE.MIXED,
   courtIds: data.courtIds ?? [],
   status: data.status ?? LADDER_STATUS.DRAFT,
   registrationOpensAt: toDate(data.registrationOpensAt),

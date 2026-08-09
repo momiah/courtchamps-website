@@ -12,7 +12,13 @@ import { format } from "date-fns";
 
 import { fetchAllCourts } from "../../services/courts";
 import { fetchLadders } from "../../services/ladders";
-import { Court, Ladder, LadderInput } from "../../types/ladder";
+import {
+  Court,
+  GenderType,
+  Ladder,
+  LadderInput,
+  TeamType,
+} from "../../types/ladder";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
 import AddCourtModal from "./AddCourtModal";
@@ -30,6 +36,8 @@ import {
 
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
 const MAX_PLAYERS_OPTIONS = [32, 64, 128, 256, 512, 1024, 2048];
+const TEAM_TYPE_OPTIONS: TeamType[] = ["Singles", "Doubles"];
+const GENDER_TYPE_OPTIONS: GenderType[] = ["Male", "Female", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
 
@@ -39,6 +47,8 @@ interface LadderFormState {
   image: string;
   region: string;
   countryCode: string;
+  teamType: TeamType;
+  genderType: GenderType;
   courtIds: string[];
   registrationOpensAt: string;
   seasonStartsAt: string;
@@ -73,6 +83,8 @@ const buildInitialState = (
   image: initialLadder?.image ?? "",
   region: initialLadder?.region ?? "",
   countryCode: initialLadder?.countryCode ?? "",
+  teamType: initialLadder?.teamType ?? "Singles",
+  genderType: initialLadder?.genderType ?? "Mixed",
   courtIds: initialLadder?.courtIds ?? [],
   registrationOpensAt: initialLadder
     ? toDateInputValue(initialLadder.registrationOpensAt)
@@ -419,6 +431,8 @@ function LadderForm({
           image: formState.image.trim(),
           region: formState.region.trim(),
           countryCode: formState.countryCode,
+          teamType: formState.teamType,
+          genderType: formState.genderType,
           courtIds: formState.courtIds,
           registrationOpensAt: registrationOpens,
           seasonStartsAt: seasonStarts,
@@ -442,6 +456,7 @@ function LadderForm({
   return (
     <>
       <Form onSubmit={handleSubmit}>
+      <SectionRow>
       <Section>
         <SectionTitle>Details</SectionTitle>
 
@@ -497,6 +512,51 @@ function LadderForm({
           ) : null}
         </FormField>
       </Section>
+
+      <Section>
+        <SectionTitle>Team type</SectionTitle>
+
+        <FormField label="Format">
+          <RadioRow role="radiogroup" aria-label="Team type">
+            {TEAM_TYPE_OPTIONS.map((option) => (
+              <RadioChip
+                key={option}
+                $selected={formState.teamType === option}
+              >
+                <HiddenRadio
+                  type="radio"
+                  name="ladder-team-type"
+                  value={option}
+                  checked={formState.teamType === option}
+                  onChange={() => updateField("teamType", option)}
+                />
+                {option}
+              </RadioChip>
+            ))}
+          </RadioRow>
+        </FormField>
+
+        <FormField label="Gender">
+          <RadioRow role="radiogroup" aria-label="Gender type">
+            {GENDER_TYPE_OPTIONS.map((option) => (
+              <RadioChip
+                key={option}
+                $selected={formState.genderType === option}
+              >
+                <HiddenRadio
+                  type="radio"
+                  name="ladder-gender-type"
+                  value={option}
+                  checked={formState.genderType === option}
+                  onChange={() => updateField("genderType", option)}
+                />
+                {option}
+              </RadioChip>
+            ))}
+          </RadioRow>
+        </FormField>
+      </Section>
+      </SectionRow>
 
       <SectionRow>
       <Section>
@@ -844,6 +904,39 @@ const SectionTitle = styled.h2({
   fontSize: "1.05rem",
   fontWeight: 700,
   margin: 0,
+});
+
+const RadioRow = styled.div({
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+});
+
+const RadioChip = styled.label<{ $selected: boolean }>(({ $selected }) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "10px 18px",
+  borderRadius: "8px",
+  border: `1px solid ${
+    $selected ? "#0099f0" : "rgba(255, 255, 255, 0.14)"
+  }`,
+  backgroundColor: $selected ? "rgba(0, 153, 240, 0.14)" : "#07111f",
+  color: $selected ? "#FFFFFF" : "#c7d4e1",
+  fontSize: "0.9rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  transition: "border-color 0.2s, background-color 0.2s, color 0.2s",
+  ":hover": {
+    borderColor: "#0099f0",
+  },
+}));
+
+const HiddenRadio = styled.input({
+  position: "absolute",
+  opacity: 0,
+  width: 0,
+  height: 0,
 });
 
 const HiddenFileInput = styled.input({

@@ -34,6 +34,21 @@ export const LADDER_STATUS = {
 export type LadderStatus =
   (typeof LADDER_STATUS)[keyof typeof LADDER_STATUS];
 
+export const TEAM_TYPE = {
+  SINGLES: "Singles",
+  DOUBLES: "Doubles",
+} as const;
+
+export type TeamType = (typeof TEAM_TYPE)[keyof typeof TEAM_TYPE];
+
+export const GENDER_TYPE = {
+  MALE: "Male",
+  FEMALE: "Female",
+  MIXED: "Mixed",
+} as const;
+
+export type GenderType = (typeof GENDER_TYPE)[keyof typeof GENDER_TYPE];
+
 export interface Ladder {
   ladderId: string;
   name: string;
@@ -41,6 +56,8 @@ export interface Ladder {
   image: string;
   region: string;
   countryCode: string;
+  teamType: TeamType;
+  genderType: GenderType;
   courtIds: string[];
   status: LadderStatus;
   registrationOpensAt: Date;
@@ -68,6 +85,8 @@ export type LadderInput = Pick<
   | "image"
   | "region"
   | "countryCode"
+  | "teamType"
+  | "genderType"
   | "courtIds"
   | "registrationOpensAt"
   | "seasonStartsAt"
