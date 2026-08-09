@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { fetchAllCourts } from "../../services/courts";
 import { fetchLadders } from "../../services/ladders";
 import { Court, Ladder, LadderInput } from "../../types/ladder";
-import { COUNTRY_OPTIONS } from "../../utils/countries";
+import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
 import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
@@ -122,6 +122,7 @@ function LadderForm({
   const [showErrors, setShowErrors] = useState<boolean>(false);
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
   const [isCourtsModalOpen, setIsCourtsModalOpen] = useState<boolean>(false);
+  const [courtCountryFilter, setCourtCountryFilter] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -179,16 +180,38 @@ function LadderForm({
     [],
   );
 
+  const verifiedCourts = useMemo(
+    () => courts.filter((court) => court.verified === true),
+    [courts],
+  );
+
+  const availableCourtCountries = useMemo(() => {
+    const codes = new Set<string>();
+    verifiedCourts.forEach((court) => {
+      const code = court.location.countryCode.trim();
+      if (code.length > 0) {
+        codes.add(code);
+      }
+    });
+    return Array.from(codes)
+      .map((code) => ({ code, name: findCountryName(code) || code }))
+      .sort((first, second) => first.name.localeCompare(second.name));
+  }, [verifiedCourts]);
+
   const verifiedCourtOptions = useMemo<MultiSelectOption[]>(
     () =>
-      courts
-        .filter((court) => court.verified === true)
+      verifiedCourts
+        .filter(
+          (court) =>
+            courtCountryFilter.length === 0 ||
+            court.location.countryCode === courtCountryFilter,
+        )
         .map((court) => ({
           id: court.courtId,
           label: court.courtName,
           sublabel: court.location.city,
         })),
-    [courts],
+    [verifiedCourts, courtCountryFilter],
   );
 
   const selectedCourtCount = formState.courtIds.length;
@@ -711,7 +734,24 @@ function LadderForm({
         >
           <CourtsModalBody>
             <CourtsModalColumn>
-              {verifiedCourtOptions.length === 0 ? (
+              {availableCourtCountries.length >= 2 ? (
+                <CourtCountrySelect
+                  aria-label="Filter courts by country"
+                  value={courtCountryFilter}
+                  onChange={(changeEvent) =>
+                    setCourtCountryFilter(changeEvent.target.value)
+                  }
+                >
+                  <option value="">All countries</option>
+                  {availableCourtCountries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name} ({country.code})
+                    </option>
+                  ))}
+                </CourtCountrySelect>
+              ) : null}
+
+              {verifiedCourts.length === 0 ? (
                 <EmptyCourtsState>
                   <span>No verified courts yet.</span>
                   <Link to="/admin/courts">Manage courts</Link>
@@ -923,6 +963,10 @@ const CourtsModalColumn = styled.div({
   gap: "12px",
   flex: "1 1 0",
   minWidth: 0,
+});
+
+const CourtCountrySelect = styled(SelectInput)({
+  width: "100%",
 });
 
 const CourtsMapColumn = styled.div({
