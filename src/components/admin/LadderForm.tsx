@@ -456,8 +456,9 @@ function LadderForm({
   return (
     <>
       <Form onSubmit={handleSubmit}>
-      <SectionRow>
       <Section>
+        <DetailsRow>
+          <DetailsColumn>
         <SectionTitle>Details</SectionTitle>
 
         <FormField label="Name" htmlFor="ladder-name" error={fieldError("name")}>
@@ -511,9 +512,9 @@ function LadderForm({
             <ImagePreview src={imagePreviewSource} alt="Ladder preview" />
           ) : null}
         </FormField>
-      </Section>
+          </DetailsColumn>
 
-      <Section>
+          <TeamTypeColumn>
         <SectionTitle>Team type</SectionTitle>
 
         <FormField label="Format">
@@ -555,8 +556,9 @@ function LadderForm({
             ))}
           </RadioRow>
         </FormField>
+          </TeamTypeColumn>
+        </DetailsRow>
       </Section>
-      </SectionRow>
 
       <SectionRow>
       <Section>
@@ -904,6 +906,31 @@ const SectionTitle = styled.h2({
   fontSize: "1.05rem",
   fontWeight: 700,
   margin: 0,
+});
+
+const DetailsRow = styled.div({
+  display: "flex",
+  gap: "28px",
+  alignItems: "flex-start",
+  "@media (max-width: 900px)": {
+    flexDirection: "column",
+  },
+});
+
+const DetailsColumn = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+  flex: "2 1 0",
+  minWidth: 0,
+});
+
+const TeamTypeColumn = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+  flex: "1 1 0",
+  minWidth: 0,
 });
 
 const RadioRow = styled.div({
