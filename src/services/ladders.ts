@@ -36,7 +36,7 @@ interface LadderDocumentData {
   ladderType?: string;
   genderType?: string;
   courtIds?: string[];
-  status?: LadderStatus;
+  status?: string;
   registrationOpensAt?: Timestamp | null;
   registrationClosesAt?: Timestamp | null;
   seasonStartsAt?: Timestamp | null;
@@ -58,6 +58,15 @@ interface LadderDocumentData {
 const toDate = (value: Timestamp | null | undefined): Date =>
   value instanceof Timestamp ? value.toDate() : new Date(0);
 
+// Coerce any stored status that is missing or no longer part of the lifecycle
+// (e.g. legacy "draft"/"inProgress") to registrationOpen so the UI never has
+// to handle an unknown status.
+const KNOWN_LADDER_STATUSES = new Set<string>(Object.values(LADDER_STATUS));
+const normalizeLadderStatus = (value: string | undefined): LadderStatus =>
+  value !== undefined && KNOWN_LADDER_STATUSES.has(value)
+    ? (value as LadderStatus)
+    : LADDER_STATUS.REGISTRATION_OPEN;
+
 const mapLadderDocument = (
   ladderId: string,
   data: LadderDocumentData,
@@ -71,7 +80,7 @@ const mapLadderDocument = (
   ladderType: (data.ladderType as LadderType) ?? LADDER_TYPE.SINGLES,
   genderType: (data.genderType as GenderType) ?? GENDER_TYPE.MIXED,
   courtIds: data.courtIds ?? [],
-  status: data.status ?? LADDER_STATUS.REGISTRATION_OPEN,
+  status: normalizeLadderStatus(data.status),
   registrationOpensAt: toDate(data.registrationOpensAt),
   registrationClosesAt: toDate(data.registrationClosesAt),
   seasonStartsAt: toDate(data.seasonStartsAt),

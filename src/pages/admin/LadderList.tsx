@@ -90,7 +90,9 @@ function LadderList() {
         key: "status",
         header: "Status",
         render: (ladder) => {
-          const statusStyle = LADDER_STATUS_STYLES[ladder.status];
+          const statusStyle =
+            LADDER_STATUS_STYLES[ladder.status] ??
+            LADDER_STATUS_STYLES[LADDER_STATUS.REGISTRATION_OPEN];
           return (
             <StatusPill tone={statusStyle.tone}>
               {statusStyle.label}
