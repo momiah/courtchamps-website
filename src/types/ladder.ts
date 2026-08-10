@@ -22,10 +22,8 @@ export interface Court {
 export type CourtInput = Pick<Court, "courtName" | "location">;
 
 export const LADDER_STATUS = {
-  DRAFT: "draft",
   REGISTRATION_OPEN: "registrationOpen",
   REGISTRATION_CLOSED: "registrationClosed",
-  IN_PROGRESS: "inProgress",
   PLAYOFFS: "playoffs",
   COMPLETED: "completed",
   CANCELLED: "cancelled",

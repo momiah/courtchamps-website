@@ -71,7 +71,7 @@ const mapLadderDocument = (
   ladderType: (data.ladderType as LadderType) ?? LADDER_TYPE.SINGLES,
   genderType: (data.genderType as GenderType) ?? GENDER_TYPE.MIXED,
   courtIds: data.courtIds ?? [],
-  status: data.status ?? LADDER_STATUS.DRAFT,
+  status: data.status ?? LADDER_STATUS.REGISTRATION_OPEN,
   registrationOpensAt: toDate(data.registrationOpensAt),
   registrationClosesAt: toDate(data.registrationClosesAt),
   seasonStartsAt: toDate(data.seasonStartsAt),
@@ -148,7 +148,7 @@ export const createLadder = async ({
   const ladderReference = await addDoc(collection(db, LADDERS_COLLECTION), {
     ...input,
     ...derivedDates,
-    status: LADDER_STATUS.DRAFT,
+    status: LADDER_STATUS.REGISTRATION_OPEN,
     participantCount: 0,
     prizesDistributed: false,
     createdBy: actorUserId,

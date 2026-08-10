@@ -20,7 +20,6 @@ interface LadderStatusStyle {
 }
 
 const LADDER_STATUS_STYLES: Record<LadderStatus, LadderStatusStyle> = {
-  [LADDER_STATUS.DRAFT]: { label: "Draft", tone: "neutral" },
   [LADDER_STATUS.REGISTRATION_OPEN]: {
     label: "Registration open",
     tone: "info",
@@ -29,7 +28,6 @@ const LADDER_STATUS_STYLES: Record<LadderStatus, LadderStatusStyle> = {
     label: "Registration closed",
     tone: "warning",
   },
-  [LADDER_STATUS.IN_PROGRESS]: { label: "In progress", tone: "info" },
   [LADDER_STATUS.PLAYOFFS]: { label: "Playoffs", tone: "info" },
   [LADDER_STATUS.COMPLETED]: { label: "Completed", tone: "positive" },
   [LADDER_STATUS.CANCELLED]: { label: "Cancelled", tone: "danger" },
