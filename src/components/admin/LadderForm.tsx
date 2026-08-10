@@ -17,7 +17,7 @@ import {
   GenderType,
   Ladder,
   LadderInput,
-  TeamType,
+  LadderType,
 } from "../../types/ladder";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
@@ -36,7 +36,7 @@ import {
 
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
 const MAX_PLAYERS_OPTIONS = [32, 64, 128, 256, 512, 1024, 2048];
-const TEAM_TYPE_OPTIONS: TeamType[] = ["Singles", "Doubles"];
+const LADDER_TYPE_OPTIONS: LadderType[] = ["Singles", "Doubles"];
 const GENDER_TYPE_OPTIONS: GenderType[] = ["Mens", "Womens", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
@@ -47,7 +47,7 @@ interface LadderFormState {
   image: string;
   region: string;
   countryCode: string;
-  teamType: TeamType;
+  ladderType: LadderType;
   genderType: GenderType;
   courtIds: string[];
   registrationOpensAt: string;
@@ -83,7 +83,7 @@ const buildInitialState = (
   image: initialLadder?.image ?? "",
   region: initialLadder?.region ?? "",
   countryCode: initialLadder?.countryCode ?? "",
-  teamType: initialLadder?.teamType ?? "Singles",
+  ladderType: initialLadder?.ladderType ?? "Singles",
   genderType: initialLadder?.genderType ?? "Mixed",
   courtIds: initialLadder?.courtIds ?? [],
   registrationOpensAt: initialLadder
@@ -430,7 +430,7 @@ function LadderForm({
           image: formState.image.trim(),
           region: formState.region.trim(),
           countryCode: formState.countryCode,
-          teamType: formState.teamType,
+          ladderType: formState.ladderType,
           genderType: formState.genderType,
           courtIds: formState.courtIds,
           registrationOpensAt: registrationOpens,
@@ -523,18 +523,18 @@ function LadderForm({
               <SectionTitle>Team type</SectionTitle>
 
               <FormField label="Format">
-                <RadioRow role="radiogroup" aria-label="Team type">
-                  {TEAM_TYPE_OPTIONS.map((option) => (
+                <RadioRow role="radiogroup" aria-label="Ladder type">
+                  {LADDER_TYPE_OPTIONS.map((option) => (
                     <RadioChip
                       key={option}
-                      $selected={formState.teamType === option}
+                      $selected={formState.ladderType === option}
                     >
                       <HiddenRadio
                         type="radio"
-                        name="ladder-team-type"
+                        name="ladder-type"
                         value={option}
-                        checked={formState.teamType === option}
-                        onChange={() => updateField("teamType", option)}
+                        checked={formState.ladderType === option}
+                        onChange={() => updateField("ladderType", option)}
                       />
                       {option}
                     </RadioChip>

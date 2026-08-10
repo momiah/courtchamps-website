@@ -20,8 +20,8 @@ import {
   LadderInput,
   LADDER_STATUS,
   LadderStatus,
-  TeamType,
-  TEAM_TYPE,
+  LadderType,
+  LADDER_TYPE,
 } from "../types/ladder";
 import { deriveLadderDates } from "../utils/ladderDates";
 
@@ -33,7 +33,7 @@ interface LadderDocumentData {
   image?: string;
   region?: string;
   countryCode?: string;
-  teamType?: string;
+  ladderType?: string;
   genderType?: string;
   courtIds?: string[];
   status?: LadderStatus;
@@ -68,7 +68,7 @@ const mapLadderDocument = (
   image: data.image ?? "",
   region: data.region ?? "",
   countryCode: data.countryCode ?? "",
-  teamType: (data.teamType as TeamType) ?? TEAM_TYPE.SINGLES,
+  ladderType: (data.ladderType as LadderType) ?? LADDER_TYPE.SINGLES,
   genderType: (data.genderType as GenderType) ?? GENDER_TYPE.MIXED,
   courtIds: data.courtIds ?? [],
   status: data.status ?? LADDER_STATUS.DRAFT,
