@@ -128,6 +128,9 @@ function LadderForm({
   );
   const [courts, setCourts] = useState<Court[]>([]);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
+  const [regionCourtGroups, setRegionCourtGroups] = useState<
+    { region: string; courtIds: string[] }[]
+  >([]);
   const [showErrors, setShowErrors] = useState<boolean>(false);
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
   const [isCourtsModalOpen, setIsCourtsModalOpen] = useState<boolean>(false);
@@ -167,6 +170,30 @@ function LadderForm({
           ),
         ).sort((first, second) => first.localeCompare(second));
         setExistingRegions(distinctRegions);
+
+        // Group the court ids of every existing ladder by its region so a
+        // whole region's courts can be reused in one click. Ladders that share
+        // a region string merge into one entry.
+        const courtIdsByRegion = new Map<string, Set<string>>();
+        loadedLadders.forEach((ladder) => {
+          const region = ladder.region.trim();
+          if (region.length === 0) {
+            return;
+          }
+          const existing = courtIdsByRegion.get(region) ?? new Set<string>();
+          ladder.courtIds.forEach((courtId) => existing.add(courtId));
+          courtIdsByRegion.set(region, existing);
+        });
+        setRegionCourtGroups(
+          Array.from(courtIdsByRegion.entries())
+            .map(([region, courtIdSet]) => ({
+              region,
+              courtIds: Array.from(courtIdSet),
+            }))
+            .sort((first, second) =>
+              first.region.localeCompare(second.region),
+            ),
+        );
       } catch (loadError) {
         console.error("Failed to load ladder reference data", loadError);
       }
@@ -367,6 +394,58 @@ function LadderForm({
       ),
     }));
   }, []);
+
+  const bulkToggleCourts = useCallback(
+    (courtIds: string[], selected: boolean) => {
+      setFormState((previous) => {
+        const nextIds = new Set(previous.courtIds);
+        if (selected) {
+          courtIds.forEach((courtId) => nextIds.add(courtId));
+        } else {
+          courtIds.forEach((courtId) => nextIds.delete(courtId));
+        }
+        return { ...previous, courtIds: Array.from(nextIds) };
+      });
+    },
+    [],
+  );
+
+  // Regions from existing ladders that still resolve to at least one verified
+  // court, so a whole region's courts can be reused in one click.
+  const verifiedCourtIdSet = useMemo(
+    () => new Set(verifiedCourts.map((court) => court.courtId)),
+    [verifiedCourts],
+  );
+
+  const reusableRegions = useMemo(
+    () =>
+      regionCourtGroups
+        .map((group) => ({
+          region: group.region,
+          courtIds: group.courtIds.filter((courtId) =>
+            verifiedCourtIdSet.has(courtId),
+          ),
+        }))
+        .filter((group) => group.courtIds.length > 0),
+    [regionCourtGroups, verifiedCourtIdSet],
+  );
+
+  const reuseRegionCourts = useCallback(
+    (region: string) => {
+      const group = reusableRegions.find(
+        (candidate) => candidate.region === region,
+      );
+      if (!group) {
+        return;
+      }
+      setFormState((previous) => {
+        const nextIds = new Set(previous.courtIds);
+        group.courtIds.forEach((courtId) => nextIds.add(courtId));
+        return { ...previous, courtIds: Array.from(nextIds) };
+      });
+    },
+    [reusableRegions],
+  );
 
   const handleCourtCreated = useCallback((createdCourt: Court) => {
     setCourts((previous) => [...previous, createdCourt]);
@@ -824,6 +903,23 @@ function LadderForm({
                 </CourtCountrySelect>
               ) : null}
 
+              {reusableRegions.length > 0 ? (
+                <RegionReuseSelect
+                  aria-label="Reuse courts from a region"
+                  value=""
+                  onChange={(changeEvent) =>
+                    reuseRegionCourts(changeEvent.target.value)
+                  }
+                >
+                  <option value="">Reuse courts from a region…</option>
+                  {reusableRegions.map((group) => (
+                    <option key={group.region} value={group.region}>
+                      {group.region} ({group.courtIds.length})
+                    </option>
+                  ))}
+                </RegionReuseSelect>
+              ) : null}
+
               {verifiedCourts.length === 0 ? (
                 <EmptyCourtsState>
                   <span>No verified courts yet.</span>
@@ -835,6 +931,7 @@ function LadderForm({
                   selectedIds={formState.courtIds}
                   onToggle={toggleCourt}
                   onRemove={removeCourt}
+                  onBulkToggle={bulkToggleCourts}
                   searchPlaceholder="Search courts…"
                   listMaxHeight={520}
                 />
@@ -1095,6 +1192,10 @@ const CourtsModalColumn = styled.div({
 });
 
 const CourtCountrySelect = styled(SelectInput)({
+  width: "100%",
+});
+
+const RegionReuseSelect = styled(SelectInput)({
   width: "100%",
 });
 

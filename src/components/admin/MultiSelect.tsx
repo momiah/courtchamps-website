@@ -12,6 +12,7 @@ function MultiSelect({
   selectedIds,
   onToggle,
   onRemove,
+  onBulkToggle,
   searchPlaceholder,
   footer,
   listMaxHeight,
@@ -20,6 +21,7 @@ function MultiSelect({
   selectedIds: string[];
   onToggle: (optionId: string) => void;
   onRemove: (optionId: string) => void;
+  onBulkToggle?: (optionIds: string[], selected: boolean) => void;
   searchPlaceholder?: string;
   footer?: React.ReactNode;
   listMaxHeight?: number;
@@ -39,6 +41,29 @@ function MultiSelect({
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
+  const selectedVisibleCount = useMemo(
+    () =>
+      filteredOptions.reduce(
+        (count, option) => (selectedIdSet.has(option.id) ? count + 1 : count),
+        0,
+      ),
+    [filteredOptions, selectedIdSet],
+  );
+
+  const allVisibleSelected =
+    filteredOptions.length > 0 &&
+    selectedVisibleCount === filteredOptions.length;
+
+  const handleBulkToggle = (): void => {
+    if (!onBulkToggle) {
+      return;
+    }
+    onBulkToggle(
+      filteredOptions.map((option) => option.id),
+      !allVisibleSelected,
+    );
+  };
+
   return (
     <Container>
       <SearchInput
@@ -47,6 +72,21 @@ function MultiSelect({
         placeholder={searchPlaceholder ?? "Search…"}
         onChange={(changeEvent) => setSearchTerm(changeEvent.target.value)}
       />
+
+      {onBulkToggle ? (
+        <BulkRow>
+          <BulkCount>
+            {selectedVisibleCount} of {filteredOptions.length} selected
+          </BulkCount>
+          <BulkButton
+            type="button"
+            onClick={handleBulkToggle}
+            disabled={filteredOptions.length === 0}
+          >
+            {allVisibleSelected ? "Clear all" : "Select all"}
+          </BulkButton>
+        </BulkRow>
+      ) : null}
 
       <OptionList $maxHeight={listMaxHeight ?? 220}>
         {filteredOptions.length === 0 ? (
@@ -100,6 +140,35 @@ const SearchInput = styled.input({
   outline: "none",
   ":focus": {
     borderColor: "#0099f0",
+  },
+});
+
+const BulkRow = styled.div({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+});
+
+const BulkCount = styled.span({
+  color: "#8fa3b8",
+  fontSize: "0.8rem",
+});
+
+const BulkButton = styled.button({
+  border: "none",
+  background: "none",
+  color: "#0099f0",
+  fontSize: "0.82rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  padding: "2px 0",
+  ":disabled": {
+    color: "#5f7183",
+    cursor: "not-allowed",
+  },
+  ":not(:disabled):hover": {
+    textDecoration: "underline",
   },
 });
 
