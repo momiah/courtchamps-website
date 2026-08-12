@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
-import { Court, CourtInput, CourtLocation } from "../types/ladder";
+import { Court, CourtInput, CourtLocation } from "courtchamps-shared/types";
 import { generateCourtId } from "../utils/generateCourtId";
 
 const COURTS_COLLECTION = "courts";

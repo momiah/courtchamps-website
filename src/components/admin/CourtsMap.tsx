@@ -13,7 +13,7 @@ import {
   buildCourtCandidatesFromCourt,
   GeoPoint,
 } from "../../services/geocode";
-import { Court } from "../../types/ladder";
+import { Court } from "courtchamps-shared/types";
 
 interface CourtMapPoint {
   court: Court;

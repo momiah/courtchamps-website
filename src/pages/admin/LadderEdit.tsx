@@ -11,7 +11,7 @@ import {
   fetchLadder,
   updateLadder,
 } from "../../services/ladders";
-import { Ladder, LadderInput } from "../../types/ladder";
+import { Ladder, LadderInput } from "courtchamps-shared/types";
 
 function LadderEdit() {
   const { ladderId } = useParams<{ ladderId: string }>();

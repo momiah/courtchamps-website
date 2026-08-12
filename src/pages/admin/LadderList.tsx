@@ -12,7 +12,7 @@ import StatusPill, {
 } from "../../components/admin/StatusPill";
 import { PrimaryButton } from "../../components/admin/formControls";
 import { fetchLadders } from "../../services/ladders";
-import { Ladder, LADDER_STATUS, LadderStatus } from "../../types/ladder";
+import { Ladder, LADDER_STATUS, LadderStatus } from "courtchamps-shared/types";
 
 interface LadderStatusStyle {
   label: string;

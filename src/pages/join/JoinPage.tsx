@@ -4,9 +4,9 @@ import styled from "styled-components";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import { normalizeCompetition } from "../../helpers/normalizeCompetition";
-import { NormalizedCompetition } from "../../types/competition";
+import { NormalizedCompetition } from "courtchamps-shared/types";
 import Tag from "../../components/Tag";
-import { ccImageEndpoint } from "../../schemas/schema";
+import { ccImageEndpoint } from "courtchamps-shared/schema";
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
 

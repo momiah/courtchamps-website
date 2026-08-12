@@ -22,7 +22,7 @@ import {
   LadderStatus,
   LadderType,
   LADDER_TYPE,
-} from "../types/ladder";
+} from "courtchamps-shared/types";
 import { deriveLadderDates } from "../utils/ladderDates";
 
 const LADDERS_COLLECTION = "ladders";

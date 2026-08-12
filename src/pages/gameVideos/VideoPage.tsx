@@ -3,10 +3,10 @@ import { useSearchParams, Link } from "react-router-dom";
 import styled, { keyframes, createGlobalStyle } from "styled-components";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
-import { GameVideo } from "../../types/game";
+import { GameVideo } from "courtchamps-shared/types";
 import { CourtChampLogo, appStoreBadge, playStoreBadge } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
-import { ccImageEndpoint } from "../../schemas/schema";
+import { ccImageEndpoint } from "courtchamps-shared/schema";
 
 const PREVIEW_DURATION = 5; // seconds before pausing for non-authenticated users
 
