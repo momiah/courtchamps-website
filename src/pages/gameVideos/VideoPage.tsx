@@ -416,25 +416,6 @@ const GateSubtitle = styled.p({
   margin: "0 0 8px",
 });
 
-const GateBadgeRow = styled.div({
-  display: "flex",
-  gap: 10,
-  justifyContent: "center",
-  flexWrap: "wrap",
-});
-
-const GateBadgeButton = styled.button({
-  border: "none",
-  background: "none",
-  padding: 0,
-  cursor: "pointer",
-});
-
-const GateBadgeImage = styled.img({
-  height: 36,
-  objectFit: "contain",
-});
-
 const Controls = styled.div({
   position: "absolute",
   bottom: 0,
@@ -496,12 +477,6 @@ const TimeRow = styled.div({
 const TimeText = styled.span({
   fontSize: 11,
   color: "rgba(255,255,255,0.7)",
-});
-
-const PreviewNote = styled.span({
-  fontSize: 10,
-  color: "#FFD700",
-  fontWeight: 600,
 });
 
 // ─── Scorecard ────────────────────────────────────────────────────────────────
