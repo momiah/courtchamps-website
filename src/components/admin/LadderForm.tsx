@@ -18,7 +18,7 @@ import {
   Ladder,
   LadderInput,
   LadderType,
-} from "../../types/ladder";
+} from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "../../utils/ladderDates";
 import AddCourtModal from "./AddCourtModal";

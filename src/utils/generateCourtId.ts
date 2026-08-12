@@ -1,4 +1,4 @@
-import { CourtInput } from "../types/ladder";
+import { CourtInput } from "courtchamps-shared/types";
 
 const ID_SUFFIX_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const ID_SUFFIX_LENGTH = 5;

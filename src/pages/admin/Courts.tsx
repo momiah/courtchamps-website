@@ -17,7 +17,7 @@ import {
 } from "../../components/admin/formControls";
 import { deleteCourt, fetchAllCourts } from "../../services/courts";
 import { countLaddersUsingCourt } from "../../services/ladders";
-import { Court } from "../../types/ladder";
+import { Court } from "courtchamps-shared/types";
 import { findCountryName } from "../../utils/countries";
 
 type CourtFilterTab = "all" | "unverified" | "verified";

@@ -1,4 +1,4 @@
-import { Court } from "../types/ladder";
+import { Court } from "courtchamps-shared/types";
 
 export interface GeoPoint {
   latitude: number;

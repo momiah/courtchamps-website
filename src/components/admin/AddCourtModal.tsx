@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useGeocoder } from "../../maps/useGeocoder";
 import { createCourt, updateCourt } from "../../services/courts";
 import { buildCourtSearchCandidates } from "../../services/geocode";
-import { Court } from "../../types/ladder";
+import { Court } from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import FormField from "./FormField";
 import LocationPreviewMap from "./LocationPreviewMap";
