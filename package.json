@@ -8,8 +8,13 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/country-list": "^2.1.4",
+    "@types/google.maps": "^3.65.4",
+    "@vis.gl/react-google-maps": "^1.9.0",
     "aos": "^2.3.4",
+    "country-list": "^2.4.1",
     "crypto": "^1.0.1",
+    "date-fns": "^4.4.0",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.4.0",
@@ -26,7 +31,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "import-courts": "node --env-file=.env scripts/importCourts.mjs"
   },
   "eslintConfig": {
     "extends": [
