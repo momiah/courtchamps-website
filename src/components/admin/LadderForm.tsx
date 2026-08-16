@@ -41,22 +41,22 @@ const GENDER_TYPE_OPTIONS: GenderType[] = ["Mens", "Womens", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
 
-interface LadderFormState {
-  name: string;
-  description: string;
-  image: string;
-  region: string;
-  countryCode: string;
-  ladderType: LadderType;
-  genderType: GenderType;
-  courtIds: string[];
+// Form state mirrors the shared LadderInput, but the fields a user types are
+// held as strings until parsed/validated on submit.
+type LadderFormState = Omit<
+  LadderInput,
+  | "registrationOpensAt"
+  | "seasonStartsAt"
+  | "entryFee"
+  | "minRank"
+  | "maxPlayers"
+> & {
   registrationOpensAt: string;
   seasonStartsAt: string;
   entryFee: string;
-  currencyType: string;
   minRank: string;
   maxPlayers: string;
-}
+};
 
 type LadderFormErrors = Partial<Record<keyof LadderFormState, string>>;
 
