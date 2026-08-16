@@ -19,10 +19,10 @@ import {
   Ladder,
   LadderInput,
   LADDER_STATUS,
-  LadderStatus,
   LadderType,
   LADDER_TYPE,
 } from "courtchamps-shared/types";
+import { normalizeLadderStatus } from "courtchamps-shared/helpers";
 import { deriveLadderDates } from "../utils/ladderDates";
 
 const LADDERS_COLLECTION = "ladders";
@@ -57,15 +57,6 @@ interface LadderDocumentData {
 
 const toDate = (value: Timestamp | null | undefined): Date =>
   value instanceof Timestamp ? value.toDate() : new Date(0);
-
-// Coerce any stored status that is missing or no longer part of the lifecycle
-// (e.g. legacy "draft"/"inProgress") to registrationOpen so the UI never has
-// to handle an unknown status.
-const KNOWN_LADDER_STATUSES = new Set<string>(Object.values(LADDER_STATUS));
-const normalizeLadderStatus = (value: string | undefined): LadderStatus =>
-  value !== undefined && KNOWN_LADDER_STATUSES.has(value)
-    ? (value as LadderStatus)
-    : LADDER_STATUS.REGISTRATION_OPEN;
 
 const mapLadderDocument = (
   ladderId: string,
