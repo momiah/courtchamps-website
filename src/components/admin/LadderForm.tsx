@@ -9,6 +9,7 @@ import React, {
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { format } from "date-fns";
+import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 
 import { fetchAllCourts } from "../../services/courts";
 import { fetchLadders } from "../../services/ladders";
@@ -57,8 +58,6 @@ type LadderFormState = Omit<
   minRank: string;
   maxPlayers: string;
 };
-
-type LadderFormErrors = Partial<Record<keyof LadderFormState, string>>;
 
 const toDateInputValue = (date: Date): string => {
   if (Number.isNaN(date.getTime()) || date.getTime() === 0) {
@@ -123,15 +122,28 @@ function LadderForm({
   onSubmit: (input: LadderInput, options: { imageFile: File | null }) => void;
   submitting: boolean;
 }) {
-  const [formState, setFormState] = useState<LadderFormState>(() =>
-    buildInitialState(initialLadder),
-  );
+  const {
+    control,
+    handleSubmit,
+    watch,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = useForm<LadderFormState>({
+    defaultValues: buildInitialState(initialLadder),
+  });
+
+  const courtIds = watch("courtIds");
+  const seasonStartsAt = watch("seasonStartsAt");
+  const entryFee = watch("entryFee");
+  const maxPlayers = watch("maxPlayers");
+  const image = watch("image");
+
   const [courts, setCourts] = useState<Court[]>([]);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
   const [regionCourtGroups, setRegionCourtGroups] = useState<
     { region: string; courtIds: string[] }[]
   >([]);
-  const [showErrors, setShowErrors] = useState<boolean>(false);
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
   const [isCourtsModalOpen, setIsCourtsModalOpen] = useState<boolean>(false);
   const [courtCountryFilter, setCourtCountryFilter] = useState<string>("");
@@ -206,16 +218,6 @@ function LadderForm({
     };
   }, []);
 
-  const updateField = useCallback(
-    <FieldName extends keyof LadderFormState>(
-      field: FieldName,
-      value: LadderFormState[FieldName],
-    ) => {
-      setFormState((previous) => ({ ...previous, [field]: value }));
-    },
-    [],
-  );
-
   const verifiedCourts = useMemo(
     () => courts.filter((court) => court.verified === true),
     [courts],
@@ -250,23 +252,23 @@ function LadderForm({
     [verifiedCourts, courtCountryFilter],
   );
 
-  const selectedCourtCount = formState.courtIds.length;
+  const selectedCourtCount = courtIds.length;
 
   const selectedCourts = useMemo(
     () =>
-      formState.courtIds
+      courtIds
         .map((courtId) => courts.find((court) => court.courtId === courtId))
         .filter((court): court is Court => court !== undefined),
-    [formState.courtIds, courts],
+    [courtIds, courts],
   );
 
   const derivedDatesPreview = useMemo(() => {
-    const seasonStart = parseDateInputValue(formState.seasonStartsAt);
+    const seasonStart = parseDateInputValue(seasonStartsAt);
     if (!seasonStart) {
       return null;
     }
     return deriveLadderDates({ seasonStartsAt: seasonStart });
-  }, [formState.seasonStartsAt]);
+  }, [seasonStartsAt]);
 
   const minScheduleDate = useMemo(() => {
     const todayInputValue = format(new Date(), "yyyy-MM-dd");
@@ -282,88 +284,15 @@ function LadderForm({
       : todayInputValue;
   }, [initialLadder]);
 
-  const errors = useMemo<LadderFormErrors>(() => {
-    const nextErrors: LadderFormErrors = {};
-
-    if (formState.name.trim().length === 0) {
-      nextErrors.name = "Name is required.";
-    }
-    if (formState.description.trim().length === 0) {
-      nextErrors.description = "Description is required.";
-    }
-    if (formState.region.trim().length === 0) {
-      nextErrors.region = "Region is required.";
-    }
-    if (!COUNTRY_CODE_PATTERN.test(formState.countryCode)) {
-      nextErrors.countryCode = "Select a country.";
-    }
-    if (formState.courtIds.length === 0) {
-      nextErrors.courtIds = "Select at least one court.";
-    }
-
-    const registrationOpens = parseDateInputValue(
-      formState.registrationOpensAt,
-    );
-    const seasonStarts = parseDateInputValue(formState.seasonStartsAt);
-    if (!registrationOpens) {
-      nextErrors.registrationOpensAt = "Registration opening date is required.";
-    } else if (formState.registrationOpensAt < minScheduleDate) {
-      nextErrors.registrationOpensAt =
-        "Registration opening date cannot be in the past.";
-    }
-    if (!seasonStarts) {
-      nextErrors.seasonStartsAt = "Season start date is required.";
-    } else if (formState.seasonStartsAt < minScheduleDate) {
-      nextErrors.seasonStartsAt = "Season start date cannot be in the past.";
-    }
-    if (
-      registrationOpens &&
-      seasonStarts &&
-      registrationOpens.getTime() >= seasonStarts.getTime()
-    ) {
-      nextErrors.seasonStartsAt =
-        "Season start must be after registration opens.";
-    }
-
-    const entryFeeValue = Number(formState.entryFee);
-    if (
-      formState.entryFee.trim().length === 0 ||
-      Number.isNaN(entryFeeValue) ||
-      entryFeeValue < 0
-    ) {
-      nextErrors.entryFee = "Entry fee must be 0 or greater.";
-    }
-
-    const minRankValue = Number(formState.minRank);
-    if (
-      formState.minRank.trim().length === 0 ||
-      Number.isNaN(minRankValue) ||
-      minRankValue < 0
-    ) {
-      nextErrors.minRank = "Minimum rank must be 0 or greater.";
-    }
-
-    const maxPlayersValue = Number(formState.maxPlayers);
-    if (
-      formState.maxPlayers.trim().length === 0 ||
-      Number.isNaN(maxPlayersValue) ||
-      maxPlayersValue < 2
-    ) {
-      nextErrors.maxPlayers = "Maximum players must be 2 or greater.";
-    }
-
-    return nextErrors;
-  }, [formState, minScheduleDate]);
-
   const isEntryFeeZero = useMemo(
-    () => Number(formState.entryFee) === 0,
-    [formState.entryFee],
+    () => Number(entryFee) === 0,
+    [entryFee],
   );
 
   const maxPlayersOptions = useMemo(() => {
-    const currentValue = Number(formState.maxPlayers);
+    const currentValue = Number(maxPlayers);
     if (
-      formState.maxPlayers.trim().length > 0 &&
+      maxPlayers.trim().length > 0 &&
       !Number.isNaN(currentValue) &&
       !MAX_PLAYERS_OPTIONS.includes(currentValue)
     ) {
@@ -372,42 +301,44 @@ function LadderForm({
       );
     }
     return MAX_PLAYERS_OPTIONS;
-  }, [formState.maxPlayers]);
+  }, [maxPlayers]);
 
-  const toggleCourt = useCallback((courtId: string) => {
-    setFormState((previous) => {
-      const isSelected = previous.courtIds.includes(courtId);
-      return {
-        ...previous,
-        courtIds: isSelected
-          ? previous.courtIds.filter((existingId) => existingId !== courtId)
-          : [...previous.courtIds, courtId],
-      };
-    });
-  }, []);
+  const toggleCourt = useCallback(
+    (courtId: string) => {
+      const current = getValues("courtIds");
+      setValue(
+        "courtIds",
+        current.includes(courtId)
+          ? current.filter((existingId) => existingId !== courtId)
+          : [...current, courtId],
+        { shouldValidate: true },
+      );
+    },
+    [getValues, setValue],
+  );
 
-  const removeCourt = useCallback((courtId: string) => {
-    setFormState((previous) => ({
-      ...previous,
-      courtIds: previous.courtIds.filter(
-        (existingId) => existingId !== courtId,
-      ),
-    }));
-  }, []);
+  const removeCourt = useCallback(
+    (courtId: string) => {
+      setValue(
+        "courtIds",
+        getValues("courtIds").filter((existingId) => existingId !== courtId),
+        { shouldValidate: true },
+      );
+    },
+    [getValues, setValue],
+  );
 
   const bulkToggleCourts = useCallback(
-    (courtIds: string[], selected: boolean) => {
-      setFormState((previous) => {
-        const nextIds = new Set(previous.courtIds);
-        if (selected) {
-          courtIds.forEach((courtId) => nextIds.add(courtId));
-        } else {
-          courtIds.forEach((courtId) => nextIds.delete(courtId));
-        }
-        return { ...previous, courtIds: Array.from(nextIds) };
-      });
+    (ids: string[], selected: boolean) => {
+      const nextIds = new Set(getValues("courtIds"));
+      if (selected) {
+        ids.forEach((courtId) => nextIds.add(courtId));
+      } else {
+        ids.forEach((courtId) => nextIds.delete(courtId));
+      }
+      setValue("courtIds", Array.from(nextIds), { shouldValidate: true });
     },
-    [],
+    [getValues, setValue],
   );
 
   // Regions from existing ladders that still resolve to at least one verified
@@ -438,25 +369,26 @@ function LadderForm({
       if (!group) {
         return;
       }
-      setFormState((previous) => {
-        const nextIds = new Set(previous.courtIds);
-        group.courtIds.forEach((courtId) => nextIds.add(courtId));
-        return { ...previous, courtIds: Array.from(nextIds) };
-      });
+      const nextIds = new Set(getValues("courtIds"));
+      group.courtIds.forEach((courtId) => nextIds.add(courtId));
+      setValue("courtIds", Array.from(nextIds), { shouldValidate: true });
     },
-    [reusableRegions],
+    [reusableRegions, getValues, setValue],
   );
 
-  const handleCourtCreated = useCallback((createdCourt: Court) => {
-    setCourts((previous) => [...previous, createdCourt]);
-    setFormState((previous) => ({
-      ...previous,
-      courtIds: previous.courtIds.includes(createdCourt.courtId)
-        ? previous.courtIds
-        : [...previous.courtIds, createdCourt.courtId],
-    }));
-    setIsCourtModalOpen(false);
-  }, []);
+  const handleCourtCreated = useCallback(
+    (createdCourt: Court) => {
+      setCourts((previous) => [...previous, createdCourt]);
+      const current = getValues("courtIds");
+      if (!current.includes(createdCourt.courtId)) {
+        setValue("courtIds", [...current, createdCourt.courtId], {
+          shouldValidate: true,
+        });
+      }
+      setIsCourtModalOpen(false);
+    },
+    [getValues, setValue],
+  );
 
   const handleImageFileChange = useCallback(
     (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
@@ -472,68 +404,54 @@ function LadderForm({
 
   const clearImage = useCallback(() => {
     setImageFile(null);
-    setFormState((previous) => ({ ...previous, image: "" }));
+    setValue("image", "");
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
     }
-  }, []);
+  }, [setValue]);
 
   const imagePreviewSource = useMemo(() => {
     if (imagePreviewUrl) {
       return imagePreviewUrl;
     }
-    return formState.image.trim().length > 0 ? formState.image : null;
-  }, [imagePreviewUrl, formState.image]);
+    return image.trim().length > 0 ? image : null;
+  }, [imagePreviewUrl, image]);
 
-  const handleSubmit = useCallback(
-    (submitEvent: React.FormEvent<HTMLFormElement>) => {
-      submitEvent.preventDefault();
-      setShowErrors(true);
+  const onValid: SubmitHandler<LadderFormState> = (values) => {
+    if (submitting) {
+      return;
+    }
 
-      if (Object.keys(errors).length > 0 || submitting) {
-        return;
-      }
+    const registrationOpens = parseDateInputValue(values.registrationOpensAt);
+    const seasonStarts = parseDateInputValue(values.seasonStartsAt);
+    if (!registrationOpens || !seasonStarts) {
+      return;
+    }
 
-      const registrationOpens = parseDateInputValue(
-        formState.registrationOpensAt,
-      );
-      const seasonStarts = parseDateInputValue(formState.seasonStartsAt);
-      if (!registrationOpens || !seasonStarts) {
-        return;
-      }
-
-      onSubmit(
-        {
-          name: formState.name.trim(),
-          description: formState.description.trim(),
-          image: formState.image.trim(),
-          region: formState.region.trim(),
-          countryCode: formState.countryCode,
-          ladderType: formState.ladderType,
-          genderType: formState.genderType,
-          courtIds: formState.courtIds,
-          registrationOpensAt: registrationOpens,
-          seasonStartsAt: seasonStarts,
-          entryFee: Number(formState.entryFee),
-          currencyType: formState.currencyType,
-          minRank: Number(formState.minRank),
-          maxPlayers: Number(formState.maxPlayers),
-        },
-        { imageFile },
-      );
-    },
-    [errors, formState, imageFile, onSubmit, submitting],
-  );
-
-  const fieldError = useCallback(
-    (field: keyof LadderFormState): string | null =>
-      showErrors ? (errors[field] ?? null) : null,
-    [errors, showErrors],
-  );
+    onSubmit(
+      {
+        name: values.name.trim(),
+        description: values.description.trim(),
+        image: values.image.trim(),
+        region: values.region.trim(),
+        countryCode: values.countryCode,
+        ladderType: values.ladderType,
+        genderType: values.genderType,
+        courtIds: values.courtIds,
+        registrationOpensAt: registrationOpens,
+        seasonStartsAt: seasonStarts,
+        entryFee: Number(values.entryFee),
+        currencyType: values.currencyType,
+        minRank: Number(values.minRank),
+        maxPlayers: Number(values.maxPlayers),
+      },
+      { imageFile },
+    );
+  };
 
   return (
     <>
-      <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit(onValid)}>
         <Section>
           <DetailsRow>
             <DetailsColumn>
@@ -542,29 +460,36 @@ function LadderForm({
               <FormField
                 label="Name"
                 htmlFor="ladder-name"
-                error={fieldError("name")}
+                error={errors.name?.message ?? null}
               >
-                <TextInput
-                  id="ladder-name"
-                  type="text"
-                  value={formState.name}
-                  onChange={(changeEvent) =>
-                    updateField("name", changeEvent.target.value)
-                  }
+                <Controller
+                  control={control}
+                  name="name"
+                  rules={{
+                    validate: (value) =>
+                      value.trim().length > 0 || "Name is required.",
+                  }}
+                  render={({ field }) => (
+                    <TextInput id="ladder-name" type="text" {...field} />
+                  )}
                 />
               </FormField>
 
               <FormField
                 label="Description"
                 htmlFor="ladder-description"
-                error={fieldError("description")}
+                error={errors.description?.message ?? null}
               >
-                <TextArea
-                  id="ladder-description"
-                  value={formState.description}
-                  onChange={(changeEvent) =>
-                    updateField("description", changeEvent.target.value)
-                  }
+                <Controller
+                  control={control}
+                  name="description"
+                  rules={{
+                    validate: (value) =>
+                      value.trim().length > 0 || "Description is required.",
+                  }}
+                  render={({ field }) => (
+                    <TextArea id="ladder-description" {...field} />
+                  )}
                 />
               </FormField>
 
@@ -602,43 +527,55 @@ function LadderForm({
               <SectionTitle>Team type</SectionTitle>
 
               <FormField label="Format">
-                <RadioRow role="radiogroup" aria-label="Ladder type">
-                  {LADDER_TYPE_OPTIONS.map((option) => (
-                    <RadioChip
-                      key={option}
-                      $selected={formState.ladderType === option}
-                    >
-                      <HiddenRadio
-                        type="radio"
-                        name="ladder-type"
-                        value={option}
-                        checked={formState.ladderType === option}
-                        onChange={() => updateField("ladderType", option)}
-                      />
-                      {option}
-                    </RadioChip>
-                  ))}
-                </RadioRow>
+                <Controller
+                  control={control}
+                  name="ladderType"
+                  render={({ field }) => (
+                    <RadioRow role="radiogroup" aria-label="Ladder type">
+                      {LADDER_TYPE_OPTIONS.map((option) => (
+                        <RadioChip
+                          key={option}
+                          $selected={field.value === option}
+                        >
+                          <HiddenRadio
+                            type="radio"
+                            name="ladder-type"
+                            value={option}
+                            checked={field.value === option}
+                            onChange={() => field.onChange(option)}
+                          />
+                          {option}
+                        </RadioChip>
+                      ))}
+                    </RadioRow>
+                  )}
+                />
               </FormField>
 
               <FormField label="Gender">
-                <RadioRow role="radiogroup" aria-label="Gender type">
-                  {GENDER_TYPE_OPTIONS.map((option) => (
-                    <RadioChip
-                      key={option}
-                      $selected={formState.genderType === option}
-                    >
-                      <HiddenRadio
-                        type="radio"
-                        name="ladder-gender-type"
-                        value={option}
-                        checked={formState.genderType === option}
-                        onChange={() => updateField("genderType", option)}
-                      />
-                      {option}
-                    </RadioChip>
-                  ))}
-                </RadioRow>
+                <Controller
+                  control={control}
+                  name="genderType"
+                  render={({ field }) => (
+                    <RadioRow role="radiogroup" aria-label="Gender type">
+                      {GENDER_TYPE_OPTIONS.map((option) => (
+                        <RadioChip
+                          key={option}
+                          $selected={field.value === option}
+                        >
+                          <HiddenRadio
+                            type="radio"
+                            name="ladder-gender-type"
+                            value={option}
+                            checked={field.value === option}
+                            onChange={() => field.onChange(option)}
+                          />
+                          {option}
+                        </RadioChip>
+                      ))}
+                    </RadioRow>
+                  )}
+                />
               </FormField>
             </TeamTypeColumn>
           </DetailsRow>
@@ -652,16 +589,23 @@ function LadderForm({
               label="Region"
               htmlFor="ladder-region"
               hint="e.g. North London"
-              error={fieldError("region")}
+              error={errors.region?.message ?? null}
             >
-              <TextInput
-                id="ladder-region"
-                type="text"
-                list={REGION_DATALIST_ID}
-                value={formState.region}
-                onChange={(changeEvent) =>
-                  updateField("region", changeEvent.target.value)
-                }
+              <Controller
+                control={control}
+                name="region"
+                rules={{
+                  validate: (value) =>
+                    value.trim().length > 0 || "Region is required.",
+                }}
+                render={({ field }) => (
+                  <TextInput
+                    id="ladder-region"
+                    type="text"
+                    list={REGION_DATALIST_ID}
+                    {...field}
+                  />
+                )}
               />
               <datalist id={REGION_DATALIST_ID}>
                 {existingRegions.map((region) => (
@@ -673,40 +617,57 @@ function LadderForm({
             <FormField
               label="Country"
               htmlFor="ladder-country"
-              error={fieldError("countryCode")}
+              error={errors.countryCode?.message ?? null}
             >
-              <SelectInput
-                id="ladder-country"
-                value={formState.countryCode}
-                onChange={(changeEvent) =>
-                  updateField("countryCode", changeEvent.target.value)
-                }
-              >
-                <option value="">Select a country</option>
-                {COUNTRY_OPTIONS.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.name}
-                  </option>
-                ))}
-              </SelectInput>
+              <Controller
+                control={control}
+                name="countryCode"
+                rules={{
+                  validate: (value) =>
+                    COUNTRY_CODE_PATTERN.test(value) || "Select a country.",
+                }}
+                render={({ field }) => (
+                  <SelectInput id="ladder-country" {...field}>
+                    <option value="">Select a country</option>
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </SelectInput>
+                )}
+              />
             </FormField>
 
-            <FormField label="Courts" error={fieldError("courtIds")}>
-              <CourtsSelectButton
-                type="button"
-                onClick={() => setIsCourtsModalOpen(true)}
-              >
-                <span>Select courts</span>
-                <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
-              </CourtsSelectButton>
-              <SelectedSummary>
-                {selectedCourtCount === 0
-                  ? "No courts selected"
-                  : `${selectedCourtCount} ${
-                      selectedCourtCount === 1 ? "court" : "courts"
-                    } selected`}
-              </SelectedSummary>
-            </FormField>
+            <Controller
+              control={control}
+              name="courtIds"
+              rules={{
+                validate: (value) =>
+                  value.length > 0 || "Select at least one court.",
+              }}
+              render={({ field }) => (
+                <FormField
+                  label="Courts"
+                  error={errors.courtIds?.message ?? null}
+                >
+                  <CourtsSelectButton
+                    type="button"
+                    onClick={() => setIsCourtsModalOpen(true)}
+                  >
+                    <span>Select courts</span>
+                    <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
+                  </CourtsSelectButton>
+                  <SelectedSummary>
+                    {field.value.length === 0
+                      ? "No courts selected"
+                      : `${field.value.length} ${
+                          field.value.length === 1 ? "court" : "courts"
+                        } selected`}
+                  </SelectedSummary>
+                </FormField>
+              )}
+            />
           </Section>
 
           <Section>
@@ -716,34 +677,72 @@ function LadderForm({
               <FormField
                 label="Registration opens"
                 htmlFor="ladder-registration-opens"
-                error={fieldError("registrationOpensAt")}
+                error={errors.registrationOpensAt?.message ?? null}
               >
-                <TextInput
-                  id="ladder-registration-opens"
-                  type="date"
-                  min={minScheduleDate}
-                  value={formState.registrationOpensAt}
-                  onClick={openDatePicker}
-                  onChange={(changeEvent) =>
-                    updateField("registrationOpensAt", changeEvent.target.value)
-                  }
+                <Controller
+                  control={control}
+                  name="registrationOpensAt"
+                  rules={{
+                    validate: (value) => {
+                      if (!parseDateInputValue(value)) {
+                        return "Registration opening date is required.";
+                      }
+                      if (value < minScheduleDate) {
+                        return "Registration opening date cannot be in the past.";
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextInput
+                      id="ladder-registration-opens"
+                      type="date"
+                      min={minScheduleDate}
+                      onClick={openDatePicker}
+                      {...field}
+                    />
+                  )}
                 />
               </FormField>
 
               <FormField
                 label="Season starts"
                 htmlFor="ladder-season-starts"
-                error={fieldError("seasonStartsAt")}
+                error={errors.seasonStartsAt?.message ?? null}
               >
-                <TextInput
-                  id="ladder-season-starts"
-                  type="date"
-                  min={minScheduleDate}
-                  value={formState.seasonStartsAt}
-                  onClick={openDatePicker}
-                  onChange={(changeEvent) =>
-                    updateField("seasonStartsAt", changeEvent.target.value)
-                  }
+                <Controller
+                  control={control}
+                  name="seasonStartsAt"
+                  rules={{
+                    validate: (value) => {
+                      const seasonStart = parseDateInputValue(value);
+                      if (!seasonStart) {
+                        return "Season start date is required.";
+                      }
+                      if (value < minScheduleDate) {
+                        return "Season start date cannot be in the past.";
+                      }
+                      const registrationOpens = parseDateInputValue(
+                        getValues("registrationOpensAt"),
+                      );
+                      if (
+                        registrationOpens &&
+                        registrationOpens.getTime() >= seasonStart.getTime()
+                      ) {
+                        return "Season start must be after registration opens.";
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextInput
+                      id="ladder-season-starts"
+                      type="date"
+                      min={minScheduleDate}
+                      onClick={openDatePicker}
+                      {...field}
+                    />
+                  )}
                 />
               </FormField>
             </DateRow>
@@ -796,34 +795,53 @@ function LadderForm({
               label="Entry fee"
               htmlFor="ladder-entry-fee"
               hint="0 means a free ladder"
-              error={fieldError("entryFee")}
+              error={errors.entryFee?.message ?? null}
             >
-              <TextInput
-                id="ladder-entry-fee"
-                type="number"
-                min={0}
-                value={formState.entryFee}
-                onChange={(changeEvent) =>
-                  updateField("entryFee", changeEvent.target.value)
-                }
+              <Controller
+                control={control}
+                name="entryFee"
+                rules={{
+                  validate: (value) => {
+                    const parsed = Number(value);
+                    if (
+                      value.trim().length === 0 ||
+                      Number.isNaN(parsed) ||
+                      parsed < 0
+                    ) {
+                      return "Entry fee must be 0 or greater.";
+                    }
+                    return true;
+                  },
+                }}
+                render={({ field }) => (
+                  <TextInput
+                    id="ladder-entry-fee"
+                    type="number"
+                    min={0}
+                    {...field}
+                  />
+                )}
               />
             </FormField>
 
             <FormField label="Currency" htmlFor="ladder-currency">
-              <SelectInput
-                id="ladder-currency"
-                value={formState.currencyType}
-                disabled={isEntryFeeZero}
-                onChange={(changeEvent) =>
-                  updateField("currencyType", changeEvent.target.value)
-                }
-              >
-                {CURRENCY_OPTIONS.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </SelectInput>
+              <Controller
+                control={control}
+                name="currencyType"
+                render={({ field }) => (
+                  <SelectInput
+                    id="ladder-currency"
+                    disabled={isEntryFeeZero}
+                    {...field}
+                  >
+                    {CURRENCY_OPTIONS.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
+                  </SelectInput>
+                )}
+              />
             </FormField>
           </FeeRow>
 
@@ -831,38 +849,67 @@ function LadderForm({
             <FormField
               label="Minimum rank to enter (0 = open to all)"
               htmlFor="ladder-min-rank"
-              error={fieldError("minRank")}
+              error={errors.minRank?.message ?? null}
             >
-              <TextInput
-                id="ladder-min-rank"
-                type="number"
-                min={0}
-                value={formState.minRank}
-                onChange={(changeEvent) =>
-                  updateField("minRank", changeEvent.target.value)
-                }
+              <Controller
+                control={control}
+                name="minRank"
+                rules={{
+                  validate: (value) => {
+                    const parsed = Number(value);
+                    if (
+                      value.trim().length === 0 ||
+                      Number.isNaN(parsed) ||
+                      parsed < 0
+                    ) {
+                      return "Minimum rank must be 0 or greater.";
+                    }
+                    return true;
+                  },
+                }}
+                render={({ field }) => (
+                  <TextInput
+                    id="ladder-min-rank"
+                    type="number"
+                    min={0}
+                    {...field}
+                  />
+                )}
               />
             </FormField>
 
             <FormField
               label="Maximum players"
               htmlFor="ladder-max-players"
-              error={fieldError("maxPlayers")}
+              error={errors.maxPlayers?.message ?? null}
             >
-              <SelectInput
-                id="ladder-max-players"
-                value={formState.maxPlayers}
-                onChange={(changeEvent) =>
-                  updateField("maxPlayers", changeEvent.target.value)
-                }
-              >
-                <option value="">Select</option>
-                {maxPlayersOptions.map((option) => (
-                  <option key={option} value={String(option)}>
-                    {option}
-                  </option>
-                ))}
-              </SelectInput>
+              <Controller
+                control={control}
+                name="maxPlayers"
+                rules={{
+                  validate: (value) => {
+                    const parsed = Number(value);
+                    if (
+                      value.trim().length === 0 ||
+                      Number.isNaN(parsed) ||
+                      parsed < 2
+                    ) {
+                      return "Maximum players must be 2 or greater.";
+                    }
+                    return true;
+                  },
+                }}
+                render={({ field }) => (
+                  <SelectInput id="ladder-max-players" {...field}>
+                    <option value="">Select</option>
+                    {maxPlayersOptions.map((option) => (
+                      <option key={option} value={String(option)}>
+                        {option}
+                      </option>
+                    ))}
+                  </SelectInput>
+                )}
+              />
             </FormField>
           </FeeRow>
         </Section>
@@ -928,7 +975,7 @@ function LadderForm({
               ) : (
                 <MultiSelect
                   options={verifiedCourtOptions}
-                  selectedIds={formState.courtIds}
+                  selectedIds={courtIds}
                   onToggle={toggleCourt}
                   onRemove={removeCourt}
                   onBulkToggle={bulkToggleCourts}
