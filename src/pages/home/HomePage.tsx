@@ -438,7 +438,7 @@ const HeroHeadline = styled.h1({
 });
 
 const Gradient = styled.span({
-  background: `linear-gradient(90deg, ${theme.blue}, ${theme.gold})`,
+  background: `linear-gradient(90deg, ${theme.blue}, ${theme.blueDeep})`,
   WebkitBackgroundClip: "text",
   backgroundClip: "text",
   WebkitTextFillColor: "transparent",
