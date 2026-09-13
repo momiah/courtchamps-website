@@ -131,6 +131,7 @@ export default function Players() {
         <ColumnHeader>
           <span>Rank</span>
           <span>Player</span>
+          <FlagHead>Country</FlagHead>
           <StatHead>CP</StatHead>
           <MedalHead>Rank</MedalHead>
         </ColumnHeader>
@@ -173,19 +174,18 @@ export default function Players() {
                     }}
                   />
                   <NameBlock>
-                    <NameRow>
-                      <PlayerName>
-                        {displayName || player.username || "Unknown player"}
-                      </PlayerName>
-                      {flag && (
-                        <Flag src={flag} alt="" loading="lazy" width={20} />
-                      )}
-                    </NameRow>
+                    <PlayerName>
+                      {displayName || player.username || "Unknown player"}
+                    </PlayerName>
                     {player.username && (
                       <Username>@{player.username}</Username>
                     )}
                   </NameBlock>
                 </PlayerCell>
+
+                <FlagCell>
+                  {flag && <Flag src={flag} alt="" loading="lazy" />}
+                </FlagCell>
 
                 <StatCell>
                   <StatLabel>CP</StatLabel>
@@ -336,9 +336,12 @@ const ListCard = styled.div({
   overflow: "hidden",
 });
 
+const GRID_COLUMNS = "56px 1fr 44px 72px 64px";
+const GRID_COLUMNS_MOBILE = "34px 1fr 30px 50px 44px";
+
 const ColumnHeader = styled.div({
   display: "grid",
-  gridTemplateColumns: "56px 1fr 72px 64px",
+  gridTemplateColumns: GRID_COLUMNS,
   alignItems: "center",
   gap: "12px",
   padding: "12px 16px",
@@ -349,19 +352,25 @@ const ColumnHeader = styled.div({
   textTransform: "uppercase",
   letterSpacing: "1.5px",
   "@media (max-width: 480px)": {
-    gridTemplateColumns: "36px 1fr 52px 46px",
-    gap: "8px",
+    gridTemplateColumns: GRID_COLUMNS_MOBILE,
+    gap: "6px",
     padding: "12px 12px",
     letterSpacing: "0.5px",
   },
 });
 
+const FlagHead = styled.span({
+  textAlign: "center",
+  overflow: "hidden",
+  // The flag column is too narrow on phones for a text label; hide it there.
+  "@media (max-width: 480px)": { fontSize: 0 },
+});
 const StatHead = styled.span({ textAlign: "center" });
 const MedalHead = styled.span({ textAlign: "center" });
 
 const PlayerRow = styled.div({
   display: "grid",
-  gridTemplateColumns: "56px 1fr 72px 64px",
+  gridTemplateColumns: GRID_COLUMNS,
   alignItems: "center",
   gap: "12px",
   padding: "12px 16px",
@@ -370,8 +379,8 @@ const PlayerRow = styled.div({
   transition: "background 0.15s ease",
   ":hover": { background: "rgba(0,162,255,0.06)" },
   "@media (max-width: 480px)": {
-    gridTemplateColumns: "36px 1fr 52px 46px",
-    gap: "8px",
+    gridTemplateColumns: GRID_COLUMNS_MOBILE,
+    gap: "6px",
     padding: "12px 12px",
   },
 });
@@ -410,13 +419,7 @@ const Avatar = styled.img({
 
 const NameBlock = styled.div({ minWidth: 0 });
 
-const NameRow = styled.div({
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-});
-
-const PlayerName = styled.span({
+const PlayerName = styled.div({
   fontSize: "0.95rem",
   fontWeight: 700,
   color: "#FFFFFF",
@@ -425,11 +428,17 @@ const PlayerName = styled.span({
   whiteSpace: "nowrap",
 });
 
+const FlagCell = styled.div({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
 const Flag = styled.img({
-  height: "14px",
+  height: "16px",
   width: "auto",
   borderRadius: "2px",
-  flexShrink: 0,
+  boxShadow: "0 0 0 1px rgba(255,255,255,0.1)",
 });
 
 const Username = styled.div({
