@@ -188,8 +188,8 @@ export default function Players() {
                 </PlayerCell>
 
                 <StatCell>
-                  <StatValue>{Math.round(xp).toLocaleString()}</StatValue>
                   <StatLabel>CP</StatLabel>
+                  <StatValue>{Math.round(xp).toLocaleString()}</StatValue>
                 </StatCell>
 
                 <MedalCell title={medal.name}>
