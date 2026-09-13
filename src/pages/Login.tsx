@@ -9,6 +9,8 @@ import { CourtChampLogo } from "../assets";
 import { auth } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
 
+type AuthMode = "signIn" | "signUp";
+
 interface LoginRouterState {
   from?: string;
 }
@@ -33,16 +35,17 @@ export default function Login() {
   const {
     currentUser,
     loading,
-    accessDenied,
     signInWithGoogle,
     signInWithFacebook,
     signInWithApple,
     signInWithEmail,
+    signUpWithEmail,
     sendPasswordReset,
   } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [mode, setMode] = useState<AuthMode>("signIn");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -110,7 +113,9 @@ export default function Login() {
 
   const handleEmailSubmit = (submitEvent: React.FormEvent): void => {
     submitEvent.preventDefault();
-    void runAuthAction(() => signInWithEmail({ email, password }));
+    const submitHandler =
+      mode === "signIn" ? signInWithEmail : signUpWithEmail;
+    void runAuthAction(() => submitHandler({ email, password }));
   };
 
   const handleForgotPassword = (): void => {
@@ -125,17 +130,20 @@ export default function Login() {
     });
   };
 
+  const toggleMode = (): void => {
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setMode((previousMode) =>
+      previousMode === "signIn" ? "signUp" : "signIn",
+    );
+  };
+
+  const submitLabel = mode === "signIn" ? "Sign In" : "Create Account";
+
   return (
     <PageContainer>
       <Card>
         <Logo src={CourtChampLogo} alt="Court Champs" />
-
-        {accessDenied && (
-          <NoticeBanner role="alert">
-            This account isn’t authorised to access the CourtChamps admin site.
-            You’ve been signed out.
-          </NoticeBanner>
-        )}
 
         <SocialButton
           type="button"
@@ -195,7 +203,9 @@ export default function Login() {
           <TextInput
             id="login-password"
             type="password"
-            autoComplete="current-password"
+            autoComplete={
+              mode === "signIn" ? "current-password" : "new-password"
+            }
             value={password}
             required
             disabled={isSubmitting}
@@ -203,20 +213,31 @@ export default function Login() {
           />
 
           <SubmitButton type="submit" disabled={isSubmitting}>
-            Sign In
+            {submitLabel}
           </SubmitButton>
         </Form>
 
-        <ForgotPasswordButton
-          type="button"
-          disabled={isSubmitting}
-          onClick={handleForgotPassword}
-        >
-          Forgot password?
-        </ForgotPasswordButton>
+        {mode === "signIn" && (
+          <ForgotPasswordButton
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleForgotPassword}
+          >
+            Forgot password?
+          </ForgotPasswordButton>
+        )}
 
         {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
         {infoMessage && <InfoText>{infoMessage}</InfoText>}
+
+        <ToggleRow>
+          {mode === "signIn"
+            ? "New to Court Champs?"
+            : "Already have an account?"}
+          <ToggleButton type="button" disabled={isSubmitting} onClick={toggleMode}>
+            {mode === "signIn" ? "Create an account" : "Sign in"}
+          </ToggleButton>
+        </ToggleRow>
       </Card>
     </PageContainer>
   );
@@ -400,14 +421,27 @@ const InfoText = styled.p({
   textAlign: "center",
 });
 
-const NoticeBanner = styled.div({
-  marginBottom: "20px",
-  padding: "12px 14px",
-  borderRadius: "10px",
-  border: "1px solid rgba(255, 107, 107, 0.4)",
-  backgroundColor: "rgba(255, 107, 107, 0.12)",
-  color: "#ffb3b3",
+const ToggleRow = styled.div({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: "6px",
+  marginTop: "24px",
+  color: "#8fa3b8",
   fontSize: "0.85rem",
-  lineHeight: 1.5,
-  textAlign: "center",
+});
+
+const ToggleButton = styled.button({
+  padding: 0,
+  border: "none",
+  background: "none",
+  color: "#0099f0",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  ":disabled": {
+    opacity: 0.6,
+    cursor: "not-allowed",
+  },
 });

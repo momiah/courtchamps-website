@@ -2,21 +2,6 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Environment variables
-
-Set these in a `.env` file (see `src/firebase/config.ts`):
-
-- `REACT_APP_FIREBASE_API_KEY`, `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`,
-  `REACT_APP_FIREBASE_APP_ID` — Firebase web config.
-- `REACT_APP_OWNER_EMAILS` — **comma-separated allowlist of emails permitted to
-  sign in to the website.** Anyone who authenticates with an email outside this
-  list is signed straight back out. If it is empty, sign-in is locked for
-  everyone (fail-closed), so this must be set before deploying. Example:
-  `REACT_APP_OWNER_EMAILS=owner@example.com,second-admin@example.com`.
-
-  Note: this is a client-side gate for the website only; data access is still
-  enforced by the shared Firestore security rules.
-
 ## Available Scripts
 
 In the project directory, you can run:
