@@ -12,6 +12,7 @@ import Header from "./components/Header";
 import RequireRole from "./components/auth/RequireRole";
 
 import HomePage from "./pages/home/HomePage";
+import Players from "./pages/players/Players";
 import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
@@ -42,6 +43,7 @@ function AppShell() {
       {isAdminRoute ? null : <Header />}
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/players" element={<Players />} />
         <Route path="/accounts/delete-account" element={<DeleteAccount />} />
         {/* e.g. https://courtchamps.com/join/league/abc123 */}
         <Route
