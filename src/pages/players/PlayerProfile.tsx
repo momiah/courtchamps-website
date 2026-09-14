@@ -275,11 +275,11 @@ const Banner = styled.div({
   border: `1px solid ${BORDER}`,
   background:
     "linear-gradient(120deg, #0b2138 0%, #0a1a2e 55%, #0c2b45 100%)",
+  // Keep the avatar and rank medal side by side on mobile (like the app),
+  // rather than stacking the medal underneath.
   "@media (max-width: 640px)": {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    padding: "22px 20px",
-    gap: "18px",
+    padding: "18px 16px",
+    gap: "12px",
   },
 });
 
@@ -299,7 +299,7 @@ const BannerLeft = styled.div({
   alignItems: "center",
   gap: "22px",
   minWidth: 0,
-  "@media (max-width: 640px)": { gap: "16px" },
+  "@media (max-width: 640px)": { gap: "12px" },
 });
 
 const AvatarRing = styled.div({
@@ -317,7 +317,7 @@ const Avatar = styled.img({
   objectFit: "cover",
   border: "3px solid rgb(3,16,31)",
   backgroundColor: "#07111f",
-  "@media (max-width: 640px)": { width: "84px", height: "84px" },
+  "@media (max-width: 640px)": { width: "60px", height: "60px" },
 });
 
 const Identity = styled.div({ minWidth: 0 });
@@ -330,7 +330,7 @@ const PlayerName = styled.h1({
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  "@media (max-width: 640px)": { fontSize: "1.6rem" },
+  "@media (max-width: 640px)": { fontSize: "1.25rem", margin: "0 0 4px" },
 });
 
 const MetaRow = styled.div({
@@ -338,6 +338,7 @@ const MetaRow = styled.div({
   flexWrap: "wrap",
   alignItems: "center",
   gap: "8px 16px",
+  minWidth: 0,
 });
 
 const Meta = styled.div({
@@ -346,12 +347,19 @@ const Meta = styled.div({
   gap: "6px",
   color: MUTED,
   fontSize: "0.9rem",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  "@media (max-width: 640px)": { fontSize: "0.8rem" },
 });
 
 const Headline = styled.div({
   color: "#c7d4e1",
   fontSize: "0.9rem",
   fontStyle: "italic",
+  // Hide in the tight mobile header row to keep the avatar/medal row clean.
+  "@media (max-width: 640px)": { display: "none" },
 });
 
 const MedalBadge = styled.div({
@@ -368,18 +376,20 @@ const BigMedal = styled.img({
   width: "104px",
   height: "104px",
   objectFit: "contain",
-  "@media (max-width: 640px)": { width: "84px", height: "84px" },
+  "@media (max-width: 640px)": { width: "60px", height: "60px" },
 });
 
 const MedalName = styled.div({
   color: "#FFFFFF",
   fontWeight: 700,
   fontSize: "1rem",
+  "@media (max-width: 640px)": { fontSize: "0.85rem" },
 });
 
 const MedalLevel = styled.div({
   color: MUTED,
   fontSize: "0.8rem",
+  "@media (max-width: 640px)": { fontSize: "0.72rem" },
 });
 
 // KPI strip
