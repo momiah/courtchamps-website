@@ -4,10 +4,7 @@ import styled from "styled-components";
 import { FaEye, FaGlobe, FaChevronLeft } from "react-icons/fa";
 
 import { CourtChampLogoIcon } from "../../assets";
-import {
-  getPlayerProfile,
-  PlayerListItem,
-} from "../../services/players";
+import { getPlayerProfile, PlayerListItem } from "../../services/players";
 import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
 import ProfilePerformance from "./ProfilePerformance";
 
@@ -34,6 +31,16 @@ const rankSuffix = (rank: number): string => {
 
 const flagUrl = (countryCode?: string): string | null =>
   countryCode ? `https://flagcdn.com/h20/${countryCode.toLowerCase()}.png` : null;
+
+const ordinal = (rank: number | null): React.ReactNode =>
+  rank ? (
+    <>
+      {rank}
+      <Sub>{rankSuffix(rank)}</Sub>
+    </>
+  ) : (
+    "—"
+  );
 
 export default function PlayerProfile() {
   const { userId } = useParams<{ userId: string }>();
@@ -79,12 +86,14 @@ export default function PlayerProfile() {
   if (loading) {
     return (
       <PageContainer>
-        <BackLink to="/players">
-          <FaChevronLeft /> Players
-        </BackLink>
-        <Centered>
-          <Spinner />
-        </Centered>
+        <Inner>
+          <BackLink to="/players">
+            <FaChevronLeft /> Players
+          </BackLink>
+          <Centered>
+            <Spinner />
+          </Centered>
+        </Inner>
       </PageContainer>
     );
   }
@@ -92,10 +101,12 @@ export default function PlayerProfile() {
   if (notFound || !profile) {
     return (
       <PageContainer>
-        <BackLink to="/players">
-          <FaChevronLeft /> Players
-        </BackLink>
-        <Centered>This profile no longer exists.</Centered>
+        <Inner>
+          <BackLink to="/players">
+            <FaChevronLeft /> Players
+          </BackLink>
+          <Centered>This profile no longer exists.</Centered>
+        </Inner>
       </PageContainer>
     );
   }
@@ -106,77 +117,87 @@ export default function PlayerProfile() {
   const level = findRankIndex(xp) + 1;
   const pd = detail?.totalPointDifference ?? 0;
   const flag = flagUrl(profile.location?.countryCode);
+  const locationText = [profile.location?.city, profile.location?.country]
+    .filter(Boolean)
+    .join(", ");
+
+  const kpis = [
+    { label: "Global Rank", value: ordinal(globalRank), icon: <FaGlobe /> },
+    {
+      label: "Country Rank",
+      value: ordinal(countryRank),
+      icon: flag ? <FlagImg src={flag} alt="" /> : <FaGlobe />,
+    },
+    { label: "Court Points", value: fmt(Math.round(xp)) },
+    {
+      label: "Point Difference",
+      value: (
+        <span style={{ color: pd < 0 ? "#ff6b6b" : "#4cd47a" }}>
+          {pd > 0 ? "+" : ""}
+          {fmt(pd)}
+        </span>
+      ),
+    },
+    { label: "Profile Views", value: fmt(profile.profileViews ?? 0), icon: <FaEye /> },
+  ];
 
   return (
     <PageContainer>
-      <BackLink to="/players">
-        <FaChevronLeft /> Players
-      </BackLink>
+      <Inner>
+        <BackLink to="/players">
+          <FaChevronLeft /> Players
+        </BackLink>
 
-      <Card>
-        <Overview>
-          <PlayerDetail>
-            <Avatar
-              src={profile.profileImage || CourtChampLogoIcon}
-              alt=""
-              onError={(event) => {
-                event.currentTarget.src = CourtChampLogoIcon;
-              }}
-            />
-            <DetailColumn>
+        {/* ── Hero banner ── */}
+        <Banner>
+          <BannerGlow />
+          <BannerLeft>
+            <AvatarRing>
+              <Avatar
+                src={profile.profileImage || CourtChampLogoIcon}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.src = CourtChampLogoIcon;
+                }}
+              />
+            </AvatarRing>
+            <Identity>
               <PlayerName>{profile.username}</PlayerName>
-              <DetailText>{fmt(Math.round(xp))} CP</DetailText>
-              <PdText $negative={pd < 0}>
-                {pd > 0 ? "+" : ""}
-                {fmt(pd)} PD
-              </PdText>
-            </DetailColumn>
-          </PlayerDetail>
+              <MetaRow>
+                {locationText && (
+                  <Meta>
+                    {flag && <FlagImg src={flag} alt="" />}
+                    {locationText}
+                  </Meta>
+                )}
+                {profile.headline && <Headline>“{profile.headline}”</Headline>}
+              </MetaRow>
+            </Identity>
+          </BannerLeft>
 
-          <MedalColumn>
+          <MedalBadge>
             <BigMedal src={rankMedalUrl(medal.icon)} alt={medal.name} />
-            <MedalName>{medal.name}</MedalName>
-            <MedalLevel>( Level {level} )</MedalLevel>
-          </MedalColumn>
-        </Overview>
+            <div>
+              <MedalName>{medal.name}</MedalName>
+              <MedalLevel>Level {level}</MedalLevel>
+            </div>
+          </MedalBadge>
+        </Banner>
 
-        {profile.headline && <Headline>{profile.headline}</Headline>}
+        {/* ── KPI strip ── */}
+        <KpiStrip>
+          {kpis.map((kpi) => (
+            <KpiTile key={kpi.label}>
+              <KpiLabel>
+                {kpi.icon && <KpiIcon>{kpi.icon}</KpiIcon>}
+                {kpi.label}
+              </KpiLabel>
+              <KpiValue>{kpi.value}</KpiValue>
+            </KpiTile>
+          ))}
+        </KpiStrip>
 
-        <Summary>
-          <SummaryItem>
-            <FaGlobe color="#aaa" />
-            <SummaryValue>
-              {globalRank ? (
-                <>
-                  {globalRank}
-                  <Sfx>{rankSuffix(globalRank)}</Sfx>
-                </>
-              ) : (
-                "—"
-              )}
-            </SummaryValue>
-          </SummaryItem>
-
-          <SummaryItem>
-            {flag ? <FlagImg src={flag} alt="" /> : <FaGlobe color="#aaa" />}
-            <SummaryValue>
-              {countryRank ? (
-                <>
-                  {countryRank}
-                  <Sfx>{rankSuffix(countryRank)}</Sfx>
-                </>
-              ) : (
-                "—"
-              )}
-            </SummaryValue>
-          </SummaryItem>
-
-          <SummaryItem>
-            <SummaryValue>{fmt(profile.profileViews ?? 0)}</SummaryValue>
-            <FaEye color="#aaa" />
-          </SummaryItem>
-        </Summary>
-
+        {/* ── Tabs ── */}
         <TabBar>
           {TABS.map((name) => (
             <TabButton
@@ -189,22 +210,22 @@ export default function PlayerProfile() {
           ))}
         </TabBar>
 
-        <TabContent>
-          {tab === "Performance" ? (
-            <ProfilePerformance profile={profile} />
-          ) : (
-            <ComingSoon>{tab} — coming soon.</ComingSoon>
-          )}
-        </TabContent>
-      </Card>
+        {/* ── Tab content ── */}
+        {tab === "Performance" ? (
+          <ProfilePerformance profile={profile} />
+        ) : (
+          <ComingSoon>{tab} — coming soon.</ComingSoon>
+        )}
+      </Inner>
     </PageContainer>
   );
 }
 
 // ─── Theme ───
 const BLUE = "#00A2FF";
+const PANEL = "rgba(255,255,255,0.04)";
 const BORDER = "rgba(255,255,255,0.08)";
-const MUTED = "#aaa";
+const MUTED = "#8fa3b8";
 
 // ─── Styled ───
 const PageContainer = styled.div({
@@ -215,18 +236,19 @@ const PageContainer = styled.div({
   color: "#FFFFFF",
   padding: "24px 24px 80px",
   display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
+  justifyContent: "center",
+});
+
+const Inner = styled.div({
+  width: "100%",
+  maxWidth: "1080px",
 });
 
 const BackLink = styled(Link)({
   display: "inline-flex",
   alignItems: "center",
   gap: "6px",
-  alignSelf: "flex-start",
-  width: "100%",
-  maxWidth: "760px",
-  margin: "0 auto 16px",
+  marginBottom: "16px",
   color: BLUE,
   fontSize: "0.9rem",
   fontWeight: 600,
@@ -252,165 +274,220 @@ const Spinner = styled.div({
   "@keyframes profileSpin": { to: { transform: "rotate(360deg)" } },
 });
 
-const Card = styled.div({
-  width: "100%",
-  maxWidth: "760px",
-});
-
-const Overview = styled.div({
+// Hero banner
+const Banner = styled.div({
+  position: "relative",
+  overflow: "hidden",
   display: "flex",
+  alignItems: "center",
   justifyContent: "space-between",
-  alignItems: "center",
-  gap: "16px",
-  padding: "8px 0 16px",
+  gap: "20px",
+  padding: "28px 32px",
+  borderRadius: "20px",
+  border: `1px solid ${BORDER}`,
+  background:
+    "linear-gradient(120deg, #0b2138 0%, #0a1a2e 55%, #0c2b45 100%)",
+  "@media (max-width: 640px)": {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    padding: "22px 20px",
+    gap: "18px",
+  },
 });
 
-const PlayerDetail = styled.div({
+const BannerGlow = styled.div({
+  position: "absolute",
+  top: "-120px",
+  right: "-80px",
+  width: "380px",
+  height: "380px",
+  background: `radial-gradient(circle, ${BLUE}33 0%, transparent 65%)`,
+  pointerEvents: "none",
+});
+
+const BannerLeft = styled.div({
+  position: "relative",
   display: "flex",
   alignItems: "center",
-  gap: "18px",
+  gap: "22px",
   minWidth: 0,
+  "@media (max-width: 640px)": { gap: "16px" },
+});
+
+const AvatarRing = styled.div({
+  padding: "4px",
+  borderRadius: "50%",
+  background: `linear-gradient(145deg, ${BLUE}, #0057FF)`,
+  flexShrink: 0,
 });
 
 const Avatar = styled.img({
-  width: "80px",
-  height: "80px",
+  display: "block",
+  width: "104px",
+  height: "104px",
   borderRadius: "50%",
   objectFit: "cover",
-  border: `2px solid ${BLUE}`,
+  border: "3px solid rgb(3,16,31)",
   backgroundColor: "#07111f",
-  flexShrink: 0,
-  "@media (max-width: 480px)": { width: "64px", height: "64px" },
+  "@media (max-width: 640px)": { width: "84px", height: "84px" },
 });
 
-const DetailColumn = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  gap: "3px",
-  minWidth: 0,
-});
+const Identity = styled.div({ minWidth: 0 });
 
-const PlayerName = styled.div({
-  fontSize: "1.6rem",
+const PlayerName = styled.h1({
+  fontSize: "2rem",
   fontWeight: 800,
-  color: "#FFFFFF",
+  margin: "0 0 8px",
+  letterSpacing: "-0.5px",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  "@media (max-width: 480px)": { fontSize: "1.3rem" },
+  "@media (max-width: 640px)": { fontSize: "1.6rem" },
 });
 
-const DetailText = styled.div({
+const MetaRow = styled.div({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "8px 16px",
+});
+
+const Meta = styled.div({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
   color: MUTED,
   fontSize: "0.9rem",
 });
 
-const PdText = styled.div<{ $negative?: boolean }>(({ $negative }) => ({
-  color: $negative ? "#ff6b6b" : "#4cd47a",
+const Headline = styled.div({
+  color: "#c7d4e1",
   fontSize: "0.9rem",
-  fontWeight: 700,
-}));
+  fontStyle: "italic",
+});
 
-const MedalColumn = styled.div({
+const MedalBadge = styled.div({
+  position: "relative",
   display: "flex",
-  flexDirection: "column",
   alignItems: "center",
-  gap: "6px",
+  gap: "12px",
+  padding: "10px 18px 10px 14px",
+  borderRadius: "16px",
+  background: "rgba(0,0,0,0.25)",
+  border: `1px solid ${BORDER}`,
   flexShrink: 0,
 });
 
 const BigMedal = styled.img({
-  width: "80px",
-  height: "80px",
+  width: "56px",
+  height: "56px",
   objectFit: "contain",
-  "@media (max-width: 480px)": { width: "64px", height: "64px" },
 });
 
 const MedalName = styled.div({
   color: "#FFFFFF",
-  fontSize: "0.8rem",
+  fontWeight: 700,
+  fontSize: "1rem",
 });
 
 const MedalLevel = styled.div({
-  color: "#cdcdcd",
-  fontStyle: "italic",
-  fontSize: "0.75rem",
+  color: MUTED,
+  fontSize: "0.8rem",
 });
 
-const Headline = styled.div({
-  color: "#FFFFFF",
-  fontSize: "0.9rem",
-  marginBottom: "14px",
-});
-
-const Summary = styled.div({
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
+// KPI strip
+const KpiStrip = styled.div({
+  display: "grid",
+  gridTemplateColumns: "repeat(5, 1fr)",
   gap: "12px",
-  padding: "12px 16px",
-  borderRadius: "8px",
-  background: "rgba(0,0,0,0.3)",
-  marginBottom: "18px",
+  margin: "16px 0 24px",
+  "@media (max-width: 760px)": { gridTemplateColumns: "repeat(2, 1fr)" },
+  "@media (max-width: 380px)": { gridTemplateColumns: "1fr" },
 });
 
-const SummaryItem = styled.div({
+const KpiTile = styled.div({
+  padding: "16px",
+  borderRadius: "14px",
+  background: PANEL,
+  border: `1px solid ${BORDER}`,
+});
+
+const KpiLabel = styled.div({
   display: "flex",
   alignItems: "center",
   gap: "6px",
+  color: MUTED,
+  fontSize: "0.72rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.6px",
+  marginBottom: "8px",
 });
 
-const SummaryValue = styled.span({
-  color: "#FFFFFF",
-  fontWeight: 700,
-  fontSize: "1.05rem",
+const KpiIcon = styled.span({
+  display: "inline-flex",
+  color: BLUE,
+  fontSize: "0.85rem",
+});
+
+const KpiValue = styled.div({
   display: "inline-flex",
   alignItems: "baseline",
+  fontSize: "1.5rem",
+  fontWeight: 800,
+  color: "#FFFFFF",
 });
 
-const Sfx = styled.span({
-  color: "rgba(255,255,255,0.7)",
-  fontSize: "0.7rem",
-  marginLeft: "1px",
+const Sub = styled.span({
+  color: "rgba(255,255,255,0.6)",
+  fontSize: "0.8rem",
+  marginLeft: "2px",
 });
 
 const FlagImg = styled.img({
-  height: "16px",
+  height: "14px",
   width: "auto",
   borderRadius: "2px",
-  boxShadow: "0 0 0 1px rgba(255,255,255,0.1)",
+  boxShadow: "0 0 0 1px rgba(255,255,255,0.12)",
 });
 
+// Tabs (underline style)
 const TabBar = styled.div({
   display: "flex",
-  gap: "10px",
+  gap: "4px",
+  borderBottom: `1px solid ${BORDER}`,
+  marginBottom: "24px",
   overflowX: "auto",
-  padding: "4px 0 14px",
 });
 
 const TabButton = styled.button<{ $active?: boolean }>(({ $active }) => ({
-  flex: "1 0 auto",
-  minWidth: "22%",
-  padding: "9px 16px",
-  borderRadius: "20px",
-  border: `${$active ? 2 : 1}px solid ${$active ? BLUE : "rgba(255,255,255,0.5)"}`,
-  background: $active ? "rgba(0,162,255,0.12)" : "transparent",
-  color: "#FFFFFF",
-  fontSize: "0.9rem",
-  fontWeight: 600,
+  position: "relative",
+  padding: "12px 18px",
+  border: "none",
+  background: "none",
+  color: $active ? "#FFFFFF" : MUTED,
+  fontSize: "0.95rem",
+  fontWeight: 700,
   cursor: "pointer",
   whiteSpace: "nowrap",
-  transition: "background 0.2s, border-color 0.2s",
-  ":hover": { borderColor: BLUE },
+  transition: "color 0.2s",
+  ":hover": { color: "#FFFFFF" },
+  ":after": {
+    content: '""',
+    position: "absolute",
+    left: "12px",
+    right: "12px",
+    bottom: "-1px",
+    height: "3px",
+    borderRadius: "3px 3px 0 0",
+    background: $active ? BLUE : "transparent",
+  },
 }));
 
-const TabContent = styled.div({
-  borderTop: `1px solid ${BORDER}`,
-  paddingTop: "8px",
-});
-
 const ComingSoon = styled.div({
-  padding: "48px 16px",
+  padding: "64px 16px",
   textAlign: "center",
   color: MUTED,
+  border: `1px dashed ${BORDER}`,
+  borderRadius: "16px",
 });
