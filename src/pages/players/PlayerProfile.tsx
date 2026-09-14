@@ -364,9 +364,10 @@ const MedalBadge = styled.div({
 });
 
 const BigMedal = styled.img({
-  width: "64px",
-  height: "64px",
+  width: "104px",
+  height: "104px",
   objectFit: "contain",
+  "@media (max-width: 640px)": { width: "84px", height: "84px" },
 });
 
 const MedalName = styled.div({

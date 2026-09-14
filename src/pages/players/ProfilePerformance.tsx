@@ -55,12 +55,12 @@ export default function ProfilePerformance({
 
   return (
     <Grid>
-      <FeatureCard>
-        <CardTitle>Rank Progress</CardTitle>
-        <MedalProgress xp={xp} prevGameXp={detail?.prevGameXP} />
-      </FeatureCard>
-
       <Column>
+        <Card>
+          <CardTitle>Rank Progress</CardTitle>
+          <MedalProgress xp={xp} prevGameXp={detail?.prevGameXP} />
+        </Card>
+
         <Card>
           <CardTitle>Season Record</CardTitle>
           <RecordGrid>
@@ -199,10 +199,6 @@ const Card = styled.div({
   border: `1px solid ${BORDER}`,
 });
 
-const FeatureCard = styled(Card)({
-  gridColumn: "1 / -1",
-});
-
 // A single grid column that stacks its cards vertically.
 const Column = styled.div({
   display: "flex",
@@ -220,11 +216,8 @@ const CardTitle = styled.h3({
   margin: "0 0 16px",
 });
 
-// Rank progress — keep the element sizes, but halve the overall length.
-const ProgressWrap = styled.div({
-  maxWidth: "520px",
-  "@media (max-width: 760px)": { maxWidth: "100%" },
-});
+// Rank progress
+const ProgressWrap = styled.div({});
 
 const ProgressHead = styled.div({
   display: "flex",
