@@ -115,7 +115,6 @@ export default function PlayerProfile() {
   const xp = detail?.XP ?? 0;
   const medal = getRankByXp(xp);
   const level = findRankIndex(xp) + 1;
-  const pd = detail?.totalPointDifference ?? 0;
   const flag = flagUrl(profile.location?.countryCode);
   const locationText = [profile.location?.city, profile.location?.country]
     .filter(Boolean)
@@ -127,16 +126,6 @@ export default function PlayerProfile() {
       label: "Country Rank",
       value: ordinal(countryRank),
       icon: flag ? <FlagImg src={flag} alt="" /> : <FaGlobe />,
-    },
-    { label: "Court Points", value: fmt(Math.round(xp)) },
-    {
-      label: "Point Difference",
-      value: (
-        <span style={{ color: pd < 0 ? "#ff6b6b" : "#4cd47a" }}>
-          {pd > 0 ? "+" : ""}
-          {fmt(pd)}
-        </span>
-      ),
     },
     { label: "Profile Views", value: fmt(profile.profileViews ?? 0), icon: <FaEye /> },
   ];
@@ -370,17 +359,13 @@ const MedalBadge = styled.div({
   position: "relative",
   display: "flex",
   alignItems: "center",
-  gap: "12px",
-  padding: "10px 18px 10px 14px",
-  borderRadius: "16px",
-  background: "rgba(0,0,0,0.25)",
-  border: `1px solid ${BORDER}`,
+  gap: "14px",
   flexShrink: 0,
 });
 
 const BigMedal = styled.img({
-  width: "56px",
-  height: "56px",
+  width: "64px",
+  height: "64px",
   objectFit: "contain",
 });
 
@@ -398,11 +383,10 @@ const MedalLevel = styled.div({
 // KPI strip
 const KpiStrip = styled.div({
   display: "grid",
-  gridTemplateColumns: "repeat(5, 1fr)",
+  gridTemplateColumns: "repeat(3, 1fr)",
   gap: "12px",
   margin: "16px 0 24px",
-  "@media (max-width: 760px)": { gridTemplateColumns: "repeat(2, 1fr)" },
-  "@media (max-width: 380px)": { gridTemplateColumns: "1fr" },
+  "@media (max-width: 560px)": { gridTemplateColumns: "1fr" },
 });
 
 const KpiTile = styled.div({

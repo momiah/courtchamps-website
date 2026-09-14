@@ -30,12 +30,23 @@ export default function ProfilePerformance({
 }: ProfilePerformanceProps) {
   const detail = profile.profileDetail;
   const xp = detail?.XP ?? 0;
+  const pd = detail?.totalPointDifference ?? 0;
 
   const wins = detail?.numberOfWins ?? 0;
   const losses = detail?.numberOfLosses ?? 0;
   const winRatio = losses === 0 ? 0 : wins / losses;
 
-  const record = [
+  const record: { title: string; value: React.ReactNode }[] = [
+    { title: "Court Points", value: fmt(Math.round(xp)) },
+    {
+      title: "Point Difference",
+      value: (
+        <span style={{ color: pd < 0 ? "#ff6b6b" : "#4cd47a" }}>
+          {pd > 0 ? "+" : ""}
+          {fmt(pd)}
+        </span>
+      ),
+    },
     { title: "Wins", value: fmt(wins) },
     { title: "Losses", value: fmt(losses) },
     { title: "Win Ratio", value: Number.isNaN(winRatio) ? "0" : winRatio.toFixed(2) },
@@ -49,7 +60,7 @@ export default function ProfilePerformance({
         <MedalProgress xp={xp} prevGameXp={detail?.prevGameXP} />
       </FeatureCard>
 
-      <Card>
+      <FeatureCard>
         <CardTitle>Season Record</CardTitle>
         <RecordGrid>
           {record.map((item) => (
@@ -59,9 +70,9 @@ export default function ProfilePerformance({
             </RecordTile>
           ))}
         </RecordGrid>
-      </Card>
+      </FeatureCard>
 
-      <Card>
+      <FeatureCard>
         <CardTitle>Match Medals</CardTitle>
         <MedalRow>
           {matchMedals(detail).map((medal) => (
@@ -72,7 +83,7 @@ export default function ProfilePerformance({
             </MedalItem>
           ))}
         </MedalRow>
-      </Card>
+      </FeatureCard>
 
       <Card>
         <CardTitle>League Victories</CardTitle>
@@ -203,20 +214,20 @@ const ProgressHead = styled.div({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  gap: "12px",
-  marginBottom: "18px",
+  gap: "10px",
+  marginBottom: "10px",
 });
 
 const RankChip = styled.div({
   display: "flex",
   alignItems: "center",
-  gap: "10px",
+  gap: "7px",
   minWidth: 0,
 });
 
 const RankMedal = styled.img({
-  width: "34px",
-  height: "34px",
+  width: "22px",
+  height: "22px",
   objectFit: "contain",
   flexShrink: 0,
 });
@@ -224,13 +235,13 @@ const RankMedal = styled.img({
 const RankChipName = styled.div({
   color: "#FFFFFF",
   fontWeight: 700,
-  fontSize: "0.9rem",
+  fontSize: "0.78rem",
   whiteSpace: "nowrap",
 });
 
 const RankChipXp = styled.div({
   color: MUTED,
-  fontSize: "0.78rem",
+  fontSize: "0.68rem",
 });
 
 const PrevBlock = styled.div({
@@ -242,20 +253,20 @@ const PrevBlock = styled.div({
 
 const PrevXp = styled.span<{ $negative?: boolean }>(({ $negative }) => ({
   color: $negative ? "#ff6b6b" : "#4cd47a",
-  fontSize: "1.1rem",
+  fontSize: "0.85rem",
   fontWeight: 800,
   whiteSpace: "nowrap",
 }));
 
 const PrevLabel = styled.span({
   color: MUTED,
-  fontSize: "0.7rem",
+  fontSize: "0.6rem",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
 });
 
 const ArrowTrack = styled.div({
-  height: "20px",
+  height: "14px",
   width: "100%",
   position: "relative",
 });
@@ -272,7 +283,7 @@ const ArrowFill = styled.div({
 
 const ArrowLabel = styled.span({
   color: "#FFFFFF",
-  fontSize: "0.8rem",
+  fontSize: "0.68rem",
   fontWeight: 800,
   whiteSpace: "nowrap",
 });
@@ -280,34 +291,36 @@ const ArrowLabel = styled.span({
 const Caret = styled.div({
   width: 0,
   height: 0,
-  borderLeft: "6px solid transparent",
-  borderRight: "6px solid transparent",
-  borderTop: `7px solid ${BLUE}`,
+  borderLeft: "5px solid transparent",
+  borderRight: "5px solid transparent",
+  borderTop: `6px solid ${BLUE}`,
   alignSelf: "flex-end",
   marginRight: "2px",
 });
 
 const BarTrack = styled.div({
-  height: "16px",
+  height: "9px",
   width: "100%",
   background: "rgba(255,255,255,0.1)",
-  borderRadius: "10px",
+  borderRadius: "6px",
   overflow: "hidden",
-  marginTop: "4px",
+  marginTop: "3px",
 });
 
 const BarFill = styled.div({
   height: "100%",
   background: "linear-gradient(90deg, #FFD100, #FF7800)",
-  borderRadius: "10px",
+  borderRadius: "6px",
   transition: "width 1s ease-out",
 });
 
 // Season record
 const RecordGrid = styled.div({
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "repeat(6, 1fr)",
   gap: "12px",
+  "@media (max-width: 760px)": { gridTemplateColumns: "repeat(3, 1fr)" },
+  "@media (max-width: 460px)": { gridTemplateColumns: "repeat(2, 1fr)" },
 });
 
 const RecordTile = styled.div({
@@ -324,7 +337,8 @@ const RecordTile = styled.div({
 const RecordValue = styled.span({
   color: "#FFFFFF",
   fontWeight: 800,
-  fontSize: "1.6rem",
+  fontSize: "1.5rem",
+  "@media (max-width: 760px)": { fontSize: "1.6rem" },
 });
 
 const RecordLabel = styled.span({
