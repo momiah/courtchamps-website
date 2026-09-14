@@ -128,14 +128,6 @@ export default function Players() {
       />
 
       <ListCard>
-        <ColumnHeader>
-          <span>Rank</span>
-          <span>Player</span>
-          <FlagHead>Country</FlagHead>
-          <StatHead>CP</StatHead>
-          <MedalHead>Rank</MedalHead>
-        </ColumnHeader>
-
         {error && <StateRow>{error}</StateRow>}
 
         {!error && loading && (
@@ -338,35 +330,6 @@ const ListCard = styled.div({
 
 const GRID_COLUMNS = "56px 1fr 44px 72px 64px";
 const GRID_COLUMNS_MOBILE = "34px 1fr 30px 50px 44px";
-
-const ColumnHeader = styled.div({
-  display: "grid",
-  gridTemplateColumns: GRID_COLUMNS,
-  alignItems: "center",
-  gap: "12px",
-  padding: "12px 16px",
-  borderBottom: `1px solid ${BORDER}`,
-  color: MUTED,
-  fontSize: "0.7rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "1.5px",
-  "@media (max-width: 480px)": {
-    gridTemplateColumns: GRID_COLUMNS_MOBILE,
-    gap: "6px",
-    padding: "12px 12px",
-    letterSpacing: "0.5px",
-  },
-});
-
-const FlagHead = styled.span({
-  textAlign: "center",
-  overflow: "hidden",
-  // The flag column is too narrow on phones for a text label; hide it there.
-  "@media (max-width: 480px)": { fontSize: 0 },
-});
-const StatHead = styled.span({ textAlign: "center" });
-const MedalHead = styled.span({ textAlign: "center" });
 
 const PlayerRow = styled.div({
   display: "grid",
