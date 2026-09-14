@@ -77,10 +77,10 @@ const features = [
       "View top players, see real-time stats and join or create leagues in your area!",
   },
   {
-    label: "User Profile",
-    image: appImages.userProfile,
+    label: "Pre-Scheduled matches",
+    image: appImages.tournamentFixtures,
     description:
-      "A personal profile page displaying your match history, earned medals, XP, and progress toward higher ranks.",
+      "Cut back admin time with automatic generation of teams and fixtures for round robin tournaments.",
   },
   {
     label: "Player details modal",
@@ -174,7 +174,10 @@ export default function HomePage() {
   }, []);
 
   const openAppStore = () => {
-    window.open("https://apps.apple.com/app/court-champs/id6538725576", "_blank");
+    window.open(
+      "https://apps.apple.com/app/court-champs/id6538725576",
+      "_blank",
+    );
   };
 
   const openPlayStore = () => {
@@ -212,8 +215,8 @@ export default function HomePage() {
           </HeroHeadline>
           <HeroSub data-aos="fade-up" data-aos-delay="150">
             Join leagues and tournaments, log live scores, track your stats and
-            climb the ranks. CourtChamps brings the whole competitive
-            experience to your pocket.
+            climb the ranks. CourtChamps brings the whole competitive experience
+            to your pocket.
           </HeroSub>
           <div data-aos="fade-up" data-aos-delay="200">
             {StoreBadges}
@@ -230,10 +233,16 @@ export default function HomePage() {
 
         <HeroVisual data-aos="fade-left" data-aos-delay="200">
           <PhoneFrame $featured>
-            <PhoneScreen src={appImages.homePage} alt="CourtChamps home screen" />
+            <PhoneScreen
+              src={appImages.homePage}
+              alt="CourtChamps home screen"
+            />
           </PhoneFrame>
           <PhoneFrame $floatingBack>
-            <PhoneScreen src={appImages.scoreboard} alt="CourtChamps scoreboard" />
+            <PhoneScreen
+              src={appImages.scoreboard}
+              alt="CourtChamps scoreboard"
+            />
           </PhoneFrame>
         </HeroVisual>
       </Hero>
@@ -246,7 +255,11 @@ export default function HomePage() {
         </SectionTitle>
         <StepsGrid>
           {steps.map((step, i) => (
-            <StepCard key={step.title} data-aos="fade-up" data-aos-delay={i * 100}>
+            <StepCard
+              key={step.title}
+              data-aos="fade-up"
+              data-aos-delay={i * 100}
+            >
               <StepNumber>{i + 1}</StepNumber>
               <StepIcon>{step.icon}</StepIcon>
               <StepTitle>{step.title}</StepTitle>
@@ -267,9 +280,7 @@ export default function HomePage() {
             const isOdd = idx % 2 === 1;
             return (
               <FeatureRow key={feat.label} $reverse={isOdd}>
-                <FeatureVisual
-                  data-aos={isOdd ? "fade-left" : "fade-right"}
-                >
+                <FeatureVisual data-aos={isOdd ? "fade-left" : "fade-right"}>
                   <PhoneFrame>
                     <PhoneScreen src={feat.image} alt={feat.label} />
                   </PhoneFrame>
@@ -296,7 +307,11 @@ export default function HomePage() {
         <SectionTitle data-aos="fade-up">Built for every player</SectionTitle>
         <FeatureGrid>
           {moreFeatures.map((f, i) => (
-            <MiniCard key={f.title} data-aos="fade-up" data-aos-delay={(i % 4) * 80}>
+            <MiniCard
+              key={f.title}
+              data-aos="fade-up"
+              data-aos-delay={(i % 4) * 80}
+            >
               <MiniIcon>{f.icon}</MiniIcon>
               <MiniTitle>{f.title}</MiniTitle>
               <MiniText>{f.description}</MiniText>
@@ -718,7 +733,8 @@ const MiniCard = styled.div({
   borderRadius: "18px",
   background: theme.panel,
   border: `1px solid ${theme.panelBorder}`,
-  transition: "transform 0.25s ease, border-color 0.25s ease, background 0.25s ease",
+  transition:
+    "transform 0.25s ease, border-color 0.25s ease, background 0.25s ease",
   ":hover": {
     transform: "translateY(-6px)",
     borderColor: `${theme.blue}55`,

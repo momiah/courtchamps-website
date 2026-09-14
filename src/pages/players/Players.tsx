@@ -10,10 +10,7 @@ import {
 
 import { CourtChampLogoIcon } from "../../assets";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  getAllPlayersPaginated,
-  PlayerListItem,
-} from "../../services/players";
+import { getAllPlayersPaginated, PlayerListItem } from "../../services/players";
 import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
 
 const PAGE_SIZE = 25;
@@ -36,7 +33,9 @@ const getRankSuffix = (rank: number): string => {
 };
 
 const flagUrl = (countryCode?: string): string | null =>
-  countryCode ? `https://flagcdn.com/h20/${countryCode.toLowerCase()}.png` : null;
+  countryCode
+    ? `https://flagcdn.com/h20/${countryCode.toLowerCase()}.png`
+    : null;
 
 export default function Players() {
   const [players, setPlayers] = useState<PlayerListItem[]>([]);
@@ -173,9 +172,7 @@ export default function Players() {
                     <PlayerName>
                       {displayName || player.username || "Unknown player"}
                     </PlayerName>
-                    {player.username && (
-                      <Username>@{player.username}</Username>
-                    )}
+                    {player.username && <Username>@{player.username}</Username>}
                   </NameBlock>
                 </PlayerCell>
 
