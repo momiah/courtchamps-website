@@ -8,6 +8,7 @@ import { getPlayerProfile, PlayerListItem } from "../../services/players";
 import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
 import ProfilePerformance from "./ProfilePerformance";
 import ProfileAbout from "./ProfileAbout";
+import ProfileActivity from "./ProfileActivity";
 
 const TABS = ["Performance", "Profile", "Activity", "Videos"] as const;
 type Tab = (typeof TABS)[number];
@@ -201,9 +202,8 @@ export default function PlayerProfile() {
         {/* ── Tab content ── */}
         {tab === "Performance" && <ProfilePerformance profile={profile} />}
         {tab === "Profile" && <ProfileAbout profile={profile} />}
-        {(tab === "Activity" || tab === "Videos") && (
-          <ComingSoon>{tab} — coming soon.</ComingSoon>
-        )}
+        {tab === "Activity" && <ProfileActivity profile={profile} />}
+        {tab === "Videos" && <ComingSoon>{tab} — coming soon.</ComingSoon>}
       </Inner>
     </PageContainer>
   );
