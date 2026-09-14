@@ -317,7 +317,7 @@ const Avatar = styled.img({
   objectFit: "cover",
   border: "3px solid rgb(3,16,31)",
   backgroundColor: "#07111f",
-  "@media (max-width: 640px)": { width: "60px", height: "60px" },
+  "@media (max-width: 640px)": { width: "48px", height: "48px" },
 });
 
 const Identity = styled.div({ minWidth: 0 });
@@ -330,7 +330,15 @@ const PlayerName = styled.h1({
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  "@media (max-width: 640px)": { fontSize: "1.25rem", margin: "0 0 4px" },
+  "@media (max-width: 640px)": {
+    fontSize: "1.15rem",
+    margin: "0 0 4px",
+    // Let the name show in full rather than truncating in the tight row.
+    whiteSpace: "normal",
+    overflow: "visible",
+    textOverflow: "clip",
+    overflowWrap: "anywhere",
+  },
 });
 
 const MetaRow = styled.div({
@@ -351,7 +359,13 @@ const Meta = styled.div({
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  "@media (max-width: 640px)": { fontSize: "0.8rem" },
+  "@media (max-width: 640px)": {
+    fontSize: "0.8rem",
+    // Allow the location to wrap fully instead of being clipped.
+    overflow: "visible",
+    textOverflow: "clip",
+    whiteSpace: "normal",
+  },
 });
 
 const Headline = styled.div({
@@ -370,13 +384,14 @@ const MedalBadge = styled.div({
   gap: "4px",
   flexShrink: 0,
   textAlign: "center",
+  "@media (max-width: 640px)": { maxWidth: "100px" },
 });
 
 const BigMedal = styled.img({
   width: "104px",
   height: "104px",
   objectFit: "contain",
-  "@media (max-width: 640px)": { width: "60px", height: "60px" },
+  "@media (max-width: 640px)": { width: "48px", height: "48px" },
 });
 
 const MedalName = styled.div({
