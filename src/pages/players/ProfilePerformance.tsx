@@ -60,54 +60,58 @@ export default function ProfilePerformance({
         <MedalProgress xp={xp} prevGameXp={detail?.prevGameXP} />
       </FeatureCard>
 
-      <FeatureCard>
-        <CardTitle>Season Record</CardTitle>
-        <RecordGrid>
-          {record.map((item) => (
-            <RecordTile key={item.title}>
-              <RecordValue>{item.value}</RecordValue>
-              <RecordLabel>{item.title}</RecordLabel>
-            </RecordTile>
-          ))}
-        </RecordGrid>
-      </FeatureCard>
+      <Column>
+        <Card>
+          <CardTitle>Season Record</CardTitle>
+          <RecordGrid>
+            {record.map((item) => (
+              <RecordTile key={item.title}>
+                <RecordValue>{item.value}</RecordValue>
+                <RecordLabel>{item.title}</RecordLabel>
+              </RecordTile>
+            ))}
+          </RecordGrid>
+        </Card>
+      </Column>
 
-      <FeatureCard>
-        <CardTitle>Match Medals</CardTitle>
-        <MedalRow>
-          {matchMedals(detail).map((medal) => (
-            <MedalItem key={medal.title}>
-              <MatchMedalImg src={`${PERF_BASE}/${medal.icon}`} alt={medal.title} />
-              <MedalStat>{fmt(medal.stat)}</MedalStat>
-              <MedalTitle>{medal.title}</MedalTitle>
-            </MedalItem>
-          ))}
-        </MedalRow>
-      </FeatureCard>
+      <Column>
+        <Card>
+          <CardTitle>Match Medals</CardTitle>
+          <MedalRow>
+            {matchMedals(detail).map((medal) => (
+              <MedalItem key={medal.title}>
+                <MatchMedalImg src={`${PERF_BASE}/${medal.icon}`} alt={medal.title} />
+                <MedalStat>{fmt(medal.stat)}</MedalStat>
+                <MedalTitle>{medal.title}</MedalTitle>
+              </MedalItem>
+            ))}
+          </MedalRow>
+        </Card>
 
-      <Card>
-        <CardTitle>League Victories</CardTitle>
-        <PrizeRow>
-          {PLACEMENTS.map((key, index) => (
-            <PrizeCard key={key}>
-              <PrizeImg src={`${PERF_BASE}/${trophyIcons[index]}.png`} alt={PLACE_LABELS[index]} />
-              <PrizeText>{detail?.leagueStats?.[key] ?? 0}</PrizeText>
-            </PrizeCard>
-          ))}
-        </PrizeRow>
-      </Card>
+        <Card>
+          <CardTitle>League Victories</CardTitle>
+          <PrizeRow>
+            {PLACEMENTS.map((key, index) => (
+              <PrizeCard key={key}>
+                <PrizeImg src={`${PERF_BASE}/${trophyIcons[index]}.png`} alt={PLACE_LABELS[index]} />
+                <PrizeText>{detail?.leagueStats?.[key] ?? 0}</PrizeText>
+              </PrizeCard>
+            ))}
+          </PrizeRow>
+        </Card>
 
-      <Card>
-        <CardTitle>Tournament Victories</CardTitle>
-        <PrizeRow>
-          {PLACEMENTS.map((key, index) => (
-            <PrizeCard key={key}>
-              <PrizeImg src={`${PERF_BASE}/${medalIcons[index]}.png`} alt={PLACE_LABELS[index]} />
-              <PrizeText>{detail?.tournamentStats?.[key] ?? 0}</PrizeText>
-            </PrizeCard>
-          ))}
-        </PrizeRow>
-      </Card>
+        <Card>
+          <CardTitle>Tournament Victories</CardTitle>
+          <PrizeRow>
+            {PLACEMENTS.map((key, index) => (
+              <PrizeCard key={key}>
+                <PrizeImg src={`${PERF_BASE}/${medalIcons[index]}.png`} alt={PLACE_LABELS[index]} />
+                <PrizeText>{detail?.tournamentStats?.[key] ?? 0}</PrizeText>
+              </PrizeCard>
+            ))}
+          </PrizeRow>
+        </Card>
+      </Column>
     </Grid>
   );
 }
@@ -182,6 +186,7 @@ const BLUE = "#00A2FF";
 const Grid = styled.div({
   display: "grid",
   gridTemplateColumns: "repeat(2, 1fr)",
+  alignItems: "start",
   gap: "16px",
   paddingBottom: "40px",
   "@media (max-width: 760px)": { gridTemplateColumns: "1fr" },
@@ -198,6 +203,14 @@ const FeatureCard = styled(Card)({
   gridColumn: "1 / -1",
 });
 
+// A single grid column that stacks its cards vertically.
+const Column = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+  minWidth: 0,
+});
+
 const CardTitle = styled.h3({
   fontSize: "0.78rem",
   fontWeight: 700,
@@ -207,27 +220,30 @@ const CardTitle = styled.h3({
   margin: "0 0 16px",
 });
 
-// Rank progress
-const ProgressWrap = styled.div({});
+// Rank progress — keep the element sizes, but halve the overall length.
+const ProgressWrap = styled.div({
+  maxWidth: "520px",
+  "@media (max-width: 760px)": { maxWidth: "100%" },
+});
 
 const ProgressHead = styled.div({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  gap: "10px",
-  marginBottom: "10px",
+  gap: "12px",
+  marginBottom: "18px",
 });
 
 const RankChip = styled.div({
   display: "flex",
   alignItems: "center",
-  gap: "7px",
+  gap: "10px",
   minWidth: 0,
 });
 
 const RankMedal = styled.img({
-  width: "22px",
-  height: "22px",
+  width: "34px",
+  height: "34px",
   objectFit: "contain",
   flexShrink: 0,
 });
@@ -235,13 +251,13 @@ const RankMedal = styled.img({
 const RankChipName = styled.div({
   color: "#FFFFFF",
   fontWeight: 700,
-  fontSize: "0.78rem",
+  fontSize: "0.9rem",
   whiteSpace: "nowrap",
 });
 
 const RankChipXp = styled.div({
   color: MUTED,
-  fontSize: "0.68rem",
+  fontSize: "0.78rem",
 });
 
 const PrevBlock = styled.div({
@@ -253,20 +269,20 @@ const PrevBlock = styled.div({
 
 const PrevXp = styled.span<{ $negative?: boolean }>(({ $negative }) => ({
   color: $negative ? "#ff6b6b" : "#4cd47a",
-  fontSize: "0.85rem",
+  fontSize: "1.1rem",
   fontWeight: 800,
   whiteSpace: "nowrap",
 }));
 
 const PrevLabel = styled.span({
   color: MUTED,
-  fontSize: "0.6rem",
+  fontSize: "0.7rem",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
 });
 
 const ArrowTrack = styled.div({
-  height: "14px",
+  height: "20px",
   width: "100%",
   position: "relative",
 });
@@ -283,7 +299,7 @@ const ArrowFill = styled.div({
 
 const ArrowLabel = styled.span({
   color: "#FFFFFF",
-  fontSize: "0.68rem",
+  fontSize: "0.8rem",
   fontWeight: 800,
   whiteSpace: "nowrap",
 });
@@ -291,36 +307,34 @@ const ArrowLabel = styled.span({
 const Caret = styled.div({
   width: 0,
   height: 0,
-  borderLeft: "5px solid transparent",
-  borderRight: "5px solid transparent",
-  borderTop: `6px solid ${BLUE}`,
+  borderLeft: "6px solid transparent",
+  borderRight: "6px solid transparent",
+  borderTop: `7px solid ${BLUE}`,
   alignSelf: "flex-end",
   marginRight: "2px",
 });
 
 const BarTrack = styled.div({
-  height: "9px",
+  height: "16px",
   width: "100%",
   background: "rgba(255,255,255,0.1)",
-  borderRadius: "6px",
+  borderRadius: "10px",
   overflow: "hidden",
-  marginTop: "3px",
+  marginTop: "4px",
 });
 
 const BarFill = styled.div({
   height: "100%",
   background: "linear-gradient(90deg, #FFD100, #FF7800)",
-  borderRadius: "6px",
+  borderRadius: "10px",
   transition: "width 1s ease-out",
 });
 
 // Season record
 const RecordGrid = styled.div({
   display: "grid",
-  gridTemplateColumns: "repeat(6, 1fr)",
+  gridTemplateColumns: "1fr 1fr",
   gap: "12px",
-  "@media (max-width: 760px)": { gridTemplateColumns: "repeat(3, 1fr)" },
-  "@media (max-width: 460px)": { gridTemplateColumns: "repeat(2, 1fr)" },
 });
 
 const RecordTile = styled.div({
@@ -337,8 +351,7 @@ const RecordTile = styled.div({
 const RecordValue = styled.span({
   color: "#FFFFFF",
   fontWeight: 800,
-  fontSize: "1.5rem",
-  "@media (max-width: 760px)": { fontSize: "1.6rem" },
+  fontSize: "1.6rem",
 });
 
 const RecordLabel = styled.span({
