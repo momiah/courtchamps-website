@@ -98,3 +98,32 @@ export function findRankIndex(xp: number): number {
 export function getRankByXp(xp: number): Rank {
   return ranks[findRankIndex(xp)];
 }
+
+export interface RankProgress {
+  currentRank: Rank;
+  nextRank: Rank;
+  /** Progress from currentRank to nextRank, 0–100. 100 at the max rank. */
+  percent: number;
+}
+
+/**
+ * Progress of a given XP between its current and next rank. Mirrors the app's
+ * MedalProgress: currentRank is the highest rank at/below the XP, nextRank is
+ * the first rank above it (or the max rank when already at the top).
+ */
+export function getRankProgress(xp: number): RankProgress {
+  const numericXp = Number.isFinite(Number(xp)) ? Number(xp) : 0;
+
+  const currentRank = ranks.reduce((prev, current) =>
+    current.xp <= numericXp ? current : prev,
+  );
+
+  const nextRank =
+    ranks.find((rank) => numericXp < rank.xp) ?? ranks[ranks.length - 1];
+
+  const span = nextRank.xp - currentRank.xp;
+  const percent =
+    span <= 0 ? 100 : Math.max(0, Math.min(100, ((numericXp - currentRank.xp) / span) * 100));
+
+  return { currentRank, nextRank, percent };
+}

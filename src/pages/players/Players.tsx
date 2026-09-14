@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 import {
   FaAngleDoubleLeft,
@@ -150,7 +151,10 @@ export default function Players() {
             const flag = flagUrl(player.location?.countryCode);
 
             return (
-              <PlayerRow key={`${player.userId}-${player.globalRank}`}>
+              <PlayerRow
+                key={`${player.userId}-${player.globalRank}`}
+                to={`/players/${player.userId}`}
+              >
                 <RankCell>
                   {player.globalRank}
                   <Suffix>{getRankSuffix(player.globalRank)}</Suffix>
@@ -331,7 +335,7 @@ const ListCard = styled.div({
 const GRID_COLUMNS = "56px 1fr 44px 72px 64px";
 const GRID_COLUMNS_MOBILE = "34px 1fr 30px 50px 44px";
 
-const PlayerRow = styled.div({
+const PlayerRow = styled(Link)({
   display: "grid",
   gridTemplateColumns: GRID_COLUMNS,
   alignItems: "center",
@@ -339,6 +343,8 @@ const PlayerRow = styled.div({
   padding: "12px 16px",
   borderTop: `1px solid rgba(255,255,255,0.05)`,
   ":first-of-type": { borderTop: "none" },
+  color: "inherit",
+  textDecoration: "none",
   transition: "background 0.15s ease",
   ":hover": { background: "rgba(0,162,255,0.06)" },
   "@media (max-width: 480px)": {
