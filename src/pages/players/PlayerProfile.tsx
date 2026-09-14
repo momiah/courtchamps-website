@@ -166,10 +166,8 @@ export default function PlayerProfile() {
 
           <MedalBadge>
             <BigMedal src={rankMedalUrl(medal.icon)} alt={medal.name} />
-            <div>
-              <MedalName>{medal.name}</MedalName>
-              <MedalLevel>Level {level}</MedalLevel>
-            </div>
+            <MedalName>{medal.name}</MedalName>
+            <MedalLevel>Level {level}</MedalLevel>
           </MedalBadge>
         </Banner>
 
@@ -358,9 +356,11 @@ const Headline = styled.div({
 const MedalBadge = styled.div({
   position: "relative",
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
-  gap: "14px",
+  gap: "4px",
   flexShrink: 0,
+  textAlign: "center",
 });
 
 const BigMedal = styled.img({

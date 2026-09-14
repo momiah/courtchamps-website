@@ -58,7 +58,7 @@ export default function ProfilePerformance({
       <Column>
         <Card>
           <CardTitle>Rank Progress</CardTitle>
-          <MedalProgress xp={xp} prevGameXp={detail?.prevGameXP} />
+          <MedalProgress xp={xp} />
         </Card>
 
         <Card>
@@ -117,13 +117,7 @@ export default function ProfilePerformance({
 }
 
 // ─── Medal / XP progress ───
-function MedalProgress({
-  xp,
-  prevGameXp,
-}: {
-  xp: number;
-  prevGameXp?: number;
-}) {
+function MedalProgress({ xp }: { xp: number }) {
   const { currentRank, nextRank, percent } = getRankProgress(xp);
   const [fill, setFill] = useState(0);
 
@@ -132,37 +126,8 @@ function MedalProgress({
     return () => window.clearTimeout(handle);
   }, [percent]);
 
-  const prev = typeof prevGameXp === "number" ? Math.round(prevGameXp) : null;
-
   return (
     <ProgressWrap>
-      <ProgressHead>
-        <RankChip>
-          <RankMedal src={rankMedalUrl(currentRank.icon)} alt={currentRank.name} />
-          <div>
-            <RankChipName>{currentRank.name}</RankChipName>
-            <RankChipXp>{fmt(currentRank.xp)} CP</RankChipXp>
-          </div>
-        </RankChip>
-
-        {prev !== null && (
-          <PrevBlock>
-            <PrevXp $negative={prev < 0}>
-              {prev < 0 ? `${fmt(prev)}` : `+${fmt(prev)}`} CP
-            </PrevXp>
-            <PrevLabel>Last Match</PrevLabel>
-          </PrevBlock>
-        )}
-
-        <RankChip style={{ flexDirection: "row-reverse", textAlign: "right" }}>
-          <RankMedal src={rankMedalUrl(nextRank.icon)} alt={nextRank.name} />
-          <div>
-            <RankChipName>{nextRank.name}</RankChipName>
-            <RankChipXp>{fmt(nextRank.xp)} CP</RankChipXp>
-          </div>
-        </RankChip>
-      </ProgressHead>
-
       <ArrowTrack>
         <ArrowFill style={{ width: `${fill}%` }}>
           <ArrowLabel>{fmt(Math.round(xp))} CP</ArrowLabel>
@@ -172,6 +137,24 @@ function MedalProgress({
       <BarTrack>
         <BarFill style={{ width: `${fill}%` }} />
       </BarTrack>
+
+      <RanksRow>
+        <RankChip>
+          <RankMedal src={rankMedalUrl(currentRank.icon)} alt={currentRank.name} />
+          <div>
+            <RankChipName>{currentRank.name}</RankChipName>
+            <RankChipXp>{fmt(currentRank.xp)} CP</RankChipXp>
+          </div>
+        </RankChip>
+
+        <RankChip style={{ flexDirection: "row-reverse", textAlign: "right" }}>
+          <RankMedal src={rankMedalUrl(nextRank.icon)} alt={nextRank.name} />
+          <div>
+            <RankChipName>{nextRank.name}</RankChipName>
+            <RankChipXp>{fmt(nextRank.xp)} CP</RankChipXp>
+          </div>
+        </RankChip>
+      </RanksRow>
     </ProgressWrap>
   );
 }
@@ -186,7 +169,9 @@ const BLUE = "#00A2FF";
 const Grid = styled.div({
   display: "grid",
   gridTemplateColumns: "repeat(2, 1fr)",
-  alignItems: "start",
+  // Stretch both columns to the taller one's height; each Column then spreads
+  // its cards to fill, so the two sides always end level regardless of data.
+  alignItems: "stretch",
   gap: "16px",
   paddingBottom: "40px",
   "@media (max-width: 760px)": { gridTemplateColumns: "1fr" },
@@ -199,10 +184,12 @@ const Card = styled.div({
   border: `1px solid ${BORDER}`,
 });
 
-// A single grid column that stacks its cards vertically.
+// A single grid column that stacks its cards vertically, spreading them to
+// fill the column so both sides end level.
 const Column = styled.div({
   display: "flex",
   flexDirection: "column",
+  justifyContent: "space-between",
   gap: "16px",
   minWidth: 0,
 });
@@ -219,12 +206,12 @@ const CardTitle = styled.h3({
 // Rank progress
 const ProgressWrap = styled.div({});
 
-const ProgressHead = styled.div({
+const RanksRow = styled.div({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   gap: "12px",
-  marginBottom: "18px",
+  marginTop: "14px",
 });
 
 const RankChip = styled.div({
@@ -251,27 +238,6 @@ const RankChipName = styled.div({
 const RankChipXp = styled.div({
   color: MUTED,
   fontSize: "0.78rem",
-});
-
-const PrevBlock = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  flexShrink: 0,
-});
-
-const PrevXp = styled.span<{ $negative?: boolean }>(({ $negative }) => ({
-  color: $negative ? "#ff6b6b" : "#4cd47a",
-  fontSize: "1.1rem",
-  fontWeight: 800,
-  whiteSpace: "nowrap",
-}));
-
-const PrevLabel = styled.span({
-  color: MUTED,
-  fontSize: "0.7rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
 });
 
 const ArrowTrack = styled.div({
@@ -368,8 +334,8 @@ const MedalItem = styled.div({
 });
 
 const MatchMedalImg = styled.img({
-  width: "52px",
-  height: "52px",
+  width: "44px",
+  height: "44px",
   objectFit: "contain",
 });
 
@@ -397,16 +363,16 @@ const PrizeCard = styled.div({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: "6px",
-  padding: "14px 6px",
+  gap: "5px",
+  padding: "10px 6px",
   borderRadius: "12px",
   background: "rgba(0,0,0,0.25)",
   border: `1px solid ${BORDER}`,
 });
 
 const PrizeImg = styled.img({
-  width: "48px",
-  height: "48px",
+  width: "40px",
+  height: "40px",
   objectFit: "contain",
 });
 
