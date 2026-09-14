@@ -14,8 +14,12 @@ const TABS = [
   { key: "leagues", label: "Leagues" },
   { key: "tournaments", label: "Tournaments" },
   { key: "clubs", label: "Clubs" },
+  { key: "teams", label: "Teams" },
 ] as const;
 type ActivityTab = (typeof TABS)[number]["key"];
+
+// Tabs that fetch and render competition cards; the rest are stubs for now.
+const COMPETITION_TABS: ActivityTab[] = ["leagues", "tournaments"];
 
 const EMPTY_MESSAGES: Record<ActivityTab, string> = {
   leagues:
@@ -23,6 +27,7 @@ const EMPTY_MESSAGES: Record<ActivityTab, string> = {
   tournaments:
     "No tournaments yet. Join or create a tournament in the app to see it here 🏆",
   clubs: "Clubs are coming soon.",
+  teams: "Teams are coming soon.",
 };
 
 const rankSuffix = (rank: number): string => {
@@ -56,7 +61,7 @@ export default function ProfileActivity({ profile }: ProfileActivityProps) {
   const reqRef = useRef(0);
 
   useEffect(() => {
-    if (tab === "clubs") return;
+    if (!COMPETITION_TABS.includes(tab)) return;
     if (tab === "leagues" && leagues !== null) return;
     if (tab === "tournaments" && tournaments !== null) return;
 
@@ -97,8 +102,8 @@ export default function ProfileActivity({ profile }: ProfileActivityProps) {
         ))}
       </SubTabs>
 
-      {tab === "clubs" ? (
-        <EmptyState>{EMPTY_MESSAGES.clubs}</EmptyState>
+      {!COMPETITION_TABS.includes(tab) ? (
+        <EmptyState>{EMPTY_MESSAGES[tab]}</EmptyState>
       ) : error ? (
         <EmptyState>{error}</EmptyState>
       ) : loading || items === null ? (
