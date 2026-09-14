@@ -7,6 +7,7 @@ import { CourtChampLogoIcon } from "../../assets";
 import { getPlayerProfile, PlayerListItem } from "../../services/players";
 import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
 import ProfilePerformance from "./ProfilePerformance";
+import ProfileAbout from "./ProfileAbout";
 
 const TABS = ["Performance", "Profile", "Activity", "Videos"] as const;
 type Tab = (typeof TABS)[number];
@@ -198,9 +199,9 @@ export default function PlayerProfile() {
         </TabBar>
 
         {/* ── Tab content ── */}
-        {tab === "Performance" ? (
-          <ProfilePerformance profile={profile} />
-        ) : (
+        {tab === "Performance" && <ProfilePerformance profile={profile} />}
+        {tab === "Profile" && <ProfileAbout profile={profile} />}
+        {(tab === "Activity" || tab === "Videos") && (
           <ComingSoon>{tab} — coming soon.</ComingSoon>
         )}
       </Inner>
