@@ -9,6 +9,7 @@ import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
 import ProfilePerformance from "./ProfilePerformance";
 import ProfileAbout from "./ProfileAbout";
 import ProfileActivity from "./ProfileActivity";
+import ProfileVideos from "./ProfileVideos";
 
 const TABS = ["Performance", "Profile", "Activity", "Videos"] as const;
 type Tab = (typeof TABS)[number];
@@ -203,7 +204,12 @@ export default function PlayerProfile() {
         {tab === "Performance" && <ProfilePerformance profile={profile} />}
         {tab === "Profile" && <ProfileAbout profile={profile} />}
         {tab === "Activity" && <ProfileActivity profile={profile} />}
-        {tab === "Videos" && <ComingSoon>{tab} — coming soon.</ComingSoon>}
+        {tab === "Videos" && (
+          <ProfileVideos
+            userId={profile.userId}
+            firstName={profile.firstName}
+          />
+        )}
       </Inner>
     </PageContainer>
   );
@@ -495,10 +501,3 @@ const TabButton = styled.button<{ $active?: boolean }>(({ $active }) => ({
   },
 }));
 
-const ComingSoon = styled.div({
-  padding: "64px 16px",
-  textAlign: "center",
-  color: MUTED,
-  border: `1px dashed ${BORDER}`,
-  borderRadius: "16px",
-});
