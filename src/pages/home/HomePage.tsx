@@ -59,7 +59,7 @@ const steps = [
     icon: <FaTrophy />,
     title: "Climb the Ranks",
     description:
-      "Earn XP, unlock medals and rise up the leaderboard as you turn every match into a title race.",
+      "Earn Court Points (CP) on every win, unlock medals and rise up the leaderboard as you turn every match into a title race.",
   },
 ];
 
@@ -215,8 +215,8 @@ export default function HomePage() {
           </HeroHeadline>
           <HeroSub data-aos="fade-up" data-aos-delay="150">
             Join leagues and tournaments, log live scores, track your stats and
-            climb the ranks. CourtChamps brings the whole competitive experience
-            to your pocket.
+            climb the ranks. CourtChamps brings a whole new competitive
+            experience to your pocket.
           </HeroSub>
           <div data-aos="fade-up" data-aos-delay="200">
             {StoreBadges}
