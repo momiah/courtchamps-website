@@ -24,6 +24,7 @@ import LadderEdit from "./pages/admin/LadderEdit";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
 import GameDisputes from "./pages/admin/GameDisputes";
+import NoShows from "./pages/admin/NoShows";
 
 export default function App() {
   return (
@@ -115,6 +116,14 @@ function AppShell() {
           element={
             <RequireRole>
               <GameDisputes />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/no-shows"
+          element={
+            <RequireRole>
+              <NoShows />
             </RequireRole>
           }
         />
