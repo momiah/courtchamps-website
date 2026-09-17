@@ -172,8 +172,14 @@ const VideoPage: React.FC = () => {
             }}
           />
           <UploaderInfo>
-            <UploaderName>{formatDisplayName(video.postedBy)}</UploaderName>
-            <CompetitionName>{video.competitionName}</CompetitionName>
+            <UploaderName to={`/players/${video.postedBy.userId}`}>
+              {formatDisplayName(video.postedBy)}
+            </UploaderName>
+            <CompetitionName
+              to={`/join/${video.competitionType}/${video.competitionId}`}
+            >
+              {video.competitionName}
+            </CompetitionName>
           </UploaderInfo>
         </UploaderRow>
 
@@ -453,16 +459,24 @@ const UploaderAvatar = styled.img({
 
 const UploaderInfo = styled.div({ flex: 1 });
 
-const UploaderName = styled.div({
+const UploaderName = styled(Link)({
+  display: "block",
+  width: "fit-content",
   fontSize: 14,
   fontWeight: 700,
   color: "#fff",
+  textDecoration: "none",
+  ":hover": { textDecoration: "underline" },
 });
 
-const CompetitionName = styled.div({
+const CompetitionName = styled(Link)({
+  display: "block",
+  width: "fit-content",
   fontSize: 12,
   color: "#00A2FF",
   marginTop: 2,
+  textDecoration: "none",
+  ":hover": { textDecoration: "underline" },
 });
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
