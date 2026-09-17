@@ -221,6 +221,7 @@ export const approveNoShowClaim = async (
     tx.update(matchRef, {
       matchStatus: LADDER_MATCH_STATUS.COMPLETED,
       walkover: true,
+      walkoverReason: "No show",
       walkoverWinner: isDoubles
         ? claim.claimantTeam.teamKey
         : claim.claimantTeam.playerIds[0],
