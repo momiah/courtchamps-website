@@ -8,8 +8,6 @@ import { CourtChampLogo, appStoreBadge, playStoreBadge } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
 
-const PREVIEW_DURATION = 5; // seconds before pausing for non-authenticated users
-
 const VideoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const docId = searchParams.get("v");
@@ -17,7 +15,6 @@ const VideoPage: React.FC = () => {
   const [video, setVideo] = useState<GameVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewEnded, setPreviewEnded] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -51,25 +48,17 @@ const VideoPage: React.FC = () => {
     fetchVideo();
   }, [docId]);
 
-  // ── Poll currentTime ──────────────────────────────────────────────────────
+  // ── Poll currentTime for the progress bar ─────────────────────────────────
   useEffect(() => {
     if (!isPlaying) return;
     intervalRef.current = setInterval(() => {
       if (!videoRef.current) return;
-      const time = videoRef.current.currentTime;
-      setCurrentTime(time);
-      if (time >= PREVIEW_DURATION && !previewEnded) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-        setPreviewEnded(true);
-        clearInterval(intervalRef.current!);
-      }
+      setCurrentTime(videoRef.current.currentTime);
     }, 200);
     return () => clearInterval(intervalRef.current!);
-  }, [isPlaying, previewEnded]);
+  }, [isPlaying]);
 
   const handlePlay = () => {
-    if (previewEnded) return;
     videoRef.current?.play();
     setIsPlaying(true);
   };
@@ -80,7 +69,6 @@ const VideoPage: React.FC = () => {
   };
 
   const handleVideoClick = () => {
-    if (previewEnded) return;
     if (isPlaying) handlePause();
     else handlePlay();
   };
@@ -200,44 +188,22 @@ const VideoPage: React.FC = () => {
           />
 
           {/* ── Play/pause overlay ── */}
-          {!isPlaying && !previewEnded && (
+          {!isPlaying && (
             <PlayOverlay>
               <PlayButton>▶</PlayButton>
             </PlayOverlay>
           )}
 
-          {/* ── Preview ended overlay ── */}
-          {previewEnded && (
-            <GateOverlay>
-              <GateContent>
-                <GateIcon>🏸</GateIcon>
-                <GateTitle>The rest of the game is in the app 📲</GateTitle>
-                <GateSubtitle>It takes 30 seconds to get started.</GateSubtitle>
-              </GateContent>
-            </GateOverlay>
-          )}
-
           {/* ── Controls ── */}
-          {!previewEnded && (
-            <Controls>
-              <ProgressTrack>
-                <ProgressFill style={{ width: `${progressPercent}%` }} />
-                {/* 5 second marker */}
-                <PreviewMarker
-                  style={{
-                    left: `${(PREVIEW_DURATION / (duration || 1)) * 100}%`,
-                  }}
-                >
-                  <PreviewMarkerLabel>Preview ends</PreviewMarkerLabel>
-                </PreviewMarker>
-              </ProgressTrack>
-              <TimeRow>
-                <TimeText>{formatTime(currentTime)}</TimeText>
-
-                <TimeText>{formatTime(duration)}</TimeText>
-              </TimeRow>
-            </Controls>
-          )}
+          <Controls>
+            <ProgressTrack>
+              <ProgressFill style={{ width: `${progressPercent}%` }} />
+            </ProgressTrack>
+            <TimeRow>
+              <TimeText>{formatTime(currentTime)}</TimeText>
+              <TimeText>{formatTime(duration)}</TimeText>
+            </TimeRow>
+          </Controls>
         </VideoContainer>
       </VideoWrapper>
 
@@ -381,41 +347,6 @@ const PlayButton = styled.div({
   ":hover": { transform: "scale(1.1)" },
 });
 
-const GateOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 16, 31, 0.92);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: ${fadeIn} 0.3s ease;
-`;
-
-const GateContent = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 10,
-  padding: "0 24px",
-  textAlign: "center",
-});
-
-const GateIcon = styled.div({ fontSize: 36, marginBottom: 4 });
-
-const GateTitle = styled.h3({
-  fontSize: 18,
-  fontWeight: 700,
-  color: "#fff",
-  margin: 0,
-});
-
-const GateSubtitle = styled.p({
-  fontSize: 13,
-  color: "#aaa",
-  margin: "0 0 8px",
-});
-
 const Controls = styled.div({
   position: "absolute",
   bottom: 0,
@@ -440,32 +371,6 @@ const ProgressFill = styled.div({
   backgroundColor: "#00A2FF",
   borderRadius: 2,
   transition: "width 0.2s linear",
-});
-
-const PreviewMarker = styled.div({
-  position: "absolute",
-  top: -2,
-  width: 2,
-  height: 8,
-  backgroundColor: "#FFD700",
-  transform: "translateX(-50%)",
-  ":hover div": { opacity: 1 },
-});
-
-const PreviewMarkerLabel = styled.div({
-  position: "absolute",
-  bottom: 12,
-  left: "50%",
-  transform: "translateX(-50%)",
-  backgroundColor: "rgba(0,0,0,0.8)",
-  color: "#FFD700",
-  fontSize: 10,
-  padding: "2px 6px",
-  borderRadius: 4,
-  whiteSpace: "nowrap",
-  opacity: 0,
-  transition: "opacity 0.2s",
-  pointerEvents: "none",
 });
 
 const TimeRow = styled.div({
