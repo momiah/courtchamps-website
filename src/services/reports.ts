@@ -5,6 +5,7 @@ import {
   getDocs,
   runTransaction,
   updateDoc,
+  writeBatch,
   Transaction,
 } from "firebase/firestore";
 
@@ -299,11 +300,20 @@ export const rejectReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
-  await updateDoc(doc(db, REPORTS, report.reportId), {
+  const batch = writeBatch(db);
+  batch.update(doc(db, REPORTS, report.reportId), {
     status: REPORT_STATUS.REJECTED,
     resolvedAt: new Date(),
     resolvedBy: adminUserId,
   });
+  // A dismissed no-show frees the match for check-in again.
+  if (report.reason === REPORT_REASONS.NO_SHOW) {
+    batch.update(
+      doc(db, LADDERS, report.ladderId, LADDER_MATCHES, report.ladderMatchId),
+      { noShowReported: false },
+    );
+  }
+  await batch.commit();
 };
 
 const removeStrike = (
@@ -347,6 +357,8 @@ const reverseWalkoverMatchUpdate = () => ({
   walkoverWinner: null,
   walkoverCp: null,
   completedAt: null,
+  // Report is pending again after a revert, so keep the match under review.
+  noShowReported: true,
 });
 
 // Reverses a no-show walkover using the CP amount recorded on the match at
@@ -490,6 +502,15 @@ export const revertReport = async (
         );
       });
       reverseWalkover?.();
+    }
+
+    // Reverting a rejected no-show puts the match back under review (the
+    // approved path already does this via the walkover reversal).
+    if (isNoShow && !wasApproved) {
+      tx.update(
+        doc(db, LADDERS, report.ladderId, LADDER_MATCHES, report.ladderMatchId),
+        { noShowReported: true },
+      );
     }
 
     tx.update(doc(db, REPORTS, report.reportId), {
