@@ -8,127 +8,130 @@ import AdminTable, {
 import ConfirmDialog from "../../components/admin/ConfirmDialog";
 import StatusPill from "../../components/admin/StatusPill";
 import { useAuth } from "../../context/AuthContext";
+import { REPORT_REASONS } from "courtchamps-shared/types";
 import {
-  approveNoShowClaim,
-  fetchPendingNoShowClaims,
-  rejectNoShowClaim,
-  EnrichedNoShowClaim,
-} from "../../services/noShows";
+  approveReport,
+  fetchPendingReports,
+  rejectReport,
+  EnrichedReport,
+} from "../../services/reports";
 
 type PendingAction = {
-  claim: EnrichedNoShowClaim;
+  report: EnrichedReport;
   type: "approve" | "reject";
 };
 
-function NoShows() {
+const isNoShow = (report: EnrichedReport): boolean =>
+  report.reason === REPORT_REASONS.NO_SHOW;
+
+function Reports() {
   const { currentUser } = useAuth();
-  const [claims, setClaims] = useState<EnrichedNoShowClaim[]>([]);
+  const [reports, setReports] = useState<EnrichedReport[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
-    null,
-  );
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [actionBusy, setActionBusy] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const loadClaims = useCallback(async (): Promise<void> => {
+  const loadReports = useCallback(async (): Promise<void> => {
     setLoading(true);
     setLoadError(null);
     try {
-      const rows = await fetchPendingNoShowClaims();
-      setClaims(rows);
+      setReports(await fetchPendingReports());
     } catch (fetchError) {
-      console.error("Failed to load no-show claims", fetchError);
-      setLoadError("Could not load no-show claims. Please refresh to try again.");
+      console.error("Failed to load reports", fetchError);
+      setLoadError("Could not load reports. Please refresh to try again.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadClaims();
-  }, [loadClaims]);
+    void loadReports();
+  }, [loadReports]);
 
   const handleResolve = async (): Promise<void> => {
     if (!pendingAction) return;
-    const { claim, type } = pendingAction;
+    const { report, type } = pendingAction;
     const adminUserId = currentUser?.uid ?? "";
     setActionBusy(true);
     setActionError(null);
     try {
       if (type === "approve") {
-        await approveNoShowClaim(claim, adminUserId);
+        await approveReport(report, adminUserId);
       } else {
-        await rejectNoShowClaim(claim, adminUserId);
+        await rejectReport(report, adminUserId);
       }
-      setClaims((prev) => prev.filter((c) => c.claimId !== claim.claimId));
+      setReports((prev) => prev.filter((r) => r.reportId !== report.reportId));
       setPendingAction(null);
     } catch (resolveError) {
-      console.error("Failed to resolve no-show claim", resolveError);
+      console.error("Failed to resolve report", resolveError);
       setActionError(
         resolveError instanceof Error
           ? resolveError.message
-          : "Could not resolve this claim. Please try again.",
+          : "Could not resolve this report. Please try again.",
       );
     } finally {
       setActionBusy(false);
     }
   };
 
-  const columns = useMemo<AdminTableColumn<EnrichedNoShowClaim>[]>(
+  const columns = useMemo<AdminTableColumn<EnrichedReport>[]>(
     () => [
       {
         key: "match",
         header: "Match",
-        render: (claim) => (
+        render: (report) => (
           <MatchCell>
-            <strong>{claim.courtName || "—"}</strong>
+            <strong>{report.courtName || "—"}</strong>
             <MatchMeta>
-              {claim.matchDate}
-              {claim.matchTime ? ` · ${claim.matchTime}` : ""}
+              {report.matchDate}
+              {report.matchTime ? ` · ${report.matchTime}` : ""}
             </MatchMeta>
           </MatchCell>
         ),
       },
       {
-        key: "type",
-        header: "Type",
-        render: (claim) => (
-          <StatusPill tone="info">
-            {claim.isDoubles ? "Doubles" : "Singles"}
+        key: "reason",
+        header: "Reason",
+        render: (report) => (
+          <StatusPill tone={isNoShow(report) ? "warning" : "danger"}>
+            {report.reasonLabel}
           </StatusPill>
         ),
       },
       {
-        key: "winner",
-        header: "Claiming (walkover win)",
-        render: (claim) => <strong>{claim.claimantLabel}</strong>,
-      },
-      {
-        key: "noShow",
-        header: "No-show",
-        render: (claim) => claim.noShowLabel,
+        key: "target",
+        header: "Reported player",
+        render: (report) => (
+          <TargetCell>
+            <strong>{report.targetLabel}</strong>
+            {report.description ? (
+              <MatchMeta>{report.description}</MatchMeta>
+            ) : null}
+          </TargetCell>
+        ),
       },
       {
         key: "reporter",
         header: "Reported by",
-        render: (claim) => claim.reporterLabel,
+        render: (report) => report.reporterLabel,
       },
       {
         key: "actions",
         header: "Actions",
         align: "right",
-        render: (claim) => (
+        render: (report) => (
           <ActionRow>
             <ApproveButton
               type="button"
-              onClick={() => setPendingAction({ claim, type: "approve" })}
+              onClick={() => setPendingAction({ report, type: "approve" })}
             >
               Approve
             </ApproveButton>
             <RejectButton
               type="button"
-              onClick={() => setPendingAction({ claim, type: "reject" })}
+              onClick={() => setPendingAction({ report, type: "reject" })}
             >
               Reject
             </RejectButton>
@@ -139,28 +142,33 @@ function NoShows() {
     [],
   );
 
+  const approveMessage = (report: EnrichedReport): string =>
+    isNoShow(report)
+      ? `Uphold the no-show against ${report.targetLabel}: award the walkover and add a no-show strike. No games are recorded.`
+      : `Uphold this ${report.reasonLabel} report and add a strike against ${report.targetLabel} in this ladder. Enough strikes disqualify them.`;
+
   return (
-    <AdminLayout title="No Shows">
+    <AdminLayout title="Reports">
       <Intro>
-        Players report a no-show when an opponent doesn&apos;t turn up and they
-        can&apos;t check in. Approving awards a plain walkover win — no games,
-        so no game points or medals — just the match win. Rejecting dismisses
-        the claim.
+        Players report no-shows (from check-in) and conduct — cheating, abuse,
+        harassment — from the match menu. Approving adds a strike to the reported
+        player in that ladder (and their global record); a no-show also awards the
+        walkover. Rejecting dismisses the report with no strike.
       </Intro>
 
       {loading ? (
-        <StateCard>Loading no-show claims…</StateCard>
+        <StateCard>Loading reports…</StateCard>
       ) : loadError ? (
         <StateCard>{loadError}</StateCard>
       ) : (
-        <AdminTable<EnrichedNoShowClaim>
+        <AdminTable<EnrichedReport>
           columns={columns}
-          rows={claims}
-          rowKey={(claim) => claim.claimId}
+          rows={reports}
+          rowKey={(report) => report.reportId}
           emptyState={
             <EmptyState>
-              <strong>No pending no-shows</strong>
-              <span>Reported no-shows awaiting a decision will appear here.</span>
+              <strong>No pending reports</strong>
+              <span>Reports awaiting a decision will appear here.</span>
             </EmptyState>
           }
         />
@@ -169,17 +177,15 @@ function NoShows() {
       {pendingAction ? (
         <ConfirmDialog
           title={
-            pendingAction.type === "approve"
-              ? "Approve walkover?"
-              : "Reject no-show?"
+            pendingAction.type === "approve" ? "Approve report?" : "Reject report?"
           }
           message={
             pendingAction.type === "approve"
-              ? `Award the match to ${pendingAction.claim.claimantLabel} as a walkover. ${pendingAction.claim.noShowLabel} takes the loss. No games are recorded.`
-              : `Dismiss the no-show reported against ${pendingAction.claim.noShowLabel}. The match stays open.`
+              ? approveMessage(pendingAction.report)
+              : `Dismiss this report against ${pendingAction.report.targetLabel}. No strike is applied.`
           }
           confirmLabel={
-            pendingAction.type === "approve" ? "Approve walkover" : "Reject"
+            pendingAction.type === "approve" ? "Approve" : "Reject"
           }
           busy={actionBusy}
           onConfirm={handleResolve}
@@ -196,7 +202,7 @@ function NoShows() {
   );
 }
 
-export default NoShows;
+export default Reports;
 
 const Intro = styled.p({
   color: "#8fa3b8",
@@ -210,6 +216,13 @@ const MatchCell = styled.div({
   display: "flex",
   flexDirection: "column",
   gap: "2px",
+});
+
+const TargetCell = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "2px",
+  maxWidth: "260px",
 });
 
 const MatchMeta = styled.span({
