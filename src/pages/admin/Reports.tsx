@@ -52,7 +52,9 @@ function Reports() {
   const [reports, setReports] = useState<EnrichedReport[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
   const [actionBusy, setActionBusy] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -102,7 +104,6 @@ function Reports() {
       } else {
         await revertReport(report, adminUserId);
       }
-      // Keep the row; reflect the new status in place.
       setReports((prev) =>
         prev.map((r) =>
           r.reportId === report.reportId ? { ...r, status: nextStatus } : r,
@@ -228,9 +229,9 @@ function Reports() {
     <AdminLayout title="Reports">
       <Intro>
         Players report no-shows (from check-in) and conduct — cheating, abuse,
-        harassment — from the match menu. Approving adds a strike to the reported
-        player in that ladder (and their global record); a no-show also awards the
-        walkover. Rejecting dismisses the report with no strike.
+        harassment — from the match menu. Approving adds a strike to the
+        reported player in that ladder (and their global record); a no-show also
+        awards the walkover. Rejecting dismisses the report with no strike.
       </Intro>
 
       <FilterRow>

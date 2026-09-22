@@ -35,7 +35,6 @@ const TEAMS = "teams";
 const USERS = "users";
 const REPORT_COUNTS = LADDER_REPORT_COUNTS_COLLECTION;
 
-// Cap the match-result form to the most recent results, matching the app.
 const MATCH_LOG_CAP = 20;
 
 export interface EnrichedReport extends Report {
@@ -110,12 +109,6 @@ const pushResult = (log: unknown, result: "W" | "L"): string[] =>
 const popResult = (log: unknown): string[] =>
   Array.isArray(log) ? (log as string[]).slice(0, -1) : [];
 
-/**
- * One walkover side (winner or loser), applied forward on approval (`sign` 1) or
- * reversed on revert (`sign` -1): adjusts the win/loss tally and the match-result
- * form, and — where a CP field is given — moves CP (the winner gains, the loser
- * loses on approval; the inverse on revert).
- */
 const applyWalkoverSide = (
   data: Record<string, unknown>,
   role: "winner" | "loser",
@@ -155,7 +148,6 @@ const reverseWalkoverMatchUpdate = () => ({
   walkoverWinner: null,
   walkoverCp: null,
   completedAt: null,
-  // The report is pending again after a revert, so keep the match under review.
   noShowReported: true,
 });
 
@@ -165,13 +157,6 @@ interface WalkoverSide {
   cpField?: string;
 }
 
-/**
- * Reads a no-show walkover's match + ranking docs and returns a closure that
- * writes the settlement. `mode` is the only difference between approve and
- * revert: the sign of every mutation, the CP source (approve caps at the loser's
- * balance; revert reads the amount stored on the match at approval), and the
- * match update. All reads happen here so the caller keeps reads before writes.
- */
 const prepareWalkoverSettlement = async (
   tx: Transaction,
   report: Report,
@@ -201,13 +186,25 @@ const prepareWalkoverSettlement = async (
   const sides: WalkoverSide[] = isDoubles
     ? [
         {
-          ref: doc(db, LADDERS, report.ladderId, LADDER_TEAMS, walkover.winnerTeamKey ?? ""),
+          ref: doc(
+            db,
+            LADDERS,
+            report.ladderId,
+            LADDER_TEAMS,
+            walkover.winnerTeamKey ?? "",
+          ),
           role: "winner",
           cpField,
         },
         { ref: doc(db, TEAMS, walkover.winnerTeamId ?? ""), role: "winner" },
         {
-          ref: doc(db, LADDERS, report.ladderId, LADDER_TEAMS, report.target.teamKey ?? ""),
+          ref: doc(
+            db,
+            LADDERS,
+            report.ladderId,
+            LADDER_TEAMS,
+            report.target.teamKey ?? "",
+          ),
           role: "loser",
           cpField,
         },
@@ -215,40 +212,61 @@ const prepareWalkoverSettlement = async (
       ]
     : [
         {
-          ref: doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, walkover.winnerUserIds[0]),
+          ref: doc(
+            db,
+            LADDERS,
+            report.ladderId,
+            LADDER_PARTICIPANTS,
+            walkover.winnerUserIds[0],
+          ),
           role: "winner",
           cpField,
         },
         {
-          ref: doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, report.target.userIds[0]),
+          ref: doc(
+            db,
+            LADDERS,
+            report.ladderId,
+            LADDER_PARTICIPANTS,
+            report.target.userIds[0],
+          ),
           role: "loser",
           cpField,
         },
       ];
   const snaps = await Promise.all(sides.map((side) => tx.get(side.ref)));
 
-  // CP field lives on the ranking record (ladder team / participant), so the
-  // loser's balance for the cap is that side's snapshot.
   const loserIndex = sides.findIndex(
     (side) => side.role === "loser" && side.cpField,
   );
   const loserSnap = snaps[loserIndex];
   const cp =
     mode === "approve"
-      ? Math.min(WALKOVER_CP, loserSnap?.exists() ? num(loserSnap.data(), cpField) : 0)
+      ? Math.min(
+          WALKOVER_CP,
+          loserSnap?.exists() ? num(loserSnap.data(), cpField) : 0,
+        )
       : matchSnap.exists()
         ? num(matchSnap.data(), "walkoverCp")
         : 0;
 
   const sign: 1 | -1 = mode === "approve" ? 1 : -1;
-  const winnerKey = isDoubles ? walkover.winnerTeamKey ?? "" : walkover.winnerUserIds[0];
+  const winnerKey = isDoubles
+    ? (walkover.winnerTeamKey ?? "")
+    : walkover.winnerUserIds[0];
 
   return () => {
     sides.forEach((side, index) => {
       if (snaps[index].exists()) {
         tx.update(
           side.ref,
-          applyWalkoverSide(snaps[index].data(), side.role, sign, side.cpField, cp),
+          applyWalkoverSide(
+            snaps[index].data(),
+            side.role,
+            sign,
+            side.cpField,
+            cp,
+          ),
         );
       }
     });
@@ -263,11 +281,6 @@ const prepareWalkoverSettlement = async (
   };
 };
 
-/**
- * Reads each struck player's per-ladder count + global conduct docs and returns
- * a closure that writes the given strike change (add on approve, remove on
- * revert) to both.
- */
 const prepareStrikeDelta = async (
   tx: Transaction,
   report: Report,
@@ -317,12 +330,6 @@ const prepareStrikeDelta = async (
   };
 };
 
-/**
- * Approve a report in one atomic transaction: mark it approved, add one strike
- * of its reason to each struck player's per-ladder count and global conduct
- * tally, and — for a no-show — complete the match as a walkover with the capped
- * CP transfer.
- */
 export const approveReport = async (
   report: Report,
   adminUserId: string,
@@ -336,7 +343,12 @@ export const approveReport = async (
     );
     const writeWalkover =
       isNoShow && report.walkover
-        ? await prepareWalkoverSettlement(tx, report, report.walkover, "approve")
+        ? await prepareWalkoverSettlement(
+            tx,
+            report,
+            report.walkover,
+            "approve",
+          )
         : null;
 
     writeStrikes();
@@ -359,7 +371,6 @@ export const rejectReport = async (
     resolvedAt: new Date(),
     resolvedBy: adminUserId,
   });
-  // A dismissed no-show frees the match for check-in again.
   if (report.reason === REPORT_REASONS.NO_SHOW) {
     batch.update(
       doc(db, LADDERS, report.ladderId, LADDER_MATCHES, report.ladderMatchId),
@@ -369,12 +380,6 @@ export const rejectReport = async (
   await batch.commit();
 };
 
-/**
- * Revert a resolved report back to pending. An approved report's effects are
- * undone atomically — one strike removed from each struck player's tallies, and
- * the walkover reversed for a no-show. A rejected report had no effects, so only
- * its status flips back.
- */
 export const revertReport = async (
   report: Report,
   adminUserId: string,
@@ -402,8 +407,6 @@ export const revertReport = async (
 
     writeStrikes?.();
     writeWalkover?.();
-    // Reverting a rejected no-show puts the match back under review (the
-    // approved path already does this via the walkover reversal).
     if (isNoShow && !wasApproved) {
       tx.update(
         doc(db, LADDERS, report.ladderId, LADDER_MATCHES, report.ladderMatchId),
