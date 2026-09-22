@@ -23,12 +23,17 @@ import type {
   Dispute,
   DisputeResolution,
   Game,
+  GameVideo,
   LadderMatch,
   ScoreboardProfile,
   TeamStats,
   UserProfile,
 } from "courtchamps-shared/types";
-import { notificationTypes, notificationSchema } from "courtchamps-shared/schema";
+import {
+  COLLECTION_NAMES,
+  notificationTypes,
+  notificationSchema,
+} from "courtchamps-shared/schema";
 import {
   resolveLadderMatchOutcome,
   scoreSinglesLadderGame,
@@ -62,17 +67,48 @@ const toMillis = (value: unknown): number => {
   return Number.isFinite(t) ? t : 0;
 };
 
+/**
+ * The video evidence for a disputed game — a normal game video uploaded through
+ * the app's video pipeline, keyed by gameId. Newest first; returns the latest.
+ */
+export const fetchDisputeGameVideo = async (
+  gameId: string,
+): Promise<GameVideo | null> => {
+  if (!gameId) return null;
+  const snapshot = await getDocs(
+    query(
+      collection(db, COLLECTION_NAMES.gameVideos),
+      where("gameId", "==", gameId),
+    ),
+  );
+  const videos = snapshot.docs
+    .map((d) => d.data() as GameVideo)
+    .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+  return videos[0] ?? null;
+};
+
+export interface EnrichedDispute extends Dispute {
+  /** True when a game video was uploaded for the disputed game. */
+  hasVideo: boolean;
+}
+
 /** Active disputes for the admin queue, newest first. */
-export const fetchActiveDisputes = async (): Promise<Dispute[]> => {
+export const fetchActiveDisputes = async (): Promise<EnrichedDispute[]> => {
   const snapshot = await getDocs(
     query(
       collection(db, DISPUTES_COLLECTION),
       where("stage", "in", DISPUTE_ACTIVE_STAGES),
     ),
   );
-  return snapshot.docs
+  const disputes = snapshot.docs
     .map((d) => d.data() as Dispute)
     .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+  return Promise.all(
+    disputes.map(async (dispute) => ({
+      ...dispute,
+      hasVideo: Boolean(await fetchDisputeGameVideo(dispute.gameId)),
+    })),
+  );
 };
 
 export const fetchDisputeById = async (
