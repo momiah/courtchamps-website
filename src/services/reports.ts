@@ -24,7 +24,7 @@ import type {
   StrikeCounts,
   DisqualificationReason,
 } from "courtchamps-shared/types";
-import { applyStrike } from "courtchamps-shared/helpers";
+import { applyStrike, removeStrike } from "courtchamps-shared/helpers";
 
 const REPORTS = REPORTS_COLLECTION;
 const LADDERS = "ladders";
@@ -109,17 +109,6 @@ const pushResult = (log: unknown, result: "W" | "L"): string[] =>
 
 const popResult = (log: unknown): string[] =>
   Array.isArray(log) ? (log as string[]).slice(0, -1) : [];
-
-const removeStrike = (
-  strikes: StrikeCounts,
-  reason: DisqualificationReason,
-): StrikeCounts => {
-  const next: StrikeCounts = { ...strikes };
-  const value = (next[reason] ?? 0) - 1;
-  if (value > 0) next[reason] = value;
-  else delete next[reason];
-  return next;
-};
 
 /**
  * One walkover side (winner or loser), applied forward on approval (`sign` 1) or
