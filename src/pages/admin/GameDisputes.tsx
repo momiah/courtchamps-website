@@ -15,17 +15,19 @@ import {
 } from "courtchamps-shared/types";
 import type {
   Dispute,
-  DisputeEvidence,
   Game,
   GameTeam,
+  GameVideo,
   Player,
   SelectedPlayers,
 } from "courtchamps-shared/types";
 import {
   approveDispute,
   fetchActiveDisputes,
+  fetchDisputeGameVideo,
   rejectDispute,
   requestMoreEvidence,
+  EnrichedDispute,
 } from "../../services/disputes";
 
 const playerName = (player?: Player | null): string => {
@@ -49,22 +51,18 @@ const scoreLabel = (game?: Game | null): string => {
   return `${game.team1?.score ?? "-"} - ${game.team2?.score ?? "-"}`;
 };
 
-const latestVideoEvidence = (
-  dispute: Dispute,
-): DisputeEvidence | undefined =>
-  [...(dispute.evidence ?? [])].reverse().find((e) => Boolean(e.videoUrl));
-
-const hasEvidence = (dispute: Dispute): boolean =>
-  (dispute.evidence ?? []).some((e) => e.videoUrl || e.notes);
+const hasEvidence = (dispute: EnrichedDispute): boolean =>
+  dispute.hasVideo ||
+  (dispute.evidence ?? []).some((e) => e.notes || e.courtPositions);
 
 type ActionType = "approve" | "reject" | "moreEvidence";
 
 function GameDisputes() {
   const { currentUser } = useAuth();
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [disputes, setDisputes] = useState<EnrichedDispute[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Dispute | null>(null);
+  const [selected, setSelected] = useState<EnrichedDispute | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [actionBusy, setActionBusy] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -127,7 +125,7 @@ function GameDisputes() {
     }
   };
 
-  const columns = useMemo<AdminTableColumn<Dispute>[]>(
+  const columns = useMemo<AdminTableColumn<EnrichedDispute>[]>(
     () => [
       {
         key: "ladder",
@@ -199,7 +197,7 @@ function GameDisputes() {
       ) : loadError ? (
         <StateCard>{loadError}</StateCard>
       ) : (
-        <AdminTable<Dispute>
+        <AdminTable<EnrichedDispute>
           columns={columns}
           rows={disputes}
           rowKey={(dispute) => dispute.disputeId}
@@ -250,11 +248,27 @@ function DisputeDetail({
   onRequestMore: () => void;
 }) {
   const isDoubles = dispute.ladderType === LADDER_TYPE.DOUBLES;
-  const video = latestVideoEvidence(dispute);
+  const [video, setVideo] = useState<GameVideo | null>(null);
+  const [videoLoading, setVideoLoading] = useState<boolean>(true);
   const positions = [...(dispute.evidence ?? [])]
     .reverse()
     .find((e) => e.courtPositions)?.courtPositions;
   const resolved = dispute.stage === DISPUTE_STAGE.RESOLVED;
+
+  useEffect(() => {
+    let active = true;
+    setVideoLoading(true);
+    fetchDisputeGameVideo(dispute.gameId)
+      .then((found) => {
+        if (active) setVideo(found);
+      })
+      .finally(() => {
+        if (active) setVideoLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [dispute.gameId]);
 
   return (
     <>
@@ -297,7 +311,9 @@ function DisputeDetail({
       </ScoreCompare>
 
       <SectionTitle>Video evidence</SectionTitle>
-      {video?.videoUrl ? (
+      {videoLoading ? (
+        <Muted>Loading video…</Muted>
+      ) : video?.videoUrl ? (
         <VideoWrap>
           <video src={video.videoUrl} controls width="100%" />
         </VideoWrap>
