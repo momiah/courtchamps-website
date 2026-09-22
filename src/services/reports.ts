@@ -4,7 +4,6 @@ import {
   getDoc,
   getDocs,
   runTransaction,
-  updateDoc,
   writeBatch,
   Transaction,
 } from "firebase/firestore";
@@ -100,191 +99,55 @@ const toMillis = (value: unknown): number => {
 const num = (data: Record<string, unknown>, field: string): number =>
   (data[field] as number) ?? 0;
 
+const strikesOf = (data: Record<string, unknown> | undefined): StrikeCounts =>
+  ((data?.strikes as StrikeCounts) ?? {}) as StrikeCounts;
+
 const pushResult = (log: unknown, result: "W" | "L"): string[] =>
   [...(Array.isArray(log) ? (log as string[]) : []), result].slice(
     -MATCH_LOG_CAP,
   );
 
-const winnerUpdate = (data: Record<string, unknown>) => ({
-  numberOfWins: num(data, "numberOfWins") + 1,
-  matchResultLog: pushResult(data.matchResultLog, "W"),
-});
+const popResult = (log: unknown): string[] =>
+  Array.isArray(log) ? (log as string[]).slice(0, -1) : [];
 
-const loserUpdate = (data: Record<string, unknown>) => ({
-  numberOfLosses: num(data, "numberOfLosses") + 1,
-  matchResultLog: pushResult(data.matchResultLog, "L"),
-});
-
-const winnerLadderUpdate = (
-  data: Record<string, unknown>,
-  cpField: string,
-  cp: number,
-) => ({ ...winnerUpdate(data), [cpField]: num(data, cpField) + cp });
-
-const loserLadderUpdate = (
-  data: Record<string, unknown>,
-  cpField: string,
-  cp: number,
-) => ({ ...loserUpdate(data), [cpField]: num(data, cpField) - cp });
-
-const strikesOf = (data: Record<string, unknown> | undefined): StrikeCounts =>
-  ((data?.strikes as StrikeCounts) ?? {}) as StrikeCounts;
-
-/**
- * Approve a report in one atomic transaction: mark it approved, add one strike
- * of its reason to each struck player's per-ladder count and global conduct
- * tally, and — for a no-show — complete the match as a walkover with the capped
- * CP transfer. Reject touches nothing but the report's status.
- */
-export const approveReport = async (
-  report: Report,
-  adminUserId: string,
-): Promise<void> => {
-  const reason = report.reason as DisqualificationReason;
-  const struckUserIds = report.target.userIds ?? [];
-  const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
-
-  await runTransaction(db, async (tx) => {
-    // ── reads first (Firestore requires all reads before any write) ──
-    const countRefs = struckUserIds.map((userId) =>
-      doc(db, LADDERS, report.ladderId, REPORT_COUNTS, userId),
-    );
-    const userRefs = struckUserIds.map((userId) => doc(db, USERS, userId));
-    const countSnaps = await Promise.all(countRefs.map((ref) => tx.get(ref)));
-    const userSnaps = await Promise.all(userRefs.map((ref) => tx.get(ref)));
-
-    let walkoverWrites: (() => void) | null = null;
-    if (isNoShow && report.walkover) {
-      walkoverWrites = await prepareWalkover(tx, report, report.walkover);
-    }
-
-    // ── writes ──
-    struckUserIds.forEach((userId, index) => {
-      const countData = countSnaps[index].exists()
-        ? (countSnaps[index].data() as Record<string, unknown>)
-        : undefined;
-      tx.set(
-        countRefs[index],
-        {
-          userId,
-          ladderId: report.ladderId,
-          teamKey: report.target.teamKey ?? null,
-          strikes: applyStrike(strikesOf(countData), reason),
-          updatedAt: new Date(),
-        },
-        { merge: true },
-      );
-
-      const userData = userSnaps[index].exists()
-        ? (userSnaps[index].data() as Record<string, unknown>)
-        : undefined;
-      const conduct =
-        (userData?.conduct as { strikes?: StrikeCounts } | undefined) ?? {};
-      tx.set(
-        userRefs[index],
-        {
-          conduct: {
-            ...conduct,
-            strikes: applyStrike(conduct.strikes ?? {}, reason),
-            lastReportedAt: new Date(),
-          },
-        },
-        { merge: true },
-      );
-    });
-
-    walkoverWrites?.();
-
-    tx.update(doc(db, REPORTS, report.reportId), {
-      status: REPORT_STATUS.APPROVED,
-      resolvedAt: new Date(),
-      resolvedBy: adminUserId,
-    });
-  });
+const removeStrike = (
+  strikes: StrikeCounts,
+  reason: DisqualificationReason,
+): StrikeCounts => {
+  const next: StrikeCounts = { ...strikes };
+  const value = (next[reason] ?? 0) - 1;
+  if (value > 0) next[reason] = value;
+  else delete next[reason];
+  return next;
 };
 
-// Reads the ranking + match docs for a no-show walkover and returns a closure
-// that performs the writes (so the caller can keep all reads before all writes).
-const prepareWalkover = async (
-  tx: Transaction,
-  report: Report,
-  walkover: ReportWalkover,
-): Promise<() => void> => {
-  const matchRef = doc(
-    db,
-    LADDERS,
-    report.ladderId,
-    LADDER_MATCHES,
-    report.ladderMatchId,
-  );
-  const matchSnap = await tx.get(matchRef);
-  if (!matchSnap.exists()) throw new Error("Match not found");
-  if (
-    (matchSnap.data() as { matchStatus?: string }).matchStatus ===
-    LADDER_MATCH_STATUS.COMPLETED
-  ) {
-    throw new Error("This match has already been completed");
-  }
-
-  const isDoubles = walkover.winnerType === "team";
-
-  if (isDoubles) {
-    const winnerLadderRef = doc(
-      db,
-      LADDERS,
-      report.ladderId,
-      LADDER_TEAMS,
-      walkover.winnerTeamKey ?? "",
-    );
-    const winnerRootRef = doc(db, TEAMS, walkover.winnerTeamId ?? "");
-    const loserLadderRef = doc(
-      db,
-      LADDERS,
-      report.ladderId,
-      LADDER_TEAMS,
-      report.target.teamKey ?? "",
-    );
-    const loserRootRef = doc(db, TEAMS, report.target.teamId ?? "");
-    const [winnerLadder, winnerRoot, loserLadder, loserRoot] =
-      await Promise.all([
-        tx.get(winnerLadderRef),
-        tx.get(winnerRootRef),
-        tx.get(loserLadderRef),
-        tx.get(loserRootRef),
-      ]);
-    const cp = Math.min(
-      WALKOVER_CP,
-      loserLadder.exists() ? num(loserLadder.data(), "XP") : 0,
-    );
-    return () => {
-      if (winnerLadder.exists())
-        tx.update(winnerLadderRef, winnerLadderUpdate(winnerLadder.data(), "XP", cp));
-      if (winnerRoot.exists())
-        tx.update(winnerRootRef, winnerUpdate(winnerRoot.data()));
-      if (loserLadder.exists())
-        tx.update(loserLadderRef, loserLadderUpdate(loserLadder.data(), "XP", cp));
-      if (loserRoot.exists())
-        tx.update(loserRootRef, loserUpdate(loserRoot.data()));
-      tx.update(matchRef, walkoverMatchUpdate(walkover.winnerTeamKey ?? "", cp));
-    };
-  }
-
-  const winnerId = walkover.winnerUserIds[0];
-  const loserId = report.target.userIds[0];
-  const winnerRef = doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, winnerId);
-  const loserRef = doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, loserId);
-  const [winner, loser] = await Promise.all([tx.get(winnerRef), tx.get(loserRef)]);
-  const cp = Math.min(
-    WALKOVER_CP,
-    loser.exists() ? num(loser.data(), "competitionXP") : 0,
-  );
-  return () => {
-    if (winner.exists())
-      tx.update(winnerRef, winnerLadderUpdate(winner.data(), "competitionXP", cp));
-    if (loser.exists())
-      tx.update(loserRef, loserLadderUpdate(loser.data(), "competitionXP", cp));
-    tx.update(matchRef, walkoverMatchUpdate(winnerId, cp));
+/**
+ * One walkover side (winner or loser), applied forward on approval (`sign` 1) or
+ * reversed on revert (`sign` -1): adjusts the win/loss tally and the match-result
+ * form, and — where a CP field is given — moves CP (the winner gains, the loser
+ * loses on approval; the inverse on revert).
+ */
+const applyWalkoverSide = (
+  data: Record<string, unknown>,
+  role: "winner" | "loser",
+  sign: 1 | -1,
+  cpField?: string,
+  cp = 0,
+): Record<string, unknown> => {
+  const isWinner = role === "winner";
+  const countField = isWinner ? "numberOfWins" : "numberOfLosses";
+  const letter: "W" | "L" = isWinner ? "W" : "L";
+  const update: Record<string, unknown> = {
+    [countField]: Math.max(0, num(data, countField) + sign),
+    matchResultLog:
+      sign > 0
+        ? pushResult(data.matchResultLog, letter)
+        : popResult(data.matchResultLog),
   };
+  if (cpField) {
+    update[cpField] = num(data, cpField) + (isWinner ? cp : -cp) * sign;
+  }
+  return update;
 };
 
 const walkoverMatchUpdate = (walkoverWinner: string, cp: number) => ({
@@ -295,6 +158,207 @@ const walkoverMatchUpdate = (walkoverWinner: string, cp: number) => ({
   walkoverCp: cp,
   completedAt: new Date(),
 });
+
+const reverseWalkoverMatchUpdate = () => ({
+  matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+  walkover: false,
+  walkoverReason: null,
+  walkoverWinner: null,
+  walkoverCp: null,
+  completedAt: null,
+  // The report is pending again after a revert, so keep the match under review.
+  noShowReported: true,
+});
+
+interface WalkoverSide {
+  ref: ReturnType<typeof doc>;
+  role: "winner" | "loser";
+  cpField?: string;
+}
+
+/**
+ * Reads a no-show walkover's match + ranking docs and returns a closure that
+ * writes the settlement. `mode` is the only difference between approve and
+ * revert: the sign of every mutation, the CP source (approve caps at the loser's
+ * balance; revert reads the amount stored on the match at approval), and the
+ * match update. All reads happen here so the caller keeps reads before writes.
+ */
+const prepareWalkoverSettlement = async (
+  tx: Transaction,
+  report: Report,
+  walkover: ReportWalkover,
+  mode: "approve" | "revert",
+): Promise<() => void> => {
+  const matchRef = doc(
+    db,
+    LADDERS,
+    report.ladderId,
+    LADDER_MATCHES,
+    report.ladderMatchId,
+  );
+  const matchSnap = await tx.get(matchRef);
+  if (mode === "approve") {
+    if (!matchSnap.exists()) throw new Error("Match not found");
+    if (
+      (matchSnap.data() as { matchStatus?: string }).matchStatus ===
+      LADDER_MATCH_STATUS.COMPLETED
+    ) {
+      throw new Error("This match has already been completed");
+    }
+  }
+
+  const isDoubles = walkover.winnerType === "team";
+  const cpField = isDoubles ? "XP" : "competitionXP";
+  const sides: WalkoverSide[] = isDoubles
+    ? [
+        {
+          ref: doc(db, LADDERS, report.ladderId, LADDER_TEAMS, walkover.winnerTeamKey ?? ""),
+          role: "winner",
+          cpField,
+        },
+        { ref: doc(db, TEAMS, walkover.winnerTeamId ?? ""), role: "winner" },
+        {
+          ref: doc(db, LADDERS, report.ladderId, LADDER_TEAMS, report.target.teamKey ?? ""),
+          role: "loser",
+          cpField,
+        },
+        { ref: doc(db, TEAMS, report.target.teamId ?? ""), role: "loser" },
+      ]
+    : [
+        {
+          ref: doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, walkover.winnerUserIds[0]),
+          role: "winner",
+          cpField,
+        },
+        {
+          ref: doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, report.target.userIds[0]),
+          role: "loser",
+          cpField,
+        },
+      ];
+  const snaps = await Promise.all(sides.map((side) => tx.get(side.ref)));
+
+  // CP field lives on the ranking record (ladder team / participant), so the
+  // loser's balance for the cap is that side's snapshot.
+  const loserIndex = sides.findIndex(
+    (side) => side.role === "loser" && side.cpField,
+  );
+  const loserSnap = snaps[loserIndex];
+  const cp =
+    mode === "approve"
+      ? Math.min(WALKOVER_CP, loserSnap?.exists() ? num(loserSnap.data(), cpField) : 0)
+      : matchSnap.exists()
+        ? num(matchSnap.data(), "walkoverCp")
+        : 0;
+
+  const sign: 1 | -1 = mode === "approve" ? 1 : -1;
+  const winnerKey = isDoubles ? walkover.winnerTeamKey ?? "" : walkover.winnerUserIds[0];
+
+  return () => {
+    sides.forEach((side, index) => {
+      if (snaps[index].exists()) {
+        tx.update(
+          side.ref,
+          applyWalkoverSide(snaps[index].data(), side.role, sign, side.cpField, cp),
+        );
+      }
+    });
+    if (matchSnap.exists()) {
+      tx.update(
+        matchRef,
+        mode === "approve"
+          ? walkoverMatchUpdate(winnerKey, cp)
+          : reverseWalkoverMatchUpdate(),
+      );
+    }
+  };
+};
+
+/**
+ * Reads each struck player's per-ladder count + global conduct docs and returns
+ * a closure that writes the given strike change (add on approve, remove on
+ * revert) to both.
+ */
+const prepareStrikeDelta = async (
+  tx: Transaction,
+  report: Report,
+  mutate: (strikes: StrikeCounts) => StrikeCounts,
+): Promise<() => void> => {
+  const userIds = report.target.userIds ?? [];
+  const countRefs = userIds.map((userId) =>
+    doc(db, LADDERS, report.ladderId, REPORT_COUNTS, userId),
+  );
+  const userRefs = userIds.map((userId) => doc(db, USERS, userId));
+  const countSnaps = await Promise.all(countRefs.map((ref) => tx.get(ref)));
+  const userSnaps = await Promise.all(userRefs.map((ref) => tx.get(ref)));
+
+  return () => {
+    userIds.forEach((userId, index) => {
+      const countData = countSnaps[index].exists()
+        ? (countSnaps[index].data() as Record<string, unknown>)
+        : undefined;
+      tx.set(
+        countRefs[index],
+        {
+          userId,
+          ladderId: report.ladderId,
+          teamKey: report.target.teamKey ?? null,
+          strikes: mutate(strikesOf(countData)),
+          updatedAt: new Date(),
+        },
+        { merge: true },
+      );
+      const userData = userSnaps[index].exists()
+        ? (userSnaps[index].data() as Record<string, unknown>)
+        : undefined;
+      const conduct =
+        (userData?.conduct as { strikes?: StrikeCounts } | undefined) ?? {};
+      tx.set(
+        userRefs[index],
+        {
+          conduct: {
+            ...conduct,
+            strikes: mutate(conduct.strikes ?? {}),
+            lastReportedAt: new Date(),
+          },
+        },
+        { merge: true },
+      );
+    });
+  };
+};
+
+/**
+ * Approve a report in one atomic transaction: mark it approved, add one strike
+ * of its reason to each struck player's per-ladder count and global conduct
+ * tally, and — for a no-show — complete the match as a walkover with the capped
+ * CP transfer.
+ */
+export const approveReport = async (
+  report: Report,
+  adminUserId: string,
+): Promise<void> => {
+  const reason = report.reason as DisqualificationReason;
+  const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
+
+  await runTransaction(db, async (tx) => {
+    const writeStrikes = await prepareStrikeDelta(tx, report, (strikes) =>
+      applyStrike(strikes, reason),
+    );
+    const writeWalkover =
+      isNoShow && report.walkover
+        ? await prepareWalkoverSettlement(tx, report, report.walkover, "approve")
+        : null;
+
+    writeStrikes();
+    writeWalkover?.();
+    tx.update(doc(db, REPORTS, report.reportId), {
+      status: REPORT_STATUS.APPROVED,
+      resolvedAt: new Date(),
+      resolvedBy: adminUserId,
+    });
+  });
+};
 
 export const rejectReport = async (
   report: Report,
@@ -316,194 +380,39 @@ export const rejectReport = async (
   await batch.commit();
 };
 
-const removeStrike = (
-  strikes: StrikeCounts,
-  reason: DisqualificationReason,
-): StrikeCounts => {
-  const next: StrikeCounts = { ...strikes };
-  const value = (next[reason] ?? 0) - 1;
-  if (value > 0) next[reason] = value;
-  else delete next[reason];
-  return next;
-};
-
-const popResult = (log: unknown): string[] =>
-  Array.isArray(log) ? (log as string[]).slice(0, -1) : [];
-
-const winnerReverse = (
-  data: Record<string, unknown>,
-  cpField: string,
-  cp: number,
-) => ({
-  numberOfWins: Math.max(0, num(data, "numberOfWins") - 1),
-  matchResultLog: popResult(data.matchResultLog),
-  [cpField]: num(data, cpField) - cp,
-});
-
-const loserReverse = (
-  data: Record<string, unknown>,
-  cpField: string,
-  cp: number,
-) => ({
-  numberOfLosses: Math.max(0, num(data, "numberOfLosses") - 1),
-  matchResultLog: popResult(data.matchResultLog),
-  [cpField]: num(data, cpField) + cp,
-});
-
-const reverseWalkoverMatchUpdate = () => ({
-  matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-  walkover: false,
-  walkoverReason: null,
-  walkoverWinner: null,
-  walkoverCp: null,
-  completedAt: null,
-  // Report is pending again after a revert, so keep the match under review.
-  noShowReported: true,
-});
-
-// Reverses a no-show walkover using the CP amount recorded on the match at
-// approval time, so the exact transfer is undone even if balances have moved.
-const prepareWalkoverReversal = async (
-  tx: Transaction,
-  report: Report,
-  walkover: ReportWalkover,
-): Promise<() => void> => {
-  const matchRef = doc(
-    db,
-    LADDERS,
-    report.ladderId,
-    LADDER_MATCHES,
-    report.ladderMatchId,
-  );
-  const matchSnap = await tx.get(matchRef);
-  const cp = matchSnap.exists() ? num(matchSnap.data(), "walkoverCp") : 0;
-  const isDoubles = walkover.winnerType === "team";
-
-  if (isDoubles) {
-    const winnerLadderRef = doc(
-      db,
-      LADDERS,
-      report.ladderId,
-      LADDER_TEAMS,
-      walkover.winnerTeamKey ?? "",
-    );
-    const winnerRootRef = doc(db, TEAMS, walkover.winnerTeamId ?? "");
-    const loserLadderRef = doc(
-      db,
-      LADDERS,
-      report.ladderId,
-      LADDER_TEAMS,
-      report.target.teamKey ?? "",
-    );
-    const loserRootRef = doc(db, TEAMS, report.target.teamId ?? "");
-    const [winnerLadder, winnerRoot, loserLadder, loserRoot] =
-      await Promise.all([
-        tx.get(winnerLadderRef),
-        tx.get(winnerRootRef),
-        tx.get(loserLadderRef),
-        tx.get(loserRootRef),
-      ]);
-    return () => {
-      if (winnerLadder.exists())
-        tx.update(winnerLadderRef, winnerReverse(winnerLadder.data(), "XP", cp));
-      if (winnerRoot.exists())
-        tx.update(winnerRootRef, {
-          numberOfWins: Math.max(0, num(winnerRoot.data(), "numberOfWins") - 1),
-          matchResultLog: popResult(winnerRoot.data().matchResultLog),
-        });
-      if (loserLadder.exists())
-        tx.update(loserLadderRef, loserReverse(loserLadder.data(), "XP", cp));
-      if (loserRoot.exists())
-        tx.update(loserRootRef, {
-          numberOfLosses: Math.max(0, num(loserRoot.data(), "numberOfLosses") - 1),
-          matchResultLog: popResult(loserRoot.data().matchResultLog),
-        });
-      if (matchSnap.exists()) tx.update(matchRef, reverseWalkoverMatchUpdate());
-    };
-  }
-
-  const winnerId = walkover.winnerUserIds[0];
-  const loserId = report.target.userIds[0];
-  const winnerRef = doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, winnerId);
-  const loserRef = doc(db, LADDERS, report.ladderId, LADDER_PARTICIPANTS, loserId);
-  const [winner, loser] = await Promise.all([tx.get(winnerRef), tx.get(loserRef)]);
-  return () => {
-    if (winner.exists())
-      tx.update(winnerRef, winnerReverse(winner.data(), "competitionXP", cp));
-    if (loser.exists())
-      tx.update(loserRef, loserReverse(loser.data(), "competitionXP", cp));
-    if (matchSnap.exists()) tx.update(matchRef, reverseWalkoverMatchUpdate());
-  };
-};
-
 /**
  * Revert a resolved report back to pending. An approved report's effects are
- * undone atomically — one strike removed from each struck player's per-ladder
- * and global tallies, and the walkover reversed for a no-show. A rejected report
- * had no effects, so only its status flips back.
+ * undone atomically — one strike removed from each struck player's tallies, and
+ * the walkover reversed for a no-show. A rejected report had no effects, so only
+ * its status flips back.
  */
 export const revertReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
   const reason = report.reason as DisqualificationReason;
-  const struckUserIds = report.target.userIds ?? [];
   const wasApproved = report.status === REPORT_STATUS.APPROVED;
   const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
 
   await runTransaction(db, async (tx) => {
-    const countRefs = wasApproved
-      ? struckUserIds.map((userId) =>
-          doc(db, LADDERS, report.ladderId, REPORT_COUNTS, userId),
-        )
-      : [];
-    const userRefs = wasApproved
-      ? struckUserIds.map((userId) => doc(db, USERS, userId))
-      : [];
-    const countSnaps = await Promise.all(countRefs.map((ref) => tx.get(ref)));
-    const userSnaps = await Promise.all(userRefs.map((ref) => tx.get(ref)));
-
-    let reverseWalkover: (() => void) | null = null;
-    if (wasApproved && isNoShow && report.walkover) {
-      reverseWalkover = await prepareWalkoverReversal(tx, report, report.walkover);
-    }
-
+    let writeStrikes: (() => void) | null = null;
+    let writeWalkover: (() => void) | null = null;
     if (wasApproved) {
-      struckUserIds.forEach((userId, index) => {
-        const countData = countSnaps[index].exists()
-          ? (countSnaps[index].data() as Record<string, unknown>)
-          : undefined;
-        tx.set(
-          countRefs[index],
-          {
-            userId,
-            ladderId: report.ladderId,
-            teamKey: report.target.teamKey ?? null,
-            strikes: removeStrike(strikesOf(countData), reason),
-            updatedAt: new Date(),
-          },
-          { merge: true },
+      writeStrikes = await prepareStrikeDelta(tx, report, (strikes) =>
+        removeStrike(strikes, reason),
+      );
+      if (isNoShow && report.walkover) {
+        writeWalkover = await prepareWalkoverSettlement(
+          tx,
+          report,
+          report.walkover,
+          "revert",
         );
-        const userData = userSnaps[index].exists()
-          ? (userSnaps[index].data() as Record<string, unknown>)
-          : undefined;
-        const conduct =
-          (userData?.conduct as { strikes?: StrikeCounts } | undefined) ?? {};
-        tx.set(
-          userRefs[index],
-          {
-            conduct: {
-              ...conduct,
-              strikes: removeStrike(conduct.strikes ?? {}, reason),
-              lastReportedAt: new Date(),
-            },
-          },
-          { merge: true },
-        );
-      });
-      reverseWalkover?.();
+      }
     }
 
+    writeStrikes?.();
+    writeWalkover?.();
     // Reverting a rejected no-show puts the match back under review (the
     // approved path already does this via the walkover reversal).
     if (isNoShow && !wasApproved) {
@@ -512,7 +421,6 @@ export const revertReport = async (
         { noShowReported: true },
       );
     }
-
     tx.update(doc(db, REPORTS, report.reportId), {
       status: REPORT_STATUS.PENDING,
       resolvedAt: null,
