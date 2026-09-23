@@ -28,6 +28,7 @@ import LadderEdit from "./pages/admin/LadderEdit";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
 import GameDisputes from "./pages/admin/GameDisputes";
+import GameDisputeDetail from "./pages/admin/GameDisputeDetail";
 import Reports from "./pages/admin/Reports";
 
 export default function App() {
@@ -118,6 +119,14 @@ function AppShell() {
           element={
             <RequireRole>
               <GameDisputes />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/disputes/:disputeId"
+          element={
+            <RequireRole>
+              <GameDisputeDetail />
             </RequireRole>
           }
         />

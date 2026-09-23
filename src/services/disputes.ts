@@ -68,31 +68,43 @@ const toMillis = (value: unknown): number => {
 };
 
 /**
- * The video evidence for a disputed game — a normal game video uploaded through
- * the app's video pipeline, keyed by gameId. Newest first; returns the latest.
+ * All video evidence for a disputed game — normal game videos uploaded through
+ * the app's video pipeline, keyed by gameId. Newest first. Each carries its
+ * uploader (`postedBy`), so a doubles side's two players are distinguishable.
  */
-export const fetchDisputeGameVideo = async (
+export const fetchDisputeGameVideos = async (
   gameId: string,
-): Promise<GameVideo | null> => {
-  if (!gameId) return null;
+): Promise<GameVideo[]> => {
+  if (!gameId) return [];
   const snapshot = await getDocs(
     query(
       collection(db, COLLECTION_NAMES.gameVideos),
       where("gameId", "==", gameId),
     ),
   );
-  const videos = snapshot.docs
+  return snapshot.docs
     .map((d) => d.data() as GameVideo)
     .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
-  return videos[0] ?? null;
 };
 
 export interface EnrichedDispute extends Dispute {
   /** True when a game video was uploaded for the disputed game. */
   hasVideo: boolean;
+  /**
+   * True when the disputer took the most recent action (opened the dispute or
+   * submitted evidence) — i.e. the row is waiting on the admin, not the player.
+   */
+  needsAttention: boolean;
 }
 
-/** Active disputes for the admin queue, newest first. */
+const lastActionByPlayer = (dispute: Dispute): boolean => {
+  const lastEvent = dispute.events?.[dispute.events.length - 1];
+  return Boolean(
+    lastEvent && dispute.participantIds?.includes(lastEvent.createdBy),
+  );
+};
+
+/** Active disputes for the admin queue; ones needing attention first. */
 export const fetchActiveDisputes = async (): Promise<EnrichedDispute[]> => {
   const snapshot = await getDocs(
     query(
@@ -103,11 +115,16 @@ export const fetchActiveDisputes = async (): Promise<EnrichedDispute[]> => {
   const disputes = snapshot.docs
     .map((d) => d.data() as Dispute)
     .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
-  return Promise.all(
+  const enriched = await Promise.all(
     disputes.map(async (dispute) => ({
       ...dispute,
-      hasVideo: Boolean(await fetchDisputeGameVideo(dispute.gameId)),
+      hasVideo: (await fetchDisputeGameVideos(dispute.gameId)).length > 0,
+      needsAttention: lastActionByPlayer(dispute),
     })),
+  );
+  // Surface rows waiting on the admin first.
+  return enriched.sort(
+    (a, b) => Number(b.needsAttention) - Number(a.needsAttention),
   );
 };
 
