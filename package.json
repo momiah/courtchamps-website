@@ -35,7 +35,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "import-courts": "node --env-file=.env scripts/importCourts.mjs",
-    "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#main --legacy-peer-deps --force"
+    "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#main --force"
   },
   "eslintConfig": {
     "extends": [
