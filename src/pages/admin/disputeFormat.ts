@@ -21,6 +21,22 @@ export const scoreLabel = (game?: Game | null): string => {
   return `${game.team1?.score ?? "-"} - ${game.team2?.score ?? "-"}`;
 };
 
+/** A dispute event's timestamp as "23 Sep, 4:15 PM" (handles Firestore Timestamps). */
+export const formatEventDate = (value: unknown): string => {
+  const date =
+    value && typeof (value as { toDate?: () => Date }).toDate === "function"
+      ? (value as { toDate: () => Date }).toDate()
+      : new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleString(undefined, {
+        day: "numeric",
+        month: "short",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+};
+
 /** Who uploaded a video-evidence clip (so a doubles side's two players read apart). */
 export const uploaderName = (video: GameVideo): string => {
   const by = video.postedBy;

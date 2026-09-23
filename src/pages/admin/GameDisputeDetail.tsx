@@ -19,7 +19,13 @@ import {
   rejectDispute,
   requestMoreEvidence,
 } from "../../services/disputes";
-import { playerName, sideLabel, scoreLabel, uploaderName } from "./disputeFormat";
+import {
+  playerName,
+  sideLabel,
+  scoreLabel,
+  uploaderName,
+  formatEventDate,
+} from "./disputeFormat";
 
 type ActionType = "approve" | "reject" | "moreEvidence";
 
@@ -180,17 +186,20 @@ function GameDisputeDetail() {
           {dispute.events.map((event, index) => (
             <Accordion key={`${event.stage}-${index}`}>
               <summary>
-                <StatusPill
-                  tone={
-                    event.stage === DISPUTE_STAGE.RESOLVED
-                      ? "info"
-                      : event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
-                        ? "warning"
-                        : "neutral"
-                  }
-                >
-                  {DISPUTE_STAGE_LABELS[event.stage]}
-                </StatusPill>
+                <SummaryRow>
+                  <StatusPill
+                    tone={
+                      event.stage === DISPUTE_STAGE.RESOLVED
+                        ? "info"
+                        : event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
+                          ? "warning"
+                          : "neutral"
+                    }
+                  >
+                    {DISPUTE_STAGE_LABELS[event.stage]}
+                  </StatusPill>
+                  <EventTime>{formatEventDate(event.createdAt)}</EventTime>
+                </SummaryRow>
               </summary>
               <AccordionBody>
                 {event.note || "No additional detail."}
@@ -411,6 +420,12 @@ const Accordion = styled.details({
   marginBottom: "8px",
   "& summary": { cursor: "pointer", listStyle: "none" },
 });
+const SummaryRow = styled.span({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "10px",
+});
+const EventTime = styled.span({ color: "#5f7d99", fontSize: "0.78rem" });
 const AccordionBody = styled.div({
   color: "#c7d6e5",
   fontSize: "0.85rem",
