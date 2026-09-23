@@ -28,7 +28,7 @@ import LadderEdit from "./pages/admin/LadderEdit";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
 import GameDisputes from "./pages/admin/GameDisputes";
-import NoShows from "./pages/admin/NoShows";
+import Reports from "./pages/admin/Reports";
 
 export default function App() {
   return (
@@ -122,10 +122,10 @@ function AppShell() {
           }
         />
         <Route
-          path="/admin/no-shows"
+          path="/admin/reports"
           element={
             <RequireRole>
-              <NoShows />
+              <Reports />
             </RequireRole>
           }
         />

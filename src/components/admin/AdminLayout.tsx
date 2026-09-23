@@ -31,7 +31,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   { label: "Support Tickets", to: "/admin/support", icon: FaTicketAlt },
   { label: "Feedback", to: "/admin/feedback", icon: FaCommentDots },
   { label: "Game Disputes", to: "/admin/disputes", icon: FaFlag },
-  { label: "No Shows", to: "/admin/no-shows", icon: FaUserClock },
+  { label: "Reports", to: "/admin/reports", icon: FaUserClock },
 ];
 
 function AdminLayout({
