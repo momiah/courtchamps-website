@@ -1,4 +1,9 @@
-import type { Game, GameTeam, GameVideo, Player } from "courtchamps-shared/types";
+import type {
+  Game,
+  GameTeam,
+  GameVideo,
+  Player,
+} from "courtchamps-shared/types";
 
 export const playerName = (player?: Player | null): string => {
   if (!player) return "—";
@@ -46,4 +51,26 @@ export const uploaderName = (video: GameVideo): string => {
     `${by.firstName ?? ""} ${by.lastName ?? ""}`.trim() ||
     "Unknown"
   );
+};
+
+export const initials = (player?: Player | null): string => {
+  const name = playerName(player);
+  if (name === "—") return "?";
+  const parts = name.split(/\s+/).filter(Boolean);
+  return (
+    parts.length > 1
+      ? `${parts[0][0]}${parts[parts.length - 1][0]}`
+      : name.slice(0, 2)
+  ).toUpperCase();
+};
+
+/** Time left until `dueMs`, e.g. "1d 22h" or "3h 10m"; null once it has passed. */
+export const formatTimeLeft = (dueMs: number, nowMs: number): string | null => {
+  const left = dueMs - nowMs;
+  if (left <= 0) return null;
+  const minutes = Math.floor(left / 60000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  return `${hours}h ${minutes % 60}m`;
 };

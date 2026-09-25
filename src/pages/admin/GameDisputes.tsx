@@ -7,16 +7,12 @@ import AdminTable, {
   AdminTableColumn,
 } from "../../components/admin/AdminTable";
 import StatusPill from "../../components/admin/StatusPill";
-import { LADDER_TYPE } from "courtchamps-shared/types";
 import {
-  fetchActiveDisputes,
-  EnrichedDispute,
-} from "../../services/disputes";
+  DISPUTE_EVIDENCE_WINDOW_HOURS,
+  LADDER_TYPE,
+} from "courtchamps-shared/types";
+import { fetchActiveDisputes, EnrichedDispute } from "../../services/disputes";
 import { scoreLabel } from "./disputeFormat";
-
-const hasEvidence = (dispute: EnrichedDispute): boolean =>
-  dispute.hasVideo ||
-  (dispute.evidence ?? []).some((e) => e.notes || e.courtPositions);
 
 function GameDisputes() {
   const navigate = useNavigate();
@@ -50,7 +46,7 @@ function GameDisputes() {
           dispute.needsAttention ? (
             <StatusPill tone="warning">Needs review</StatusPill>
           ) : (
-            <StatusPill tone="neutral">Awaiting player</StatusPill>
+            <StatusPill tone="neutral">Awaiting players</StatusPill>
           ),
       },
       {
@@ -60,7 +56,9 @@ function GameDisputes() {
           <LadderCell>
             <strong>{dispute.ladderName || "—"}</strong>
             <Meta>
-              {dispute.ladderType === LADDER_TYPE.DOUBLES ? "Doubles" : "Singles"}
+              {dispute.ladderType === LADDER_TYPE.DOUBLES
+                ? "Doubles"
+                : "Singles"}
             </Meta>
           </LadderCell>
         ),
@@ -89,7 +87,7 @@ function GameDisputes() {
         key: "evidence",
         header: "Evidence",
         render: (dispute) =>
-          hasEvidence(dispute) ? (
+          dispute.hasEvidence ? (
             <StatusPill tone="info">Provided</StatusPill>
           ) : (
             <StatusPill tone="neutral">None</StatusPill>
@@ -116,9 +114,11 @@ function GameDisputes() {
     <AdminLayout title="Game Disputes">
       <Intro>
         A player disputes a game when they reject the reported score. Rows
-        marked <strong>Needs review</strong> have a new submission from the
-        player waiting on you. Open one to approve the disputed score, keep the
-        original, or ask for more evidence.
+        marked <strong>Needs review</strong> have a new submission from a player
+        waiting on you. Open one to approve the disputed score, keep the
+        original, or ask for more evidence. Players then have{" "}
+        {DISPUTE_EVIDENCE_WINDOW_HOURS} hours to respond before the dispute is
+        voided.
       </Intro>
 
       {loading ? (
@@ -152,7 +152,11 @@ const Intro = styled.p({
   maxWidth: "760px",
 });
 
-const LadderCell = styled.div({ display: "flex", flexDirection: "column", gap: "2px" });
+const LadderCell = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  gap: "2px",
+});
 const Meta = styled.span({ color: "#8fa3b8", fontSize: "0.8rem" });
 const Mono = styled.span({
   fontFamily: "monospace",

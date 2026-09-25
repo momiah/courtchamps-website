@@ -16,11 +16,18 @@ import {
   DISPUTE_STAGE,
   DISPUTE_RESOLUTION,
   DISPUTE_ACTIVE_STAGES,
+  DISPUTE_EVENT_TYPE,
+  DISPUTE_EVIDENCE_WINDOW_HOURS,
   LADDER_MATCH_STATUS,
   LADDER_TYPE,
+  disputeTimeMs,
+  getDisputeEvidenceDueAt,
+  isDisputeEvidenceOverdue,
+  isPlayerEvidenceEvent,
 } from "courtchamps-shared/types";
 import type {
   Dispute,
+  DisputeEvent,
   DisputeResolution,
   Game,
   GameVideo,
@@ -56,17 +63,6 @@ const pruneUndefined = <T>(value: T): T =>
     ),
   ) as T;
 
-const toMillis = (value: unknown): number => {
-  if (
-    value &&
-    typeof (value as { toMillis?: () => number }).toMillis === "function"
-  ) {
-    return (value as { toMillis: () => number }).toMillis();
-  }
-  const t = new Date(value as string | number | Date).getTime();
-  return Number.isFinite(t) ? t : 0;
-};
-
 /**
  * All video evidence for a disputed game — normal game videos uploaded through
  * the app's video pipeline, keyed by gameId. Newest first. Each carries its
@@ -84,15 +80,15 @@ export const fetchDisputeGameVideos = async (
   );
   return snapshot.docs
     .map((d) => d.data() as GameVideo)
-    .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+    .sort((a, b) => disputeTimeMs(b.createdAt) - disputeTimeMs(a.createdAt));
 };
 
 export interface EnrichedDispute extends Dispute {
-  /** True when a game video was uploaded for the disputed game. */
-  hasVideo: boolean;
+  /** True when any participant has added a note or a video. */
+  hasEvidence: boolean;
   /**
-   * True when the disputer took the most recent action (opened the dispute or
-   * submitted evidence) — i.e. the row is waiting on the admin, not the player.
+   * True when a player took the most recent action (opened the dispute or
+   * submitted evidence) — i.e. the row is waiting on the admin, not the players.
    */
   needsAttention: boolean;
 }
@@ -114,14 +110,12 @@ export const fetchActiveDisputes = async (): Promise<EnrichedDispute[]> => {
   );
   const disputes = snapshot.docs
     .map((d) => d.data() as Dispute)
-    .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
-  const enriched = await Promise.all(
-    disputes.map(async (dispute) => ({
-      ...dispute,
-      hasVideo: (await fetchDisputeGameVideos(dispute.gameId)).length > 0,
-      needsAttention: lastActionByPlayer(dispute),
-    })),
-  );
+    .sort((a, b) => disputeTimeMs(b.createdAt) - disputeTimeMs(a.createdAt));
+  const enriched = disputes.map((dispute) => ({
+    ...dispute,
+    hasEvidence: (dispute.events ?? []).some(isPlayerEvidenceEvent),
+    needsAttention: lastActionByPlayer(dispute),
+  }));
   // Surface rows waiting on the admin first.
   return enriched.sort(
     (a, b) => Number(b.needsAttention) - Number(a.needsAttention),
@@ -159,8 +153,8 @@ const notifyPlayers = async (
  * approved game, score it through the normal ladder game flow (per-ladder CP +
  * global XP/medals, and the match result when the best-of is decided), complete
  * the match if it is decided, and mark the dispute resolved. `upheld` applies
- * the disputer's corrected game (or an admin-supplied one); `rejected` applies
- * the original game.
+ * the disputer's corrected game; `rejected` and `void` apply the original game.
+ * The scheduled autoVoidLadderDisputes function mirrors this for `void`.
  */
 const resolveDispute = async (
   dispute: Dispute,
@@ -307,25 +301,33 @@ const resolveDispute = async (
       resolution,
       finalGame,
       adminNotes: adminNotes ?? null,
+      evidenceDueAt: null,
       resolvedAt: new Date(),
       resolvedBy: adminUserId,
       events: [
         ...(dispute.events ?? []),
-        {
+        pruneUndefined<DisputeEvent>({
+          type:
+            resolution === DISPUTE_RESOLUTION.VOID
+              ? DISPUTE_EVENT_TYPE.VOIDED
+              : DISPUTE_EVENT_TYPE.RESOLVED,
           stage: DISPUTE_STAGE.RESOLVED,
-          note: adminNotes ?? undefined,
+          note: adminNotes || undefined,
           createdBy: adminUserId,
           createdAt: new Date(),
-        },
-      ].map((e) => pruneUndefined(e)),
+        }),
+      ],
     });
   });
 
+  const ladder = dispute.ladderName ?? "the ladder";
   await notifyPlayers(
     dispute,
     resolution === DISPUTE_RESOLUTION.UPHELD
-      ? `Your disputed game in ${dispute.ladderName ?? "the ladder"} was upheld — the corrected score now stands.`
-      : `Your disputed game in ${dispute.ladderName ?? "the ladder"} was reviewed — the original score stands.`,
+      ? `Your disputed game in ${ladder} was upheld — the corrected score now stands.`
+      : resolution === DISPUTE_RESOLUTION.VOID
+        ? `Your disputed game in ${ladder} was voided — no evidence was added within ${DISPUTE_EVIDENCE_WINDOW_HOURS} hours, so the original score stands.`
+        : `Your disputed game in ${ladder} was reviewed — the original score stands.`,
   );
 };
 
@@ -343,26 +345,56 @@ export const rejectDispute = (
 ): Promise<void> =>
   resolveDispute(dispute, adminUserId, DISPUTE_RESOLUTION.REJECTED, adminNotes);
 
-/** Move a dispute to `more_evidence_requested` and notify the disputer. */
+/**
+ * Void a dispute whose evidence request went unanswered past its deadline. The
+ * scheduled function does this hourly; this covers the gap in between.
+ */
+export const voidDispute = (
+  dispute: Dispute,
+  adminUserId: string,
+  adminNotes?: string,
+): Promise<void> => {
+  if (!isDisputeEvidenceOverdue(dispute, Date.now())) {
+    return Promise.reject(
+      new Error("The evidence deadline for this dispute has not passed yet."),
+    );
+  }
+  return resolveDispute(
+    dispute,
+    adminUserId,
+    DISPUTE_RESOLUTION.VOID,
+    adminNotes,
+  );
+};
+
+/**
+ * Ask every player in the game for more evidence. They have
+ * DISPUTE_EVIDENCE_WINDOW_HOURS to respond before the dispute is voided.
+ */
 export const requestMoreEvidence = async (
   dispute: Dispute,
   adminUserId: string,
   note: string,
 ): Promise<void> => {
+  const now = new Date();
+  const evidenceDueAt = getDisputeEvidenceDueAt(now.getTime());
   await updateDoc(doc(db, DISPUTES_COLLECTION, dispute.disputeId), {
     stage: DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED,
+    evidenceDueAt,
     events: [
       ...(dispute.events ?? []),
-      {
+      pruneUndefined<DisputeEvent>({
+        type: DISPUTE_EVENT_TYPE.EVIDENCE_REQUESTED,
         stage: DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED,
-        ...(note.trim() ? { note: note.trim() } : {}),
+        note: note.trim() || undefined,
         createdBy: adminUserId,
-        createdAt: new Date(),
-      },
+        createdAt: now,
+        evidenceDueAt,
+      }),
     ],
   });
   await notifyPlayers(
     dispute,
-    `An admin requested more evidence for your disputed game in ${dispute.ladderName ?? "the ladder"}.`,
+    `An admin requested more evidence for your disputed game in ${dispute.ladderName ?? "the ladder"}. You have ${DISPUTE_EVIDENCE_WINDOW_HOURS} hours to respond.`,
   );
 };
