@@ -6,6 +6,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import StatusPill, { StatusTone } from "../../components/admin/StatusPill";
 import { useAuth } from "../../context/AuthContext";
 import {
+  DISPUTE_ADMIN_EVENT_TYPES,
   DISPUTE_EVENT_LABELS,
   DISPUTE_EVENT_TYPE,
   DISPUTE_EVIDENCE_WINDOW_HOURS,
@@ -449,8 +450,9 @@ function GameDisputeDetail() {
           <PanelTitle>Timeline</PanelTitle>
           <TimelineList>
             {dispute.events.map((event, index) => {
-              const side = sideOf(event.createdBy);
               const type = eventType(event);
+              const byAdmin = DISPUTE_ADMIN_EVENT_TYPES.includes(type);
+              const side = byAdmin ? null : sideOf(event.createdBy);
               return (
                 <TimelineItem key={index}>
                   <Swatch
@@ -465,7 +467,12 @@ function GameDisputeDetail() {
                   <TimelineText>
                     <span>
                       {DISPUTE_EVENT_LABELS[type]}{" "}
-                      <Faint>· {actorName(event.createdBy)}</Faint>
+                      <Faint>
+                        ·{" "}
+                        {byAdmin && event.createdBy !== DISPUTE_SYSTEM_ACTOR
+                          ? "Admin"
+                          : actorName(event.createdBy)}
+                      </Faint>
                     </span>
                     {type !== DISPUTE_EVENT_TYPE.OPENED &&
                     type !== DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED &&

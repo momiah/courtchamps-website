@@ -18,8 +18,6 @@ import {
   DISPUTE_ACTIVE_STAGES,
   DISPUTE_EVENT_TYPE,
   DISPUTE_EVIDENCE_WINDOW_HOURS,
-  LADDER_MATCH_STATUS,
-  LADDER_TYPE,
   disputeTimeMs,
   getDisputeEvidenceDueAt,
   isDisputeEvidenceOverdue,
@@ -29,7 +27,6 @@ import type {
   Dispute,
   DisputeEvent,
   DisputeResolution,
-  Game,
   GameVideo,
   LadderMatch,
   ScoreboardProfile,
@@ -42,9 +39,9 @@ import {
   notificationSchema,
 } from "courtchamps-shared/schema";
 import {
-  resolveLadderMatchOutcome,
-  scoreSinglesLadderGame,
-  scoreDoublesLadderGame,
+  getDisputePlayerIds,
+  isDoublesDispute,
+  planDisputeResolution,
 } from "courtchamps-shared/helpers";
 
 const LADDERS = "ladders";
@@ -52,8 +49,6 @@ const LADDER_MATCHES = "ladderMatches";
 const LADDER_TEAMS = "ladderTeams";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const USERS = "users";
-
-const APPROVED_GAME = notificationTypes.RESPONSE.APPROVED_GAME;
 
 // Firestore rejects undefined field values anywhere in the written data.
 const pruneUndefined = <T>(value: T): T =>
@@ -154,7 +149,8 @@ const notifyPlayers = async (
  * global XP/medals, and the match result when the best-of is decided), complete
  * the match if it is decided, and mark the dispute resolved. `upheld` applies
  * the disputer's corrected game; `rejected` and `void` apply the original game.
- * The scheduled autoVoidLadderDisputes function mirrors this for `void`.
+ * The planning is shared (planDisputeResolution) with the app's cancel and the
+ * scheduled autoVoidLadderDisputes function.
  */
 const resolveDispute = async (
   dispute: Dispute,
@@ -162,15 +158,6 @@ const resolveDispute = async (
   resolution: DisputeResolution,
   adminNotes?: string,
 ): Promise<void> => {
-  const chosenGame =
-    resolution === DISPUTE_RESOLUTION.UPHELD
-      ? dispute.disputedGame
-      : dispute.originalGame;
-  const finalGame = pruneUndefined<Game>({
-    ...chosenGame,
-    approvalStatus: APPROVED_GAME,
-  });
-
   await runTransaction(db, async (tx) => {
     const matchRef = doc(
       db,
@@ -181,143 +168,56 @@ const resolveDispute = async (
     );
     const matchSnap = await tx.get(matchRef);
     if (!matchSnap.exists()) throw new Error("Match not found");
-
     const match = matchSnap.data() as LadderMatch;
-    if (match.matchStatus === LADDER_MATCH_STATUS.COMPLETED) {
-      throw new Error("This match has already been completed");
-    }
 
-    const games = match.games ?? [];
-    const index = games.findIndex((g) => g.gameId === dispute.gameId);
-    if (index === -1) throw new Error("Game not found in match");
+    const participantRef = (uid: string) =>
+      doc(db, LADDERS, dispute.ladderId, LADDER_PARTICIPANTS, uid);
+    const teamRef = (teamKey: string) =>
+      doc(db, LADDERS, dispute.ladderId, LADDER_TEAMS, teamKey);
+    const userRef = (uid: string) => doc(db, USERS, uid);
+    const playerIds = getDisputePlayerIds(dispute.originalGame);
 
-    const nextGames = [...games];
-    nextGames[index] = finalGame;
-
-    const outcome = resolveLadderMatchOutcome(
-      nextGames,
-      match.bestOf ?? nextGames.length,
-    );
-    const matchDecided = outcome.decided && !!outcome.winnerTeam;
-
-    const playerUserIds = [
-      finalGame.team1.player1?.userId,
-      finalGame.team1.player2?.userId,
-      finalGame.team2.player1?.userId,
-      finalGame.team2.player2?.userId,
-    ].filter((id): id is string => Boolean(id));
-
-    const isDoubles =
-      (match.teams?.length ?? 0) >= 2 ||
-      dispute.ladderType === LADDER_TYPE.DOUBLES;
-
-    // ── all reads before any write (Firestore requirement) ──
-    const participantRefs = playerUserIds.map((uid) =>
-      doc(db, LADDERS, dispute.ladderId, LADDER_PARTICIPANTS, uid),
-    );
-    const userRefs = playerUserIds.map((uid) => doc(db, USERS, uid));
-    const teamRefs = isDoubles
-      ? (match.teams ?? []).map((t) =>
-          doc(db, LADDERS, dispute.ladderId, LADDER_TEAMS, t.teamKey),
-        )
-      : [];
-
+    // All reads before any write (Firestore requirement).
     const [participantSnaps, userSnaps, teamSnaps] = await Promise.all([
-      Promise.all(participantRefs.map((ref) => tx.get(ref))),
-      Promise.all(userRefs.map((ref) => tx.get(ref))),
-      Promise.all(teamRefs.map((ref) => tx.get(ref))),
+      Promise.all(playerIds.map((uid) => tx.get(participantRef(uid)))),
+      Promise.all(playerIds.map((uid) => tx.get(userRef(uid)))),
+      Promise.all(
+        isDoublesDispute(dispute, match)
+          ? (match.teams ?? []).map((t) => tx.get(teamRef(t.teamKey)))
+          : [],
+      ),
     ]);
 
-    const participants = participantSnaps
-      .filter((snap) => snap.exists())
-      .map((snap) => snap.data() as ScoreboardProfile);
-    const users = userSnaps
-      .filter((snap) => snap.exists())
-      .map((snap) => snap.data() as UserProfile);
-    const ladderTeams = teamSnaps
-      .filter((snap) => snap.exists())
-      .map((snap) => snap.data() as TeamStats);
-
-    // ── writes ──
-    const persistUsers = () =>
-      users.forEach((u) => {
-        if (!u.userId) return;
-        tx.update(doc(db, USERS, u.userId), { profileDetail: u.profileDetail });
-      });
-
-    if (isDoubles) {
-      const { scoringParticipants, teams } = await scoreDoublesLadderGame({
-        game: finalGame,
-        participants,
-        users,
-        ladderTeams,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      scoringParticipants.forEach((p) => {
-        if (!p.userId) return;
-        tx.set(
-          doc(db, LADDERS, dispute.ladderId, LADDER_PARTICIPANTS, p.userId),
-          p,
-        );
-      });
-      persistUsers();
-      teams.forEach((team) => {
-        tx.set(
-          doc(db, LADDERS, dispute.ladderId, LADDER_TEAMS, team.teamKey),
-          team,
-        );
-      });
-    } else {
-      scoreSinglesLadderGame({
-        game: finalGame,
-        participants,
-        users,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      participants.forEach((p) => {
-        if (!p.userId) return;
-        tx.set(
-          doc(db, LADDERS, dispute.ladderId, LADDER_PARTICIPANTS, p.userId),
-          p,
-        );
-      });
-      persistUsers();
-    }
-
-    const matchUpdate: Record<string, unknown> = {
-      games: nextGames,
-      lastUpdated: new Date(),
-    };
-    if (matchDecided) {
-      matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-      matchUpdate.completedAt = new Date();
-    }
-    tx.update(matchRef, matchUpdate);
-
-    tx.update(doc(db, DISPUTES_COLLECTION, dispute.disputeId), {
-      stage: DISPUTE_STAGE.RESOLVED,
+    const plan = await planDisputeResolution({
+      dispute,
+      match,
+      participants: participantSnaps
+        .filter((snap) => snap.exists())
+        .map((snap) => snap.data() as ScoreboardProfile),
+      users: userSnaps
+        .filter((snap) => snap.exists())
+        .map((snap) => snap.data() as UserProfile),
+      ladderTeams: teamSnaps
+        .filter((snap) => snap.exists())
+        .map((snap) => snap.data() as TeamStats),
       resolution,
-      finalGame,
-      adminNotes: adminNotes ?? null,
-      evidenceDueAt: null,
-      resolvedAt: new Date(),
-      resolvedBy: adminUserId,
-      events: [
-        ...(dispute.events ?? []),
-        pruneUndefined<DisputeEvent>({
-          type:
-            resolution === DISPUTE_RESOLUTION.VOID
-              ? DISPUTE_EVENT_TYPE.VOIDED
-              : DISPUTE_EVENT_TYPE.RESOLVED,
-          stage: DISPUTE_STAGE.RESOLVED,
-          note: adminNotes || undefined,
-          createdBy: adminUserId,
-          createdAt: new Date(),
-        }),
-      ],
+      actorId: adminUserId,
+      note: adminNotes,
+      now: new Date(),
     });
+
+    plan.participants.forEach((p) => {
+      if (p.userId) tx.set(participantRef(p.userId), p);
+    });
+    plan.users.forEach((u) =>
+      tx.update(userRef(u.userId), { profileDetail: u.profileDetail }),
+    );
+    plan.teams.forEach((team) => tx.set(teamRef(team.teamKey), team));
+    tx.update(matchRef, plan.matchUpdate);
+    tx.update(
+      doc(db, DISPUTES_COLLECTION, dispute.disputeId),
+      plan.disputeUpdate,
+    );
   });
 
   const ladder = dispute.ladderName ?? "the ladder";
