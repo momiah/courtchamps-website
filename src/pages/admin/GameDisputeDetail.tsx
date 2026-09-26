@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
@@ -17,7 +17,8 @@ import {
   DISPUTE_SYSTEM_ACTOR,
   LADDER_TYPE,
   disputeTimeMs,
-  gameVideoDocId,
+  DISPUTE_UNDER_REVIEW_LABEL,
+  buildDisputeTimeline,
   hasCourtPositions,
   isDisputeEvidenceOverdue,
   isPlayerEvidenceEvent,
@@ -56,6 +57,7 @@ const TEAM_COLORS: Record<Side, string> = {
   team2: "#FF9F43",
 };
 const ADMIN_COLOR = "#C58BFF";
+const UNDER_REVIEW_COLOR = "#D4AF37";
 
 const STAGE_TONES: Record<Dispute["stage"], StatusTone> = {
   under_review: "info",
@@ -80,7 +82,7 @@ function GameDisputeDetail() {
   const { currentUser } = useAuth();
 
   const [dispute, setDispute] = useState<Dispute | null>(null);
-  const [videos, setVideos] = useState<GameVideo[]>([]);
+  const [videosById, setVideosById] = useState<Record<string, GameVideo>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>("");
@@ -95,7 +97,7 @@ function GameDisputeDetail() {
     try {
       const found = await fetchDisputeById(disputeId);
       setDispute(found);
-      setVideos(found ? await fetchDisputeGameVideos(found.gameId) : []);
+      setVideosById(found ? await fetchDisputeGameVideos(found.gameId) : {});
     } catch (error) {
       console.error("Failed to load dispute", error);
       setLoadError("Could not load this dispute. Please refresh to try again.");
@@ -112,16 +114,6 @@ function GameDisputeDetail() {
     const timer = window.setInterval(() => setNowMs(Date.now()), 60000);
     return () => window.clearInterval(timer);
   }, []);
-
-  const videosById = useMemo(() => {
-    const map: Record<string, GameVideo> = {};
-    videos.forEach((video) => {
-      if (video.gameId && video.postedBy?.userId) {
-        map[gameVideoDocId(video.gameId, video.postedBy.userId)] = video;
-      }
-    });
-    return map;
-  }, [videos]);
 
   const runAction = async (type: ActionType): Promise<void> => {
     if (!dispute) return;
@@ -449,12 +441,24 @@ function GameDisputeDetail() {
         <Panel>
           <PanelTitle>Timeline</PanelTitle>
           <TimelineList>
-            {dispute.events.map((event, index) => {
+            {buildDisputeTimeline(dispute.events).map((item) => {
+              if (item.kind === "under_review") {
+                return (
+                  <TimelineItem key={item.key}>
+                    <Swatch color={UNDER_REVIEW_COLOR} />
+                    <TimelineText>
+                      <span>{DISPUTE_UNDER_REVIEW_LABEL}</span>
+                    </TimelineText>
+                    <Faint>{formatEventDate(item.createdAt)}</Faint>
+                  </TimelineItem>
+                );
+              }
+              const { event } = item;
               const type = eventType(event);
               const byAdmin = DISPUTE_ADMIN_EVENT_TYPES.includes(type);
               const side = byAdmin ? null : sideOf(event.createdBy);
               return (
-                <TimelineItem key={index}>
+                <TimelineItem key={item.key}>
                   <Swatch
                     color={
                       side
@@ -474,9 +478,7 @@ function GameDisputeDetail() {
                           : actorName(event.createdBy)}
                       </Faint>
                     </span>
-                    {type !== DISPUTE_EVENT_TYPE.OPENED &&
-                    type !== DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED &&
-                    event.note ? (
+                    {byAdmin && event.note ? (
                       <Faint>“{event.note}”</Faint>
                     ) : null}
                   </TimelineText>

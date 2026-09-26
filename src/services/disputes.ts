@@ -65,17 +65,17 @@ const pruneUndefined = <T>(value: T): T =>
  */
 export const fetchDisputeGameVideos = async (
   gameId: string,
-): Promise<GameVideo[]> => {
-  if (!gameId) return [];
+): Promise<Record<string, GameVideo>> => {
+  if (!gameId) return {};
   const snapshot = await getDocs(
     query(
       collection(db, COLLECTION_NAMES.gameVideos),
       where("gameId", "==", gameId),
     ),
   );
-  return snapshot.docs
-    .map((d) => d.data() as GameVideo)
-    .sort((a, b) => disputeTimeMs(b.createdAt) - disputeTimeMs(a.createdAt));
+  return Object.fromEntries(
+    snapshot.docs.map((d) => [d.id, d.data() as GameVideo]),
+  );
 };
 
 export interface EnrichedDispute extends Dispute {
