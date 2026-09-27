@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink as RouterNavLink } from "react-router-dom";
 import styled from "styled-components";
 
 import { CourtChampLogoIcon } from "../assets";
@@ -16,6 +16,13 @@ export default function Header() {
       <BrandLink to="/">
         <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
       </BrandLink>
+
+      <PrimaryNav>
+        <PrimaryLink to="/" end>
+          Home
+        </PrimaryLink>
+        <PrimaryLink to="/players">Players</PrimaryLink>
+      </PrimaryNav>
 
       <NavGroup>
         {loading ? null : currentUser ? (
@@ -56,6 +63,28 @@ const BrandLink = styled(Link)({
 const BrandLogo = styled.img({
   height: "42px",
   width: "auto",
+});
+
+const PrimaryNav = styled.nav({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  marginRight: "auto",
+  marginLeft: "24px",
+  "@media (max-width: 560px)": { marginLeft: "12px", gap: "4px" },
+});
+
+const PrimaryLink = styled(RouterNavLink)({
+  padding: "8px 14px",
+  borderRadius: "8px",
+  color: "#c7d4e1",
+  fontSize: "0.9rem",
+  fontWeight: 600,
+  textDecoration: "none",
+  transition: "color 0.2s, background-color 0.2s",
+  ":hover": { color: "#FFFFFF", backgroundColor: "rgba(255,255,255,0.06)" },
+  "&.active": { color: "#FFFFFF", backgroundColor: "rgba(0,162,255,0.15)" },
+  "@media (max-width: 560px)": { padding: "8px 10px" },
 });
 
 const NavGroup = styled.nav({
