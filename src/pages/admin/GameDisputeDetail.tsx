@@ -58,6 +58,7 @@ const TEAM_COLORS: Record<Side, string> = {
 };
 const ADMIN_COLOR = "#C58BFF";
 const UNDER_REVIEW_COLOR = "#D4AF37";
+const SYSTEM_COLOR = "#8fa3b8";
 
 const STAGE_TONES: Record<Dispute["stage"], StatusTone> = {
   under_review: "info",
@@ -192,10 +193,7 @@ function GameDisputeDetail() {
     return player ? playerName(player) : "Admin";
   };
 
-  const evidenceEvents = dispute.events
-    .map((event, index) => ({ event, index }))
-    .filter(({ event }) => isPlayerEvidenceEvent(event))
-    .reverse();
+  const timeline = buildDisputeTimeline(dispute.events);
 
   const respondedIds = new Set(
     dispute.events
@@ -362,134 +360,153 @@ function GameDisputeDetail() {
         </Panel>
       </TopGrid>
 
-      <Panel>
-        <PanelTitle>
-          Evidence
-          <PanelMeta>
-            {evidenceEvents.length} submission
-            {evidenceEvents.length === 1 ? "" : "s"} ·{" "}
-            {evidenceEvents.filter(({ event }) => event.videoId).length} video
-            {evidenceEvents.filter(({ event }) => event.videoId).length === 1
-              ? ""
-              : "s"}
-          </PanelMeta>
-        </PanelTitle>
-        {evidenceEvents.length === 0 ? (
-          <Muted>No evidence has been added yet.</Muted>
-        ) : (
-          evidenceEvents.map(({ event, index }) => {
-            const side = sideOf(event.createdBy);
-            const video = event.videoId ? videosById[event.videoId] : undefined;
-            return (
-              <EvidenceItem key={index}>
-                <EvidenceHead>
-                  <Avatar color={side ? TEAM_COLORS[side] : ADMIN_COLOR}>
-                    {initials(playerById(event.createdBy))}
-                  </Avatar>
-                  <PlayerText>
-                    <strong>
-                      {actorName(event.createdBy)}
-                      {side
-                        ? ` · ${side === "team1" ? "Team 1" : "Team 2"}`
-                        : ""}
-                      {eventType(event) === DISPUTE_EVENT_TYPE.OPENED
-                        ? " · opened the dispute"
-                        : ""}
-                    </strong>
-                    <Faint>{formatEventDate(event.createdAt)}</Faint>
-                  </PlayerText>
-                  <Grow />
-                  {event.videoId ? <Chip>▶ Video</Chip> : <Chip>No video</Chip>}
-                  {hasCourtPositions(event.courtPositions) ? (
-                    <Chip>Court positions</Chip>
-                  ) : null}
-                  {event.note ? <Chip>Note</Chip> : null}
-                </EvidenceHead>
-                {event.videoId ? (
-                  <VideoRow>
-                    {video?.videoUrl ? (
-                      <VideoFrame src={video.videoUrl} controls />
-                    ) : (
-                      <VideoPending>
-                        Video still uploading or processing
-                      </VideoPending>
-                    )}
-                    {event.courtPositions &&
-                    hasCourtPositions(event.courtPositions) ? (
-                      <CourtDiagram
-                        positions={event.courtPositions}
-                        sideOf={sideOf}
-                      />
-                    ) : (
-                      <CourtEmpty>No court positions</CourtEmpty>
-                    )}
-                  </VideoRow>
-                ) : null}
-                {event.note ? (
-                  <NoteBox>
-                    <NoteLabel>Note</NoteLabel>
-                    {event.note}
-                  </NoteBox>
-                ) : null}
-              </EvidenceItem>
-            );
-          })
-        )}
-      </Panel>
-
-      <BottomGrid>
+      <MainGrid>
         <Panel>
-          <PanelTitle>Timeline</PanelTitle>
-          <TimelineList>
-            {buildDisputeTimeline(dispute.events).map((item) => {
+          <PanelTitle>
+            Timeline
+            <PanelMeta>
+              Oldest first · each action shows what was added
+            </PanelMeta>
+          </PanelTitle>
+          <Phases>
+            {timeline.map((item, position) => {
+              const isLast = position === timeline.length - 1;
+              const current = isLast && !resolved;
               if (item.kind === "under_review") {
                 return (
-                  <TimelineItem key={item.key}>
-                    <Swatch color={UNDER_REVIEW_COLOR} />
-                    <TimelineText>
-                      <span>{DISPUTE_UNDER_REVIEW_LABEL}</span>
-                    </TimelineText>
-                    <Faint>{formatEventDate(item.createdAt)}</Faint>
-                  </TimelineItem>
+                  <Phase key={item.key}>
+                    <PhaseGutter last={isLast}>
+                      <PhaseDot color={UNDER_REVIEW_COLOR} current={current} />
+                    </PhaseGutter>
+                    <PhaseCard current={current}>
+                      <PhaseHead>
+                        <PhaseTitle>{DISPUTE_UNDER_REVIEW_LABEL}</PhaseTitle>
+                        <Grow />
+                        <Faint>{formatEventDate(item.createdAt)}</Faint>
+                      </PhaseHead>
+                      {current ? (
+                        <PhaseText>Waiting on your decision.</PhaseText>
+                      ) : null}
+                    </PhaseCard>
+                  </Phase>
                 );
               }
               const { event } = item;
               const type = eventType(event);
               const byAdmin = DISPUTE_ADMIN_EVENT_TYPES.includes(type);
-              const side = byAdmin ? null : sideOf(event.createdBy);
+              const bySystem = event.createdBy === DISPUTE_SYSTEM_ACTOR;
+              const side = byAdmin || bySystem ? null : sideOf(event.createdBy);
+              const color = side
+                ? TEAM_COLORS[side]
+                : bySystem
+                  ? SYSTEM_COLOR
+                  : ADMIN_COLOR;
+              const video = event.videoId
+                ? videosById[event.videoId]
+                : undefined;
               return (
-                <TimelineItem key={item.key}>
-                  <Swatch
-                    color={
-                      side
-                        ? TEAM_COLORS[side]
-                        : event.createdBy === DISPUTE_SYSTEM_ACTOR
-                          ? "#8fa3b8"
-                          : ADMIN_COLOR
-                    }
-                  />
-                  <TimelineText>
-                    <span>
-                      {DISPUTE_EVENT_LABELS[type]}{" "}
-                      <Faint>
-                        ·{" "}
-                        {byAdmin && event.createdBy !== DISPUTE_SYSTEM_ACTOR
-                          ? "Admin"
-                          : actorName(event.createdBy)}
-                      </Faint>
-                    </span>
-                    {byAdmin && event.note ? (
-                      <Faint>“{event.note}”</Faint>
+                <Phase key={item.key}>
+                  <PhaseGutter last={isLast}>
+                    <PhaseDot color={color} current={current} />
+                  </PhaseGutter>
+                  <PhaseCard current={current}>
+                    <PhaseHead>
+                      <PhaseTitle>{DISPUTE_EVENT_LABELS[type]}</PhaseTitle>
+                      <Actor>
+                        <Avatar color={color} small>
+                          {side
+                            ? initials(playerById(event.createdBy))
+                            : bySystem
+                              ? "⏱"
+                              : "A"}
+                        </Avatar>
+                        {bySystem
+                          ? "Automatic"
+                          : byAdmin
+                            ? "Admin"
+                            : `${actorName(event.createdBy)} · ${side === "team1" ? "Team 1" : "Team 2"}`}
+                      </Actor>
+                      <Grow />
+                      <Faint>{formatEventDate(event.createdAt)}</Faint>
+                    </PhaseHead>
+
+                    {type === DISPUTE_EVENT_TYPE.OPENED ? (
+                      <PhaseText>
+                        Claims the score should be{" "}
+                        <strong>{scoreLabel(dispute.disputedGame)}</strong>{" "}
+                        (reported {scoreLabel(dispute.originalGame)}).
+                      </PhaseText>
                     ) : null}
-                  </TimelineText>
-                  <Faint>{formatEventDate(event.createdAt)}</Faint>
-                </TimelineItem>
+
+                    {event.videoId ? (
+                      <VideoRow>
+                        {video?.videoUrl ? (
+                          <VideoFrame src={video.videoUrl} controls />
+                        ) : (
+                          <VideoPending>
+                            Video still uploading or processing
+                          </VideoPending>
+                        )}
+                        {event.courtPositions &&
+                        hasCourtPositions(event.courtPositions) ? (
+                          <CourtDiagram
+                            positions={event.courtPositions}
+                            sideOf={sideOf}
+                          />
+                        ) : (
+                          <CourtEmpty>No court positions</CourtEmpty>
+                        )}
+                      </VideoRow>
+                    ) : null}
+
+                    {type === DISPUTE_EVENT_TYPE.EVIDENCE_REQUESTED ? (
+                      <>
+                        {event.note ? (
+                          <NoteBox admin>
+                            <NoteLabel>Admin note to players</NoteLabel>
+                            {event.note}
+                          </NoteBox>
+                        ) : null}
+                        {event.evidenceDueAt ? (
+                          <DueText>
+                            Players {current ? "have" : "had"} until{" "}
+                            {formatEventDate(event.evidenceDueAt)} to respond
+                          </DueText>
+                        ) : null}
+                      </>
+                    ) : type === DISPUTE_EVENT_TYPE.RESOLVED ||
+                      type === DISPUTE_EVENT_TYPE.VOIDED ||
+                      type === DISPUTE_EVENT_TYPE.CANCELLED ? (
+                      <>
+                        <PhaseText>
+                          {dispute.resolution
+                            ? DISPUTE_RESOLUTION_LABELS[dispute.resolution]
+                            : "Resolved"}
+                          {dispute.finalGame
+                            ? ` · final score ${scoreLabel(dispute.finalGame)}`
+                            : ""}
+                        </PhaseText>
+                        {event.note ? (
+                          <NoteBox admin>
+                            <NoteLabel>Admin note</NoteLabel>
+                            {event.note}
+                          </NoteBox>
+                        ) : null}
+                      </>
+                    ) : event.note ? (
+                      <NoteBox>
+                        <NoteLabel>Note</NoteLabel>
+                        {event.note}
+                      </NoteBox>
+                    ) : null}
+                  </PhaseCard>
+                </Phase>
               );
             })}
-          </TimelineList>
+          </Phases>
         </Panel>
 
-        <Panel>
+        <DecisionPanel>
           <PanelTitle>Decision</PanelTitle>
           {resolved ? (
             <>
@@ -555,8 +572,8 @@ function GameDisputeDetail() {
               </Actions>
             </>
           )}
-        </Panel>
-      </BottomGrid>
+        </DecisionPanel>
+      </MainGrid>
     </AdminLayout>
   );
 }
@@ -681,8 +698,6 @@ const TopGrid = styled.div({
   marginBottom: "18px",
   "@media (max-width: 1000px)": { gridTemplateColumns: "minmax(0, 1fr)" },
 });
-
-const BottomGrid = styled(TopGrid)({ marginTop: "18px", marginBottom: 0 });
 
 const Panel = styled.section({
   backgroundColor: "#03101F",
@@ -832,18 +847,20 @@ const PlayerText = styled.div<{ right?: boolean }>(({ right }) => ({
   fontSize: "0.88rem",
 }));
 
-const Avatar = styled.span<{ color: string }>(({ color }) => ({
-  width: "30px",
-  height: "30px",
-  borderRadius: "50%",
-  display: "grid",
-  placeItems: "center",
-  flex: "none",
-  backgroundColor: color,
-  color: "#021120",
-  fontSize: "0.68rem",
-  fontWeight: 700,
-}));
+const Avatar = styled.span<{ color: string; small?: boolean }>(
+  ({ color, small }) => ({
+    width: small ? "22px" : "30px",
+    height: small ? "22px" : "30px",
+    borderRadius: "50%",
+    display: "grid",
+    placeItems: "center",
+    flex: "none",
+    backgroundColor: color,
+    color: "#021120",
+    fontSize: small ? "0.58rem" : "0.68rem",
+    fontWeight: 700,
+  }),
+);
 
 const Flag = styled.small({ color: "#f5c451", fontSize: "0.7rem" });
 const Submitted = styled.small({ color: "#5ce6a1", fontSize: "0.7rem" });
@@ -891,28 +908,6 @@ const GameFoot = styled.div({
   padding: "8px 12px",
   color: "#8fa3b8",
   fontSize: "0.76rem",
-});
-
-const EvidenceItem = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  "& + &": { borderTop: "1px solid #09213E", paddingTop: "18px" },
-});
-
-const EvidenceHead = styled.div({
-  display: "flex",
-  alignItems: "center",
-  flexWrap: "wrap",
-  gap: "8px 10px",
-});
-
-const Chip = styled.span({
-  border: panelBorder,
-  borderRadius: "4px",
-  padding: "1px 6px",
-  color: "#8fa3b8",
-  fontSize: "0.7rem",
 });
 
 const VideoRow = styled.div({
@@ -1016,15 +1011,15 @@ const CourtEmpty = styled.div({
   minHeight: "120px",
 });
 
-const NoteBox = styled.div({
-  backgroundColor: "#0a1929",
+const NoteBox = styled.div<{ admin?: boolean }>(({ admin }) => ({
+  backgroundColor: admin ? "rgba(197, 139, 255, 0.1)" : "#0a1929",
   borderRadius: "8px",
   padding: "10px 12px",
-  color: "#c7d6e5",
+  color: admin ? "#e5d2ff" : "#c7d6e5",
   fontSize: "0.88rem",
   lineHeight: 1.5,
   whiteSpace: "pre-wrap",
-});
+}));
 
 const NoteLabel = styled.span({
   display: "block",
@@ -1034,42 +1029,6 @@ const NoteLabel = styled.span({
   letterSpacing: "0.08em",
   textTransform: "uppercase",
   marginBottom: "2px",
-});
-
-const Muted = styled.p({ color: "#8fa3b8", fontSize: "0.85rem", margin: 0 });
-
-const TimelineList = styled.div({ display: "flex", flexDirection: "column" });
-
-const TimelineItem = styled.div({
-  display: "grid",
-  gridTemplateColumns: "12px minmax(0, 1fr) auto",
-  gap: "10px",
-  alignItems: "center",
-  padding: "8px 0",
-  borderBottom: "1px solid #09213E",
-  color: "#fff",
-  fontSize: "0.85rem",
-  "&:last-child": { borderBottom: "none" },
-});
-
-const TimelineText = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  gap: "2px",
-  minWidth: 0,
-});
-
-const NotesInput = styled.textarea({
-  width: "100%",
-  padding: "10px",
-  borderRadius: "8px",
-  backgroundColor: "#0a1929",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "#fff",
-  fontSize: "0.85rem",
-  resize: "vertical",
-  boxSizing: "border-box",
-  fontFamily: "inherit",
 });
 
 const ErrorText = styled.p({
@@ -1127,4 +1086,119 @@ const ResolvedNote = styled.p({
   color: "#5ce6a1",
   fontSize: "0.9rem",
   margin: 0,
+});
+
+const MainGrid = styled.div({
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) 340px",
+  gap: "18px",
+  alignItems: "start",
+  "@media (max-width: 1100px)": { gridTemplateColumns: "minmax(0, 1fr)" },
+});
+
+const DecisionPanel = styled(Panel)({
+  position: "sticky",
+  top: "16px",
+  "@media (max-width: 1100px)": { position: "static" },
+});
+
+const Phases = styled.ol({
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  display: "flex",
+  flexDirection: "column",
+});
+
+const Phase = styled.li({
+  display: "grid",
+  gridTemplateColumns: "24px minmax(0, 1fr)",
+  gap: "12px",
+});
+
+const PhaseGutter = styled.div<{ last: boolean }>(({ last }) => ({
+  position: "relative",
+  display: "flex",
+  justifyContent: "center",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    top: 0,
+    bottom: last ? "calc(100% - 18px)" : 0,
+    width: "2px",
+    backgroundColor: "#D4AF37",
+    opacity: 0.6,
+  },
+}));
+
+const PhaseDot = styled.span<{ color: string; current: boolean }>(
+  ({ color, current }) => ({
+    position: "relative",
+    marginTop: "12px",
+    width: "12px",
+    height: "12px",
+    borderRadius: "50%",
+    backgroundColor: color,
+    boxShadow: current ? `0 0 0 4px ${color}33, 0 0 10px ${color}` : "none",
+  }),
+);
+
+const PhaseCard = styled.div<{ current: boolean }>(({ current }) => ({
+  border: `1px solid ${current ? "#16406a" : "#09213E"}`,
+  backgroundColor: current ? "#041526" : "transparent",
+  borderRadius: "10px",
+  padding: "10px 14px",
+  marginBottom: "12px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  minWidth: 0,
+}));
+
+const PhaseHead = styled.div({
+  display: "flex",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: "6px 12px",
+});
+
+const PhaseTitle = styled.span({
+  color: "#fff",
+  fontWeight: 700,
+  fontSize: "0.95rem",
+});
+
+const Actor = styled.span({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  color: "#9fb8c8",
+  fontSize: "0.82rem",
+});
+
+const PhaseText = styled.p({
+  margin: 0,
+  color: "#c7d6e5",
+  fontSize: "0.88rem",
+  "& strong": { color: "#fff" },
+});
+
+const DueText = styled.p({
+  margin: 0,
+  color: "#f5c451",
+  fontSize: "0.82rem",
+  fontWeight: 600,
+});
+
+const NotesInput = styled.textarea({
+  width: "100%",
+  padding: "10px",
+  borderRadius: "8px",
+  backgroundColor: "#0a1929",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#fff",
+  fontSize: "0.85rem",
+  resize: "vertical",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
 });
