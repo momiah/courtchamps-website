@@ -53,10 +53,10 @@ type ActionType = "approve" | "reject" | "moreEvidence" | "void";
 type Side = "team1" | "team2";
 
 const TEAM_COLORS: Record<Side, string> = {
-  team1: "#00A2FF",
+  team1: "#2FD27A",
   team2: "#FF9F43",
 };
-const ADMIN_COLOR = "#C58BFF";
+const ADMIN_COLOR = "#00A2FF";
 const UNDER_REVIEW_COLOR = "#D4AF37";
 const SYSTEM_COLOR = "#8fa3b8";
 
@@ -498,6 +498,8 @@ function GameDisputeDetail() {
                         <NoteLabel>Note</NoteLabel>
                         {event.note}
                       </NoteBox>
+                    ) : !event.videoId ? (
+                      <Faint>No note or video on this entry.</Faint>
                     ) : null}
                   </PhaseCard>
                 </Phase>
@@ -1012,10 +1014,10 @@ const CourtEmpty = styled.div({
 });
 
 const NoteBox = styled.div<{ admin?: boolean }>(({ admin }) => ({
-  backgroundColor: admin ? "rgba(197, 139, 255, 0.1)" : "#0a1929",
+  backgroundColor: admin ? "rgba(0, 162, 255, 0.1)" : "#0a1929",
   borderRadius: "8px",
   padding: "10px 12px",
-  color: admin ? "#e5d2ff" : "#c7d6e5",
+  color: admin ? "#cfeaff" : "#c7d6e5",
   fontSize: "0.88rem",
   lineHeight: 1.5,
   whiteSpace: "pre-wrap",
