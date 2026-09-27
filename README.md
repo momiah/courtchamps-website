@@ -2,6 +2,19 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Auth domain (mobile Safari sign-in)
+
+`REACT_APP_FIREBASE_AUTH_DOMAIN` controls the domain that serves the Firebase
+OAuth handler (`/__/auth/handler`). Set it to the domain the app is served from
+(e.g. `courtchamps.com`) so the handler is first-party. If it is left on the
+default `*.firebaseapp.com`, iOS Safari partitions/clears the handler's
+`sessionStorage` and sign-in fails with "missing initial state".
+
+Before switching it to a custom domain, that domain must be (1) connected as a
+Firebase Hosting custom domain, (2) added under Firebase Auth → Settings →
+Authorized domains, and (3) added to each OAuth provider's redirect URI as
+`https://<domain>/__/auth/handler`.
+
 ## Available Scripts
 
 In the project directory, you can run:
