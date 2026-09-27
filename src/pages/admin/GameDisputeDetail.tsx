@@ -74,6 +74,8 @@ const eventType = (event: DisputeEvent): DisputeEventType =>
       ? DISPUTE_EVENT_TYPE.EVIDENCE_REQUESTED
       : DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED);
 
+const profilePath = (userId: string): string => `/players/${userId}`;
+
 const teamPlayers = (team?: GameTeam | null): Player[] =>
   [team?.player1, team?.player2].filter((p): p is Player => Boolean(p));
 
@@ -336,7 +338,13 @@ function GameDisputeDetail() {
                             {initials(player)}
                           </Avatar>
                           <PlayerText right={side === "team2"}>
-                            <strong>{playerName(player)}</strong>
+                            <ProfileLink
+                              href={profilePath(player.userId)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {playerName(player)}
+                            </ProfileLink>
                             {opener ? <Flag>⚑ Opened dispute</Flag> : null}
                             {summary ? (
                               <Submitted>✓ {summary}</Submitted>
@@ -420,11 +428,22 @@ function GameDisputeDetail() {
                               ? "⏱"
                               : "A"}
                         </Avatar>
-                        {bySystem
-                          ? "Automatic"
-                          : byAdmin
-                            ? "Admin"
-                            : `${actorName(event.createdBy)} · ${side === "team1" ? "Team 1" : "Team 2"}`}
+                        {bySystem ? (
+                          "Automatic"
+                        ) : byAdmin ? (
+                          "Admin"
+                        ) : (
+                          <>
+                            <ProfileLink
+                              href={profilePath(event.createdBy)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {actorName(event.createdBy)}
+                            </ProfileLink>
+                            {` · ${side === "team1" ? "Team 1" : "Team 2"}`}
+                          </>
+                        )}
                       </Actor>
                       <Grow />
                       <Faint>{formatEventDate(event.createdAt)}</Faint>
@@ -1203,4 +1222,11 @@ const NotesInput = styled.textarea({
   resize: "vertical",
   boxSizing: "border-box",
   fontFamily: "inherit",
+});
+
+const ProfileLink = styled.a({
+  color: "#fff",
+  fontWeight: 700,
+  textDecoration: "none",
+  "&:hover": { color: "#00A2FF", textDecoration: "underline" },
 });
