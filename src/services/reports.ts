@@ -23,8 +23,10 @@ import type {
   ReportWalkover,
   StrikeCounts,
   DisqualificationReason,
+  LadderMatch,
 } from "courtchamps-shared/types";
 import { applyStrike, removeStrike } from "courtchamps-shared/helpers";
+import { reconcileLadderCourtFee } from "../helpers/courtFee";
 
 const REPORTS = REPORTS_COLLECTION;
 const LADDERS = "ladders";
@@ -277,6 +279,10 @@ const prepareWalkoverSettlement = async (
           ? walkoverMatchUpdate(winnerKey, cp)
           : reverseWalkoverMatchUpdate(),
       );
+      if (mode === "approve") {
+        // STUB: the no-show player bears the court fee; reimburse the attendee.
+        reconcileLadderCourtFee(matchSnap.data() as LadderMatch, "walkover");
+      }
     }
   };
 };
