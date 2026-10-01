@@ -43,6 +43,14 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "moduleNameMapper": {
+      "^courtchamps-shared/types$": "<rootDir>/node_modules/courtchamps-shared/dist/types/index.js",
+      "^courtchamps-shared/schema$": "<rootDir>/node_modules/courtchamps-shared/dist/schema.js",
+      "^courtchamps-shared/helpers$": "<rootDir>/node_modules/courtchamps-shared/dist/helpers/index.js",
+      "^courtchamps-shared$": "<rootDir>/node_modules/courtchamps-shared/dist/index.js"
+    }
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -56,6 +64,7 @@
     ]
   },
   "devDependencies": {
+    "@types/jest": "^27.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/react-router-dom": "^5.3.3",
