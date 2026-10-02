@@ -1,4 +1,6 @@
+import { DISPUTE_ADMIN_EVENT_TYPES } from "courtchamps-shared/types";
 import type {
+  DisputeEventType,
   Game,
   GameTeam,
   GameVideo,
@@ -74,3 +76,17 @@ export const formatTimeLeft = (dueMs: number, nowMs: number): string | null => {
   if (days > 0) return `${days}d ${hours}h`;
   return `${hours}h ${minutes % 60}m`;
 };
+
+/**
+ * Admin-typed events (resolved, voided, evidence requested) are normally an
+ * admin's action, but a player on the reporter's side can also resolve a
+ * dispute by approving the disputed score, in which case the event's author is
+ * that player and should be shown as such.
+ */
+export const isAdminActor = (
+  type: DisputeEventType,
+  createdBy: string,
+  participantIds: string[] = [],
+): boolean =>
+  DISPUTE_ADMIN_EVENT_TYPES.includes(type) &&
+  !participantIds.includes(createdBy);
