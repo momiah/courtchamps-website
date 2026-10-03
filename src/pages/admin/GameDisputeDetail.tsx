@@ -6,7 +6,6 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import StatusPill, { StatusTone } from "../../components/admin/StatusPill";
 import { useAuth } from "../../context/AuthContext";
 import {
-  DISPUTE_ADMIN_EVENT_TYPES,
   DISPUTE_EVENT_LABELS,
   DISPUTE_EVENT_TYPE,
   DISPUTE_EVIDENCE_WINDOW_HOURS,
@@ -43,6 +42,7 @@ import {
 } from "../../services/disputes";
 import {
   formatEventDate,
+  isAdminActor,
   formatTimeLeft,
   initials,
   playerName,
@@ -401,7 +401,11 @@ function GameDisputeDetail() {
               }
               const { event } = item;
               const type = eventType(event);
-              const byAdmin = DISPUTE_ADMIN_EVENT_TYPES.includes(type);
+              const byAdmin = isAdminActor(
+                type,
+                event.createdBy,
+                dispute.participantIds,
+              );
               const bySystem = event.createdBy === DISPUTE_SYSTEM_ACTOR;
               const side = byAdmin || bySystem ? null : sideOf(event.createdBy);
               const color = side
