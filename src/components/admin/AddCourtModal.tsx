@@ -299,7 +299,17 @@ function AddCourtModal({
 
       {court?.submission && isPendingCourtSubmission(court) ? (
         <SubmissionNote data-testid="court-submission-note">
-          Submitted by @{court.submission.submittedByUsername || court.submission.submittedBy} for{" "}
+          Submitted by{" "}
+          <SubmitterLink
+            href={`/players/${court.submission.submittedBy}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            @
+            {court.submission.submittedByUsername ||
+              court.submission.submittedBy}
+          </SubmitterLink>{" "}
+          for{" "}
           <strong>{court.submission.ladderName}</strong> on{" "}
           {court.submission.submittedAt.toLocaleDateString()}. Add the
           latitude and longitude and save to approve it, add it to the ladder
@@ -467,6 +477,12 @@ const GuidanceNote = styled.p({
   color: "#c7d4e1",
   fontSize: "0.83rem",
   lineHeight: 1.5,
+});
+
+const SubmitterLink = styled.a({
+  color: "#f5c451",
+  fontWeight: 600,
+  textDecoration: "underline",
 });
 
 const SubmissionNote = styled.p({
