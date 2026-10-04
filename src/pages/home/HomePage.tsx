@@ -169,7 +169,7 @@ const moreFeatures = [
 
 export default function HomePage() {
   usePageMeta({
-    title: "Court Champs – Badminton League & Score Tracking App",
+    title: "Court Champs – Badminton Leagues, Ladders & Tournaments",
     path: "/",
   });
 
@@ -211,14 +211,14 @@ export default function HomePage() {
       <Hero>
         <HeroCopy>
           <Logo src={CourtChampLogo} alt="CourtChamps" />
-          <Eyebrow>The badminton league &amp; score tracking app</Eyebrow>
+          <Eyebrow>The home of competitive racket sports</Eyebrow>
           <HeroHeadline>
             Turn every match into a <Gradient>title race</Gradient>
           </HeroHeadline>
           <HeroSub>
-            Join badminton leagues and tournaments, log live scores, track your
-            stats and climb the ranks. CourtChamps brings a whole new
-            competitive experience to your pocket.
+            Join badminton leagues, ladders and tournaments, log live scores,
+            share match videos and climb the ranks. CourtChamps brings a whole
+            new competitive experience to your pocket.
           </HeroSub>
           <div>{StoreBadges}</div>
           <HighlightRow>
