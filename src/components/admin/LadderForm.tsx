@@ -36,7 +36,7 @@ import {
 } from "./formControls";
 
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
-const MAX_PLAYERS_OPTIONS = [32, 64, 128, 256, 512, 1024, 2048];
+const MAX_PLAYERS_OPTIONS = [128, 256, 512, 1024, 2048];
 const LADDER_TYPE_OPTIONS: LadderType[] = ["Singles", "Doubles"];
 const GENDER_TYPE_OPTIONS: GenderType[] = ["Mens", "Womens", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
@@ -117,10 +117,12 @@ function LadderForm({
   initialLadder,
   onSubmit,
   submitting,
+  locked = false,
 }: {
   initialLadder?: Ladder | null;
   onSubmit: (input: LadderInput, options: { imageFile: File | null }) => void;
   submitting: boolean;
+  locked?: boolean;
 }) {
   const {
     control,
@@ -417,8 +419,18 @@ function LadderForm({
     return image.trim().length > 0 ? image : null;
   }, [imagePreviewUrl, image]);
 
+  const initialFormState = useMemo(
+    () => buildInitialState(initialLadder),
+    [initialLadder],
+  );
+  const currentValues = watch();
+  const hasChanges =
+    imageFile !== null ||
+    JSON.stringify(currentValues) !== JSON.stringify(initialFormState);
+  const canSave = !locked && (!initialLadder || hasChanges);
+
   const onValid: SubmitHandler<LadderFormState> = (values) => {
-    if (submitting) {
+    if (submitting || !canSave) {
       return;
     }
 
@@ -452,6 +464,12 @@ function LadderForm({
   return (
     <>
       <Form onSubmit={handleSubmit(onValid)}>
+        {locked ? (
+          <LockedNote data-testid="ladder-locked-note">
+            This ladder has started, so its settings are locked.
+          </LockedNote>
+        ) : null}
+        <LockableFieldset disabled={locked}>
         <Section>
           <DetailsRow>
             <DetailsColumn>
@@ -914,15 +932,19 @@ function LadderForm({
           </FeeRow>
         </Section>
 
-        <SubmitRow>
-          <PrimaryButton type="submit" disabled={submitting}>
-            {submitting
-              ? "Saving…"
-              : initialLadder
-                ? "Save changes"
-                : "Create ladder"}
-          </PrimaryButton>
-        </SubmitRow>
+        </LockableFieldset>
+
+        {locked ? null : (
+          <SubmitRow>
+            <PrimaryButton type="submit" disabled={submitting || !canSave}>
+              {submitting
+                ? "Saving…"
+                : initialLadder
+                  ? "Save changes"
+                  : "Create ladder"}
+            </PrimaryButton>
+          </SubmitRow>
+        )}
       </Form>
 
       {isCourtsModalOpen ? (
@@ -1031,6 +1053,26 @@ const Form = styled.form({
   flexDirection: "column",
   gap: "28px",
   width: "100%",
+});
+
+const LockableFieldset = styled.fieldset({
+  display: "flex",
+  flexDirection: "column",
+  gap: "28px",
+  border: "none",
+  margin: 0,
+  padding: 0,
+  minWidth: 0,
+  "&:disabled": { opacity: 0.7 },
+});
+
+const LockedNote = styled.div({
+  padding: "12px 14px",
+  borderRadius: "10px",
+  backgroundColor: "rgba(245, 196, 81, 0.1)",
+  border: "1px solid rgba(245, 196, 81, 0.4)",
+  color: "#f5c451",
+  fontSize: "0.85rem",
 });
 
 const Section = styled.section({
