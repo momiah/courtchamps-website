@@ -18,6 +18,7 @@ import {
 
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { appImages } from "../../assets/appImages";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
@@ -33,6 +34,10 @@ const theme = {
   text: "#FFFFFF",
   muted: "#93a7bd",
 };
+
+// Pixel size of the WebP screenshots in assets/appImages.
+const SCREENSHOT_WIDTH = 750;
+const SCREENSHOT_HEIGHT = 1630;
 
 // ─── Content ───────────────────────────────────────────────────────────────────
 
@@ -65,43 +70,43 @@ const steps = [
 
 const features = [
   {
-    label: "Scoreboard",
+    label: "Live Badminton Scoreboard",
     image: appImages.scoreboard,
     description:
       "Add scores and see real-time match updates, player stats, and player performance.",
   },
   {
-    label: "Home page",
+    label: "Leagues & Top Players Near You",
     image: appImages.homePage,
     description:
       "View top players, see real-time stats and join or create leagues in your area!",
   },
   {
-    label: "Pre-Scheduled matches",
+    label: "Automatic Tournament Fixtures",
     image: appImages.tournamentFixtures,
     description:
       "Cut back admin time with automatic generation of teams and fixtures for round robin tournaments.",
   },
   {
-    label: "Player details modal",
+    label: "Player Stats & Achievements",
     image: appImages.profileDetailModal,
     description:
       "A detailed view of a player's profile, showing stats, achievements, and other relevant information in a clean overlay.",
   },
   {
-    label: "League Summary",
+    label: "League Standings & Summaries",
     image: appImages.leagueSummary,
     description:
       "An overview of the league, including standings, recent matches, prize distribution, and player rankings all in one place.",
   },
   {
-    label: "Team details modal",
+    label: "Doubles Team Stats & Rivals",
     image: appImages.teamDetailModal,
     description:
       "View detailed team stats for your team and see who your rival is!",
   },
   {
-    label: "Chat Room",
+    label: "League Chat Rooms",
     image: appImages.chatRoom,
     description:
       "Connect with players in dedicated private chat rooms for every league, discuss games, and share experiences!",
@@ -163,6 +168,11 @@ const moreFeatures = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  usePageMeta({
+    title: "Court Champs – Badminton League & Score Tracking App",
+    path: "/",
+  });
+
   useEffect(() => {
     AOS.init({
       duration: 600,
@@ -173,26 +183,20 @@ export default function HomePage() {
     });
   }, []);
 
-  const openAppStore = () => {
-    window.open(
-      "https://apps.apple.com/app/court-champs/id6538725576",
-      "_blank",
-    );
-  };
-
-  const openPlayStore = () => {
-    window.open(
-      "https://play.google.com/store/apps/details?id=com.courtchamp",
-      "_blank",
-    );
-  };
-
   const StoreBadges = (
     <BadgeRow>
-      <BadgeLink onClick={openAppStore} aria-label="Download on the App Store">
+      <BadgeLink
+        href="https://apps.apple.com/app/court-champs/id6538725576"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <BadgeImage src={appStoreBadge} alt="Download on the App Store" />
       </BadgeLink>
-      <BadgeLink onClick={openPlayStore} aria-label="Get it on Google Play">
+      <BadgeLink
+        href="https://play.google.com/store/apps/details?id=com.courtchamp"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <BadgeImage src={playStoreBadge} alt="Get it on Google Play" />
       </BadgeLink>
     </BadgeRow>
@@ -206,22 +210,18 @@ export default function HomePage() {
       {/* ─── Hero ─── */}
       <Hero>
         <HeroCopy>
-          <Logo src={CourtChampLogo} alt="CourtChamps" data-aos="fade-up" />
-          <Eyebrow data-aos="fade-up" data-aos-delay="50">
-            The home of competitive racket sports
-          </Eyebrow>
-          <HeroHeadline data-aos="fade-up" data-aos-delay="100">
+          <Logo src={CourtChampLogo} alt="CourtChamps" />
+          <Eyebrow>The badminton league &amp; score tracking app</Eyebrow>
+          <HeroHeadline>
             Turn every match into a <Gradient>title race</Gradient>
           </HeroHeadline>
-          <HeroSub data-aos="fade-up" data-aos-delay="150">
-            Join leagues and tournaments, log live scores, track your stats and
-            climb the ranks. CourtChamps brings a whole new competitive
-            experience to your pocket.
+          <HeroSub>
+            Join badminton leagues and tournaments, log live scores, track your
+            stats and climb the ranks. CourtChamps brings a whole new
+            competitive experience to your pocket.
           </HeroSub>
-          <div data-aos="fade-up" data-aos-delay="200">
-            {StoreBadges}
-          </div>
-          <HighlightRow data-aos="fade-up" data-aos-delay="250">
+          <div>{StoreBadges}</div>
+          <HighlightRow>
             {heroHighlights.map((h) => (
               <HighlightPill key={h.label}>
                 <PillIcon>{h.icon}</PillIcon>
@@ -231,17 +231,22 @@ export default function HomePage() {
           </HighlightRow>
         </HeroCopy>
 
-        <HeroVisual data-aos="fade-left" data-aos-delay="200">
+        <HeroVisual>
           <PhoneFrame $featured>
             <PhoneScreen
               src={appImages.homePage}
-              alt="CourtChamps home screen"
+              alt="CourtChamps badminton app home screen"
+              width={SCREENSHOT_WIDTH}
+              height={SCREENSHOT_HEIGHT}
+              fetchPriority="high"
             />
           </PhoneFrame>
           <PhoneFrame $floatingBack>
             <PhoneScreen
               src={appImages.scoreboard}
-              alt="CourtChamps scoreboard"
+              alt="CourtChamps live badminton scoreboard"
+              width={SCREENSHOT_WIDTH}
+              height={SCREENSHOT_HEIGHT}
             />
           </PhoneFrame>
         </HeroVisual>
@@ -282,7 +287,14 @@ export default function HomePage() {
               <FeatureRow key={feat.label} $reverse={isOdd}>
                 <FeatureVisual data-aos={isOdd ? "fade-left" : "fade-right"}>
                   <PhoneFrame>
-                    <PhoneScreen src={feat.image} alt={feat.label} />
+                    <PhoneScreen
+                      src={feat.image}
+                      alt={feat.label}
+                      width={SCREENSHOT_WIDTH}
+                      height={SCREENSHOT_HEIGHT}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </PhoneFrame>
                 </FeatureVisual>
                 <FeatureDescriptionContainer
@@ -756,7 +768,7 @@ const MiniIcon = styled.div({
   marginBottom: "16px",
 });
 
-const MiniTitle = styled.h4({
+const MiniTitle = styled.h3({
   fontSize: "1.15rem",
   fontWeight: 700,
   margin: "0 0 8px",
@@ -827,10 +839,8 @@ const BadgeRow = styled.div({
   marginTop: "8px",
 });
 
-const BadgeLink = styled.button({
-  border: "none",
-  background: "none",
-  padding: 0,
+const BadgeLink = styled.a({
+  display: "inline-block",
   cursor: "pointer",
   transition: "transform 0.2s",
   ":hover": { transform: "scale(1.05)" },

@@ -7,6 +7,7 @@ import { GameVideo } from "courtchamps-shared/types";
 import { CourtChampLogo, appStoreBadge, playStoreBadge } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 const VideoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +21,13 @@ const VideoPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  usePageMeta({
+    title: video?.competitionName
+      ? `${video.competitionName} – Match Video | Court Champs`
+      : "Match Video | Court Champs",
+    noindex: true,
+  });
 
   useEffect(() => {
     if (!docId) {

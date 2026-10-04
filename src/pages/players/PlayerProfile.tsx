@@ -10,6 +10,7 @@ import ProfilePerformance from "./ProfilePerformance";
 import ProfileAbout from "./ProfileAbout";
 import ProfileActivity from "./ProfileActivity";
 import ProfileVideos from "./ProfileVideos";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 const TABS = ["Performance", "Profile", "Activity", "Videos"] as const;
 type Tab = (typeof TABS)[number];
@@ -54,6 +55,14 @@ export default function PlayerProfile() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>("Performance");
+
+  // Profiles stay out of search results until players can opt in.
+  usePageMeta({
+    title: profile
+      ? `${profile.username} – Badminton Player Profile | Court Champs`
+      : "Player Profile | Court Champs",
+    noindex: true,
+  });
 
   useEffect(() => {
     if (!userId) return;

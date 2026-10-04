@@ -5,10 +5,30 @@
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/court-champ-logo-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#00152B" />
+    <!-- Site-wide defaults. Pages override these with usePageMeta. -->
+    <title>Court Champs – Badminton League &amp; Score Tracking App</title>
     <meta
       name="description"
-      content="Court Champs - The #1 Badminton League and Score Tracking App."
+      content="Join or run badminton leagues and tournaments, log live scores, track your stats and climb the ranks. Free on iPhone and Android."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Court Champs" />
+    <meta property="og:title" content="Court Champs – Badminton League &amp; Score Tracking App" />
+    <meta
+      property="og:description"
+      content="Join or run badminton leagues and tournaments, log live scores, track your stats and climb the ranks. Free on iPhone and Android."
+    />
+    <meta property="og:url" content="https://courtchamps.com/" />
+    <meta property="og:image" content="https://courtchamps.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Court Champs – Badminton League &amp; Score Tracking App" />
+    <meta
+      name="twitter:description"
+      content="Join or run badminton leagues and tournaments, log live scores, track your stats and climb the ranks. Free on iPhone and Android."
+    />
+    <meta name="twitter:image" content="https://courtchamps.com/og-image.jpg" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/court-champ-logo-icon.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,7 +37,47 @@
       href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <title>Court Champs</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://courtchamps.com/#organization",
+            "name": "Court Champs",
+            "url": "https://courtchamps.com/",
+            "logo": "https://courtchamps.com/court-champ-logo-icon.png",
+            "email": "info@courtchamps.com",
+            "sameAs": [
+              "https://apps.apple.com/app/court-champs/id6538725576",
+              "https://play.google.com/store/apps/details?id=com.courtchamp"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://courtchamps.com/#website",
+            "name": "Court Champs",
+            "url": "https://courtchamps.com/",
+            "publisher": { "@id": "https://courtchamps.com/#organization" }
+          },
+          {
+            "@type": "MobileApplication",
+            "name": "Court Champs",
+            "description": "Badminton league, tournament and score tracking app. Join or run competitions, log live scores, track your stats and climb the ranks.",
+            "operatingSystem": "iOS, Android",
+            "applicationCategory": "SportsApplication",
+            "url": "https://courtchamps.com/",
+            "image": "https://courtchamps.com/og-image.jpg",
+            "installUrl": [
+              "https://apps.apple.com/app/court-champs/id6538725576",
+              "https://play.google.com/store/apps/details?id=com.courtchamp"
+            ],
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "publisher": { "@id": "https://courtchamps.com/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

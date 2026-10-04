@@ -12,6 +12,7 @@ import { CourtChampLogoIcon } from "../../assets";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { getAllPlayersPaginated, PlayerListItem } from "../../services/players";
 import { findRankIndex, getRankByXp, rankMedalUrl } from "../../utils/ranks";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 500;
@@ -38,6 +39,13 @@ const flagUrl = (countryCode?: string): string | null =>
     : null;
 
 export default function Players() {
+  usePageMeta({
+    title: "Badminton Player Rankings | Court Champs",
+    description:
+      "See the top-ranked badminton players on Court Champs, with global and country rankings, XP levels and medals.",
+    path: "/players",
+  });
+
   const [players, setPlayers] = useState<PlayerListItem[]>([]);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
