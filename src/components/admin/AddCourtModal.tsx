@@ -310,7 +310,14 @@ function AddCourtModal({
               court.submission.submittedBy}
           </SubmitterLink>{" "}
           for{" "}
-          <strong>{court.submission.ladderName}</strong> on{" "}
+          <SubmitterLink
+            href={`/admin/ladders/${court.submission.ladderId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {court.submission.ladderName}
+          </SubmitterLink>{" "}
+          on{" "}
           {court.submission.submittedAt.toLocaleDateString()}. Add the
           latitude and longitude and save to approve it, add it to the ladder
           and notify the player.
