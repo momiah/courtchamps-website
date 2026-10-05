@@ -146,6 +146,17 @@ describe("updateCourt", () => {
     expect(result).toBeUndefined();
   });
 
+  it("falls back to a plain update when the court document is missing", async () => {
+    mockGetDoc.mockResolvedValue(courtSnap(null));
+
+    const result = await save();
+
+    expect(mockBatch.commit).not.toHaveBeenCalled();
+    expect(mockBatch.set).not.toHaveBeenCalled();
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    expect(result).toBeUndefined();
+  });
+
   it("does not re-approve an already approved submission", async () => {
     mockGetDoc.mockResolvedValue(
       courtSnap({
@@ -182,6 +193,31 @@ describe("deleteCourt", () => {
       data: { ladderId: "ladder-1", tab: "Matchmaking" },
     });
     expect(mockBatch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("deletes an already approved submission without a notification", async () => {
+    mockGetDoc.mockResolvedValue(
+      courtSnap({
+        courtName: "Riverside",
+        verified: true,
+        submission: submission(COURT_SUBMISSION_STATUS.APPROVED),
+      }),
+    );
+
+    await deleteCourt({ courtId: "court-1" });
+
+    expect(mockDeleteDoc).toHaveBeenCalledWith({ __doc: "courts/court-1" });
+    expect(mockBatch.commit).not.toHaveBeenCalled();
+    expect(mockBatch.set).not.toHaveBeenCalled();
+  });
+
+  it("only deletes the document when the court no longer exists", async () => {
+    mockGetDoc.mockResolvedValue(courtSnap(null));
+
+    await deleteCourt({ courtId: "court-1" });
+
+    expect(mockDeleteDoc).toHaveBeenCalledWith({ __doc: "courts/court-1" });
+    expect(mockBatch.commit).not.toHaveBeenCalled();
   });
 
   it("deletes other courts without a notification", async () => {
