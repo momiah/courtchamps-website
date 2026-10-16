@@ -18,9 +18,10 @@ import {
 import { deleteCourt, fetchAllCourts } from "../../services/courts";
 import { countLaddersUsingCourt } from "../../services/ladders";
 import { Court } from "courtchamps-shared/types";
+import { isPendingCourtSubmission } from "courtchamps-shared/helpers";
 import { findCountryName } from "../../utils/countries";
 
-type CourtFilterTab = "all" | "unverified" | "verified";
+type CourtFilterTab = "all" | "unverified" | "verified" | "submitted";
 
 function Courts() {
   const [courts, setCourts] = useState<Court[]>([]);
@@ -90,13 +91,19 @@ function Courts() {
     [countryScopedCourts],
   );
 
+  const submittedCount = useMemo(
+    () => countryScopedCourts.filter(isPendingCourtSubmission).length,
+    [countryScopedCourts],
+  );
+
   const filterTabs = useMemo<FilterTabItem<CourtFilterTab>[]>(
     () => [
       { id: "all", label: "All" },
       { id: "unverified", label: "Unverified", count: unverifiedCount },
       { id: "verified", label: "Verified", count: verifiedCount },
+      { id: "submitted", label: "User Submitted", count: submittedCount },
     ],
-    [unverifiedCount, verifiedCount],
+    [unverifiedCount, verifiedCount, submittedCount],
   );
 
   const availableCountries = useMemo(() => {
@@ -118,7 +125,8 @@ function Courts() {
       const matchesTab =
         activeTab === "all" ||
         (activeTab === "verified" && court.verified === true) ||
-        (activeTab === "unverified" && court.verified !== true);
+        (activeTab === "unverified" && court.verified !== true) ||
+        (activeTab === "submitted" && isPendingCourtSubmission(court));
       if (!matchesTab) {
         return false;
       }
@@ -192,6 +200,10 @@ function Courts() {
   const deleteMessage = useMemo(() => {
     const courtName = courtPendingDelete?.courtName ?? "this court";
     const base = `Delete "${courtName}"? This permanently removes the court and cannot be undone.`;
+    const submission = courtPendingDelete?.submission;
+    if (courtPendingDelete && submission && isPendingCourtSubmission(courtPendingDelete)) {
+      return `${base} @${submission.submittedByUsername || submission.submittedBy} will be notified that it was not accepted for ${submission.ladderName}.`;
+    }
     if (referencingLadderCount && referencingLadderCount > 0) {
       const ladderWord = referencingLadderCount === 1 ? "ladder" : "ladders";
       return `${base} It is currently used by ${referencingLadderCount} ${ladderWord}, which will be left referencing a court that no longer exists.`;
@@ -228,6 +240,8 @@ function Courts() {
         render: (court) =>
           court.verified === true ? (
             <StatusPill tone="positive">Verified</StatusPill>
+          ) : isPendingCourtSubmission(court) ? (
+            <StatusPill tone="info">User Submitted</StatusPill>
           ) : (
             <StatusPill tone="warning">Unverified</StatusPill>
           ),

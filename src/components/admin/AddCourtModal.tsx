@@ -6,6 +6,7 @@ import { useGeocoder } from "../../maps/useGeocoder";
 import { createCourt, updateCourt } from "../../services/courts";
 import { buildCourtSearchCandidates } from "../../services/geocode";
 import { Court } from "courtchamps-shared/types";
+import { isPendingCourtSubmission } from "courtchamps-shared/helpers";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import FormField from "./FormField";
 import LocationPreviewMap from "./LocationPreviewMap";
@@ -247,13 +248,14 @@ function AddCourtModal({
 
       try {
         if (court) {
-          await updateCourt({
+          const submission = await updateCourt({
             courtId: court.courtId,
             court: courtInput,
             actorUserId,
           });
           onSaved({
             ...court,
+            ...(submission ? { submission } : {}),
             courtName: courtInput.courtName,
             location: courtInput.location,
             verified: isVerified,
@@ -294,6 +296,33 @@ function AddCourtModal({
         Court details help other players find the location, so please make sure
         they are correct.
       </GuidanceNote>
+
+      {court?.submission && isPendingCourtSubmission(court) ? (
+        <SubmissionNote data-testid="court-submission-note">
+          Submitted by{" "}
+          <SubmitterLink
+            href={`/players/${court.submission.submittedBy}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            @
+            {court.submission.submittedByUsername ||
+              court.submission.submittedBy}
+          </SubmitterLink>{" "}
+          for{" "}
+          <SubmitterLink
+            href={`/admin/ladders/${court.submission.ladderId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {court.submission.ladderName}
+          </SubmitterLink>{" "}
+          on{" "}
+          {court.submission.submittedAt.toLocaleDateString()}. Add the
+          latitude and longitude and save to approve it, add it to the ladder
+          and notify the player.
+        </SubmissionNote>
+      ) : null}
 
       <Form onSubmit={handleSubmit}>
         <ModalBody>
@@ -453,6 +482,23 @@ const GuidanceNote = styled.p({
   backgroundColor: "rgba(0, 153, 240, 0.1)",
   border: "1px solid rgba(0, 153, 240, 0.3)",
   color: "#c7d4e1",
+  fontSize: "0.83rem",
+  lineHeight: 1.5,
+});
+
+const SubmitterLink = styled.a({
+  color: "#f5c451",
+  fontWeight: 600,
+  textDecoration: "underline",
+});
+
+const SubmissionNote = styled.p({
+  margin: "0 0 20px",
+  padding: "12px 14px",
+  borderRadius: "10px",
+  backgroundColor: "rgba(245, 196, 81, 0.1)",
+  border: "1px solid rgba(245, 196, 81, 0.4)",
+  color: "#f5c451",
   fontSize: "0.83rem",
   lineHeight: 1.5,
 });

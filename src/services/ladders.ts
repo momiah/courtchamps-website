@@ -14,18 +14,25 @@ import {
 
 import { db } from "../firebase/config";
 import {
+  DISPUTES_COLLECTION,
+  Dispute,
   GenderType,
   GENDER_TYPE,
   Ladder,
   LadderInput,
+  LadderMatch,
   LADDER_STATUS,
   LadderType,
   LADDER_TYPE,
+  Report,
+  REPORTS_COLLECTION,
 } from "courtchamps-shared/types";
 import { normalizeLadderStatus } from "courtchamps-shared/helpers";
 import { deriveLadderDates } from "../utils/ladderDates";
+import { buildLadderActivity, LadderActivity } from "../utils/ladderActivity";
 
 const LADDERS_COLLECTION = "ladders";
+const LADDER_MATCHES_SUBCOLLECTION = "ladderMatches";
 
 interface LadderDocumentData {
   name?: string;
@@ -183,5 +190,48 @@ export const updateLadder = async ({
     ...derivedDates,
     updatedBy: actorUserId,
     updatedAt: now,
+  });
+};
+
+export const fetchLadderActivity = async ({
+  ladder,
+}: {
+  ladder: Ladder;
+}): Promise<LadderActivity> => {
+  const [matchesSnapshot, disputesSnapshot, reportsSnapshot] =
+    await Promise.all([
+      getDocs(
+        collection(
+          db,
+          LADDERS_COLLECTION,
+          ladder.ladderId,
+          LADDER_MATCHES_SUBCOLLECTION,
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, DISPUTES_COLLECTION),
+          where("ladderId", "==", ladder.ladderId),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, REPORTS_COLLECTION),
+          where("ladderId", "==", ladder.ladderId),
+        ),
+      ),
+    ]);
+
+  return buildLadderActivity({
+    ladder,
+    matches: matchesSnapshot.docs.map(
+      (matchDocument) => matchDocument.data() as LadderMatch,
+    ),
+    disputes: disputesSnapshot.docs.map(
+      (disputeDocument) => disputeDocument.data() as Dispute,
+    ),
+    reports: reportsSnapshot.docs.map(
+      (reportDocument) => reportDocument.data() as Report,
+    ),
   });
 };

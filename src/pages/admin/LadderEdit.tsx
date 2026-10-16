@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
 import AdminLayout from "../../components/admin/AdminLayout";
+import LadderActivity from "../../components/admin/LadderActivity";
 import LadderForm from "../../components/admin/LadderForm";
 import { useAuth } from "../../context/AuthContext";
 import { uploadLadderImage } from "../../services/ladderImages";
@@ -12,6 +13,7 @@ import {
   updateLadder,
 } from "../../services/ladders";
 import { Ladder, LadderInput } from "courtchamps-shared/types";
+import { isLadderLocked } from "../../utils/ladderActivity";
 
 function LadderEdit() {
   const { ladderId } = useParams<{ ladderId: string }>();
@@ -71,6 +73,11 @@ function LadderEdit() {
       input: LadderInput,
       { imageFile }: { imageFile: File | null },
     ): Promise<void> => {
+      if (initialLadder && isLadderLocked(initialLadder)) {
+        setSubmitError("This ladder has started and can no longer be edited.");
+        return;
+      }
+
       const actorUserId = currentUser?.uid;
       if (!actorUserId) {
         setSubmitError("You must be signed in to save a ladder.");
@@ -121,10 +128,14 @@ function LadderEdit() {
       ) : (
         <>
           {submitError ? <SubmitError>{submitError}</SubmitError> : null}
+          {initialLadder && isLadderLocked(initialLadder) ? (
+            <LadderActivity ladder={initialLadder} />
+          ) : null}
           <LadderForm
             initialLadder={initialLadder}
             onSubmit={handleSubmit}
             submitting={submitting}
+            locked={!!initialLadder && isLadderLocked(initialLadder)}
           />
         </>
       )}
