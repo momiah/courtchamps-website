@@ -10,21 +10,32 @@ import {
 
 import { db } from "../firebase/config";
 import {
-  LADDER_MATCH_STATUS,
+  assertLadderStandingsOpen,
+  isLadderStandingsLocked,
+} from "../utils/ladderStandings";
+import {
   REPORT_STATUS,
   REPORT_REASONS,
   REPORT_REASON_LABELS,
   REPORTS_COLLECTION,
   LADDER_REPORT_COUNTS_COLLECTION,
-  WALKOVER_CP,
 } from "courtchamps-shared/types";
 import type {
+  Ladder,
+  LadderMatch,
+  LadderMatchArrival,
   Report,
   ReportWalkover,
-  StrikeCounts,
-  DisqualificationReason,
 } from "courtchamps-shared/types";
-import { applyStrike, removeStrike } from "courtchamps-shared/helpers";
+import {
+  getLadderArrival,
+  getLadderStandingsDeadline,
+  getLadderWalkoverSides,
+  hasArrivedForLadderMatch,
+  planLadderWalkover,
+  planReportStrikes,
+} from "courtchamps-shared/helpers";
+import type { LadderWalkoverSide } from "courtchamps-shared/helpers";
 
 const REPORTS = REPORTS_COLLECTION;
 const LADDERS = "ladders";
@@ -35,12 +46,19 @@ const TEAMS = "teams";
 const USERS = "users";
 const REPORT_COUNTS = LADDER_REPORT_COUNTS_COLLECTION;
 
-const MATCH_LOG_CAP = 20;
-
 export interface EnrichedReport extends Report {
   reporterLabel: string;
   targetLabel: string;
   reasonLabel: string;
+  decideBy: Date | null;
+  standingsLocked: boolean;
+  reporterArrival: LadderMatchArrival | null;
+  targetArrived: boolean;
+}
+
+interface ReportContext {
+  ladder?: Ladder;
+  match?: LadderMatch;
 }
 
 const nameFromUser = (data: Record<string, unknown> | undefined): string => {
@@ -59,7 +77,10 @@ const userName = async (userId: string): Promise<string> => {
     : userId;
 };
 
-const enrich = async (report: Report): Promise<EnrichedReport> => {
+const enrich = async (
+  report: Report,
+  { ladder, match }: ReportContext,
+): Promise<EnrichedReport> => {
   let targetLabel = report.target.label?.trim() ?? "";
   if (!targetLabel) {
     const names = await Promise.all(
@@ -73,13 +94,64 @@ const enrich = async (report: Report): Promise<EnrichedReport> => {
     reporterLabel,
     targetLabel,
     reasonLabel: REPORT_REASON_LABELS[report.reason] ?? report.reason,
+    decideBy: ladder ? getLadderStandingsDeadline(ladder) : null,
+    standingsLocked: isLadderStandingsLocked(ladder),
+    reporterArrival: match ? getLadderArrival(match, report.reportedBy) : null,
+    targetArrived: match
+      ? hasArrivedForLadderMatch(match, report.target.userIds ?? [])
+      : false,
   };
+};
+
+const loadReportContexts = async (
+  reports: Report[],
+): Promise<Map<string, ReportContext>> => {
+  const ladderIds = Array.from(
+    new Set(reports.map((report) => report.ladderId)),
+  );
+  const ladders = new Map(
+    await Promise.all(
+      ladderIds.map(async (ladderId) => {
+        const snap = await getDoc(doc(db, LADDERS, ladderId));
+        return [ladderId, snap.data() as Ladder | undefined] as const;
+      }),
+    ),
+  );
+  const contexts = new Map<string, ReportContext>();
+  await Promise.all(
+    reports.map(async (report) => {
+      const match =
+        report.reason === REPORT_REASONS.NO_SHOW
+          ? ((
+              await getDoc(
+                doc(
+                  db,
+                  LADDERS,
+                  report.ladderId,
+                  LADDER_MATCHES,
+                  report.ladderMatchId,
+                ),
+              )
+            ).data() as LadderMatch | undefined)
+          : undefined;
+      contexts.set(report.reportId, {
+        ladder: ladders.get(report.ladderId),
+        match,
+      });
+    }),
+  );
+  return contexts;
 };
 
 export const fetchReports = async (): Promise<EnrichedReport[]> => {
   const snapshot = await getDocs(collection(db, REPORTS));
   const reports = snapshot.docs.map((d) => d.data() as Report);
-  const enriched = await Promise.all(reports.map(enrich));
+  const contexts = await loadReportContexts(reports);
+  const enriched = await Promise.all(
+    reports.map((report) =>
+      enrich(report, contexts.get(report.reportId) ?? {}),
+    ),
+  );
   // Newest first (client-side to avoid a composite index).
   return enriched.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
 };
@@ -95,67 +167,12 @@ const toMillis = (value: unknown): number => {
   return Number.isFinite(t) ? t : 0;
 };
 
-const num = (data: Record<string, unknown>, field: string): number =>
-  (data[field] as number) ?? 0;
-
-const strikesOf = (data: Record<string, unknown> | undefined): StrikeCounts =>
-  ((data?.strikes as StrikeCounts) ?? {}) as StrikeCounts;
-
-const pushResult = (log: unknown, result: "W" | "L"): string[] =>
-  [...(Array.isArray(log) ? (log as string[]) : []), result].slice(
-    -MATCH_LOG_CAP,
-  );
-
-const popResult = (log: unknown): string[] =>
-  Array.isArray(log) ? (log as string[]).slice(0, -1) : [];
-
-const applyWalkoverSide = (
-  data: Record<string, unknown>,
-  role: "winner" | "loser",
-  sign: 1 | -1,
-  cpField?: string,
-  cp = 0,
-): Record<string, unknown> => {
-  const isWinner = role === "winner";
-  const countField = isWinner ? "numberOfWins" : "numberOfLosses";
-  const letter: "W" | "L" = isWinner ? "W" : "L";
-  const update: Record<string, unknown> = {
-    [countField]: Math.max(0, num(data, countField) + sign),
-    matchResultLog:
-      sign > 0
-        ? pushResult(data.matchResultLog, letter)
-        : popResult(data.matchResultLog),
-  };
-  if (cpField) {
-    update[cpField] = num(data, cpField) + (isWinner ? cp : -cp) * sign;
-  }
-  return update;
-};
-
-const walkoverMatchUpdate = (walkoverWinner: string, cp: number) => ({
-  matchStatus: LADDER_MATCH_STATUS.COMPLETED,
-  walkover: true,
-  walkoverReason: "No show",
-  walkoverWinner,
-  walkoverCp: cp,
-  completedAt: new Date(),
-});
-
-const reverseWalkoverMatchUpdate = () => ({
-  matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-  walkover: false,
-  walkoverReason: null,
-  walkoverWinner: null,
-  walkoverCp: null,
-  completedAt: null,
-  noShowReported: true,
-});
-
-interface WalkoverSide {
-  ref: ReturnType<typeof doc>;
-  role: "winner" | "loser";
-  cpField?: string;
-}
+const walkoverSideRef = (ladderId: string, side: LadderWalkoverSide) =>
+  side.kind === "ladderParticipant"
+    ? doc(db, LADDERS, ladderId, LADDER_PARTICIPANTS, side.id)
+    : side.kind === "ladderTeam"
+      ? doc(db, LADDERS, ladderId, LADDER_TEAMS, side.id)
+      : doc(db, TEAMS, side.id);
 
 const prepareWalkoverSettlement = async (
   tx: Transaction,
@@ -170,121 +187,35 @@ const prepareWalkoverSettlement = async (
     LADDER_MATCHES,
     report.ladderMatchId,
   );
-  const matchSnap = await tx.get(matchRef);
-  if (mode === "approve") {
-    if (!matchSnap.exists()) throw new Error("Match not found");
-    if (
-      (matchSnap.data() as { matchStatus?: string }).matchStatus ===
-      LADDER_MATCH_STATUS.COMPLETED
-    ) {
-      throw new Error("This match has already been completed");
-    }
-  }
-
-  const isDoubles = walkover.winnerType === "team";
-  const cpField = isDoubles ? "XP" : "competitionXP";
-  const sides: WalkoverSide[] = isDoubles
-    ? [
-        {
-          ref: doc(
-            db,
-            LADDERS,
-            report.ladderId,
-            LADDER_TEAMS,
-            walkover.winnerTeamKey ?? "",
-          ),
-          role: "winner",
-          cpField,
-        },
-        { ref: doc(db, TEAMS, walkover.winnerTeamId ?? ""), role: "winner" },
-        {
-          ref: doc(
-            db,
-            LADDERS,
-            report.ladderId,
-            LADDER_TEAMS,
-            report.target.teamKey ?? "",
-          ),
-          role: "loser",
-          cpField,
-        },
-        { ref: doc(db, TEAMS, report.target.teamId ?? ""), role: "loser" },
-      ]
-    : [
-        {
-          ref: doc(
-            db,
-            LADDERS,
-            report.ladderId,
-            LADDER_PARTICIPANTS,
-            walkover.winnerUserIds[0],
-          ),
-          role: "winner",
-          cpField,
-        },
-        {
-          ref: doc(
-            db,
-            LADDERS,
-            report.ladderId,
-            LADDER_PARTICIPANTS,
-            report.target.userIds[0],
-          ),
-          role: "loser",
-          cpField,
-        },
-      ];
-  const snaps = await Promise.all(sides.map((side) => tx.get(side.ref)));
-
-  const loserIndex = sides.findIndex(
-    (side) => side.role === "loser" && side.cpField,
-  );
-  const loserSnap = snaps[loserIndex];
-  const cp =
-    mode === "approve"
-      ? Math.min(
-          WALKOVER_CP,
-          loserSnap?.exists() ? num(loserSnap.data(), cpField) : 0,
-        )
-      : matchSnap.exists()
-        ? num(matchSnap.data(), "walkoverCp")
-        : 0;
-
-  const sign: 1 | -1 = mode === "approve" ? 1 : -1;
-  const winnerKey = isDoubles
-    ? (walkover.winnerTeamKey ?? "")
-    : walkover.winnerUserIds[0];
+  const sides = getLadderWalkoverSides(report, walkover);
+  const sideRefs = sides.map((side) => walkoverSideRef(report.ladderId, side));
+  const [matchSnap, sideSnaps] = await Promise.all([
+    tx.get(matchRef),
+    Promise.all(sideRefs.map((ref) => tx.get(ref))),
+  ]);
+  const plan = planLadderWalkover({
+    walkover,
+    sides,
+    sideData: sideSnaps.map((snap) =>
+      snap.exists() ? snap.data() : undefined,
+    ),
+    match: matchSnap.exists() ? matchSnap.data() : undefined,
+    mode,
+    now: new Date(),
+  });
 
   return () => {
-    sides.forEach((side, index) => {
-      if (snaps[index].exists()) {
-        tx.update(
-          side.ref,
-          applyWalkoverSide(
-            snaps[index].data(),
-            side.role,
-            sign,
-            side.cpField,
-            cp,
-          ),
-        );
-      }
+    plan.sideUpdates.forEach((update, index) => {
+      if (update) tx.update(sideRefs[index], update);
     });
-    if (matchSnap.exists()) {
-      tx.update(
-        matchRef,
-        mode === "approve"
-          ? walkoverMatchUpdate(winnerKey, cp)
-          : reverseWalkoverMatchUpdate(),
-      );
-    }
+    if (plan.matchUpdate) tx.update(matchRef, plan.matchUpdate);
   };
 };
 
 const prepareStrikeDelta = async (
   tx: Transaction,
   report: Report,
-  mutate: (strikes: StrikeCounts) => StrikeCounts,
+  mode: "apply" | "remove",
 ): Promise<() => void> => {
   const userIds = report.target.userIds ?? [];
   const countRefs = userIds.map((userId) =>
@@ -293,54 +224,42 @@ const prepareStrikeDelta = async (
   const userRefs = userIds.map((userId) => doc(db, USERS, userId));
   const countSnaps = await Promise.all(countRefs.map((ref) => tx.get(ref)));
   const userSnaps = await Promise.all(userRefs.map((ref) => tx.get(ref)));
+  const plan = planReportStrikes({
+    report,
+    counts: countSnaps.map((snap) => (snap.exists() ? snap.data() : undefined)),
+    users: userSnaps.map((snap) => (snap.exists() ? snap.data() : undefined)),
+    mode,
+    now: new Date(),
+  });
 
   return () => {
-    userIds.forEach((userId, index) => {
-      const countData = countSnaps[index].exists()
-        ? (countSnaps[index].data() as Record<string, unknown>)
-        : undefined;
-      tx.set(
-        countRefs[index],
-        {
-          userId,
-          ladderId: report.ladderId,
-          teamKey: report.target.teamKey ?? null,
-          strikes: mutate(strikesOf(countData)),
-          updatedAt: new Date(),
-        },
-        { merge: true },
-      );
-      const userData = userSnaps[index].exists()
-        ? (userSnaps[index].data() as Record<string, unknown>)
-        : undefined;
-      const conduct =
-        (userData?.conduct as { strikes?: StrikeCounts } | undefined) ?? {};
-      tx.set(
-        userRefs[index],
-        {
-          conduct: {
-            ...conduct,
-            strikes: mutate(conduct.strikes ?? {}),
-            lastReportedAt: new Date(),
-          },
-        },
-        { merge: true },
-      );
-    });
+    plan.countUpdates.forEach((update, index) =>
+      tx.set(countRefs[index], update, { merge: true }),
+    );
+    plan.userUpdates.forEach((update, index) =>
+      tx.set(userRefs[index], update, { merge: true }),
+    );
   };
+};
+
+const assertReportLadderOpen = async (
+  report: Report,
+  tx?: Transaction,
+): Promise<void> => {
+  const ladderRef = doc(db, LADDERS, report.ladderId);
+  const ladderSnap = tx ? await tx.get(ladderRef) : await getDoc(ladderRef);
+  assertLadderStandingsOpen(ladderSnap.data() as Ladder | undefined);
 };
 
 export const approveReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
-  const reason = report.reason as DisqualificationReason;
   const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
 
   await runTransaction(db, async (tx) => {
-    const writeStrikes = await prepareStrikeDelta(tx, report, (strikes) =>
-      applyStrike(strikes, reason),
-    );
+    await assertReportLadderOpen(report, tx);
+    const writeStrikes = await prepareStrikeDelta(tx, report, "apply");
     const writeWalkover =
       isNoShow && report.walkover
         ? await prepareWalkoverSettlement(
@@ -365,6 +284,7 @@ export const rejectReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
+  await assertReportLadderOpen(report);
   const batch = writeBatch(db);
   batch.update(doc(db, REPORTS, report.reportId), {
     status: REPORT_STATUS.REJECTED,
@@ -384,17 +304,15 @@ export const revertReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
-  const reason = report.reason as DisqualificationReason;
   const wasApproved = report.status === REPORT_STATUS.APPROVED;
   const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
 
   await runTransaction(db, async (tx) => {
+    await assertReportLadderOpen(report, tx);
     let writeStrikes: (() => void) | null = null;
     let writeWalkover: (() => void) | null = null;
     if (wasApproved) {
-      writeStrikes = await prepareStrikeDelta(tx, report, (strikes) =>
-        removeStrike(strikes, reason),
-      );
+      writeStrikes = await prepareStrikeDelta(tx, report, "remove");
       if (isNoShow && report.walkover) {
         writeWalkover = await prepareWalkoverSettlement(
           tx,

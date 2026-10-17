@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import { format } from "date-fns";
 
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatusPill, { StatusTone } from "../../components/admin/StatusPill";
@@ -35,11 +36,13 @@ import type {
 import {
   approveDispute,
   fetchDisputeById,
+  fetchDisputeDeadline,
   fetchDisputeGameVideos,
   rejectDispute,
   requestMoreEvidence,
   voidDispute,
 } from "../../services/disputes";
+import type { DisputeDeadline } from "../../services/disputes";
 import {
   formatEventDate,
   isAdminActor,
@@ -92,6 +95,10 @@ function GameDisputeDetail() {
   const [actionBusy, setActionBusy] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  const [deadline, setDeadline] = useState<DisputeDeadline>({
+    decideBy: null,
+    locked: false,
+  });
 
   const load = useCallback(async (): Promise<void> => {
     if (!disputeId) return;
@@ -101,6 +108,7 @@ function GameDisputeDetail() {
       const found = await fetchDisputeById(disputeId);
       setDispute(found);
       setVideosById(found ? await fetchDisputeGameVideos(found.gameId) : {});
+      if (found) setDeadline(await fetchDisputeDeadline(found.ladderId));
     } catch (error) {
       console.error("Failed to load dispute", error);
       setLoadError("Could not load this dispute. Please refresh to try again.");
@@ -175,6 +183,10 @@ function GameDisputeDetail() {
   const timeLeft =
     awaitingPlayers && dueMs ? formatTimeLeft(dueMs, nowMs) : null;
   const isDoubles = dispute.ladderType === LADDER_TYPE.DOUBLES;
+  const decideByMs = deadline.decideBy?.getTime() ?? null;
+  const evidenceTooLate =
+    decideByMs !== null &&
+    nowMs + DISPUTE_EVIDENCE_WINDOW_HOURS * 60 * 60 * 1000 > decideByMs;
 
   const sideOf = (userId: string): Side | null => {
     if (teamPlayers(original?.team1).some((p) => p.userId === userId)) {
@@ -559,24 +571,40 @@ function GameDisputeDetail() {
                 rows={3}
               />
               {actionError ? <ErrorText>{actionError}</ErrorText> : null}
+              {deadline.decideBy ? (
+                <DecideBy locked={deadline.locked}>
+                  {deadline.locked
+                    ? "The ladder's standings are final, so this dispute is closed automatically: the game is discarded."
+                    : `Decide by ${format(deadline.decideBy, "EEE d MMM, HH:mm")}, when the ladder's standings become final. After that the game is discarded.${
+                        evidenceTooLate
+                          ? " There's no longer time for a full evidence request."
+                          : ""
+                      }`}
+                </DecideBy>
+              ) : null}
               <Actions>
                 <UpholdButton
                   type="button"
-                  disabled={actionBusy}
+                  disabled={actionBusy || deadline.locked}
                   onClick={() => runAction("approve")}
                 >
                   Uphold {scoreLabel(dispute.disputedGame)}
                 </UpholdButton>
                 <KeepButton
                   type="button"
-                  disabled={actionBusy}
+                  disabled={actionBusy || deadline.locked}
                   onClick={() => runAction("reject")}
                 >
                   Keep {scoreLabel(dispute.originalGame)}
                 </KeepButton>
                 <MoreButton
                   type="button"
-                  disabled={actionBusy || awaitingPlayers}
+                  disabled={
+                    actionBusy ||
+                    awaitingPlayers ||
+                    deadline.locked ||
+                    evidenceTooLate
+                  }
                   onClick={() => runAction("moreEvidence")}
                 >
                   {awaitingPlayers
@@ -586,7 +614,7 @@ function GameDisputeDetail() {
                 {awaitingPlayers ? (
                   <VoidButton
                     type="button"
-                    disabled={actionBusy || !overdue}
+                    disabled={actionBusy || !overdue || deadline.locked}
                     onClick={() => runAction("void")}
                   >
                     {overdue
@@ -1055,6 +1083,13 @@ const NoteLabel = styled.span({
   textTransform: "uppercase",
   marginBottom: "2px",
 });
+
+const DecideBy = styled.p<{ locked: boolean }>(({ locked }) => ({
+  color: locked ? "#8fa3b8" : "#f5a623",
+  fontSize: "0.82rem",
+  fontWeight: 600,
+  margin: 0,
+}));
 
 const ErrorText = styled.p({
   color: "#f87171",

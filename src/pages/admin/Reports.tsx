@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import { format } from "date-fns";
 
 import AdminLayout from "../../components/admin/AdminLayout";
 import AdminTable, {
@@ -46,6 +47,21 @@ const isNoShow = (report: EnrichedReport): boolean =>
 
 const isPending = (report: EnrichedReport): boolean =>
   report.status === REPORT_STATUS.PENDING;
+
+const arrivalSummary = (report: EnrichedReport): string => {
+  const reporter = report.reporterArrival
+    ? `reporter at the court ${format(toDate(report.reporterArrival.verifiedAt), "HH:mm")} (${report.reporterArrival.distanceMeters}m)`
+    : "reporter's arrival not recorded";
+  const target = report.targetArrived
+    ? "reported player arrived"
+    : "reported player not recorded";
+  return `Arrivals: ${reporter} · ${target}`;
+};
+
+const toDate = (value: unknown): Date =>
+  value && typeof (value as { toDate?: () => Date }).toDate === "function"
+    ? (value as { toDate: () => Date }).toDate()
+    : new Date(value as string | number | Date);
 
 function Reports() {
   const { currentUser } = useAuth();
@@ -134,6 +150,18 @@ function Reports() {
               {report.matchDate}
               {report.matchTime ? ` ${report.matchTime}` : ""}
             </MatchMeta>
+            {isNoShow(report) ? (
+              <MatchMeta data-testid={`report-arrivals-${report.reportId}`}>
+                {arrivalSummary(report)}
+              </MatchMeta>
+            ) : null}
+            {isPending(report) && report.decideBy ? (
+              <DecideBy locked={report.standingsLocked}>
+                {report.standingsLocked
+                  ? "Standings final — closed automatically"
+                  : `Decide by ${format(report.decideBy, "EEE d MMM, HH:mm")}`}
+              </DecideBy>
+            ) : null}
           </MatchCell>
         ),
       },
@@ -178,25 +206,26 @@ function Reports() {
         align: "right",
         render: (report) => {
           const resolved = !isPending(report);
+          const locked = report.standingsLocked;
           return (
             <ActionRow>
               <ApproveButton
                 type="button"
-                disabled={resolved}
+                disabled={resolved || locked}
                 onClick={() => setPendingAction({ report, type: "approve" })}
               >
                 Approve
               </ApproveButton>
               <RejectButton
                 type="button"
-                disabled={resolved}
+                disabled={resolved || locked}
                 onClick={() => setPendingAction({ report, type: "reject" })}
               >
                 Reject
               </RejectButton>
               <RevertButton
                 type="button"
-                disabled={!resolved}
+                disabled={!resolved || locked}
                 onClick={() => setPendingAction({ report, type: "revert" })}
               >
                 Revert
@@ -232,6 +261,9 @@ function Reports() {
         harassment — from the match menu. Approving adds a strike to the
         reported player in that ladder (and their global record); a no-show also
         awards the walkover. Rejecting dismisses the report with no strike.
+        Decide every report by its date: a day before the playoffs the
+        ladder&apos;s standings become final and anything still open is closed
+        automatically.
       </Intro>
 
       <FilterRow>
@@ -328,6 +360,12 @@ const MatchMeta = styled.span({
   color: "#8fa3b8",
   fontSize: "0.8rem",
 });
+
+const DecideBy = styled.span<{ locked: boolean }>(({ locked }) => ({
+  color: locked ? "#8fa3b8" : "#f5a623",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+}));
 
 const ActionRow = styled.div({
   display: "inline-flex",
