@@ -12,6 +12,10 @@ import {
 
 import { db } from "../firebase/config";
 import {
+  assertLadderStandingsOpen,
+  isLadderStandingsLocked,
+} from "../utils/ladderStandings";
+import {
   DISPUTES_COLLECTION,
   DISPUTE_STAGE,
   DISPUTE_RESOLUTION,
@@ -28,6 +32,7 @@ import type {
   DisputeEvent,
   DisputeResolution,
   GameVideo,
+  Ladder,
   LadderMatch,
   ScoreboardProfile,
   TeamStats,
@@ -40,6 +45,7 @@ import {
 } from "courtchamps-shared/schema";
 import {
   getDisputePlayerIds,
+  getLadderStandingsDeadline,
   isDoublesDispute,
   planDisputeResolution,
 } from "courtchamps-shared/helpers";
@@ -166,7 +172,11 @@ const resolveDispute = async (
       LADDER_MATCHES,
       dispute.ladderMatchId,
     );
-    const matchSnap = await tx.get(matchRef);
+    const [matchSnap, ladderSnap] = await Promise.all([
+      tx.get(matchRef),
+      tx.get(doc(db, LADDERS, dispute.ladderId)),
+    ]);
+    assertLadderStandingsOpen(ladderSnap.data() as Ladder | undefined);
     if (!matchSnap.exists()) throw new Error("Match not found");
     const match = matchSnap.data() as LadderMatch;
 
@@ -277,6 +287,8 @@ export const requestMoreEvidence = async (
   note: string,
 ): Promise<void> => {
   const now = new Date();
+  const ladderSnap = await getDoc(doc(db, LADDERS, dispute.ladderId));
+  assertLadderStandingsOpen(ladderSnap.data() as Ladder | undefined, now);
   const evidenceDueAt = getDisputeEvidenceDueAt(now.getTime());
   await updateDoc(doc(db, DISPUTES_COLLECTION, dispute.disputeId), {
     stage: DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED,
@@ -297,4 +309,20 @@ export const requestMoreEvidence = async (
     dispute,
     `An admin requested more evidence for your disputed game in ${dispute.ladderName ?? "the ladder"}. You have ${DISPUTE_EVIDENCE_WINDOW_HOURS} hours to respond.`,
   );
+};
+
+export interface DisputeDeadline {
+  decideBy: Date | null;
+  locked: boolean;
+}
+
+export const fetchDisputeDeadline = async (
+  ladderId: string,
+): Promise<DisputeDeadline> => {
+  const ladder = (await getDoc(doc(db, LADDERS, ladderId))).data() as
+    Ladder | undefined;
+  return {
+    decideBy: ladder ? getLadderStandingsDeadline(ladder) : null,
+    locked: isLadderStandingsLocked(ladder),
+  };
 };
