@@ -19,6 +19,7 @@ import type { Dispute } from "courtchamps-shared/types";
 jest.mock("../firebase/config", () => ({ db: {} }));
 
 const mockGetDocs = jest.fn();
+const mockGetDoc = jest.fn();
 const mockRunTransaction = jest.fn();
 const mockAddDoc = jest.fn();
 const mockUpdateDoc = jest.fn();
@@ -29,7 +30,7 @@ jest.mock("firebase/firestore", () => ({
     __ref: args,
     id: args.length <= 1 ? "generated-id" : String(args[args.length - 1]),
   })),
-  getDoc: jest.fn(),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
   query: jest.fn((...args) => ({ __query: args })),
   where: jest.fn((...args) => ({ __where: args })),
@@ -48,6 +49,8 @@ jest.mock("courtchamps-shared/helpers", () => ({
 
 // Must follow the jest.mock calls above for readability;
 // babel-plugin-jest-hoist hoists them either way.
+// eslint-disable-next-line import/first
+import { STANDINGS_FINAL_MESSAGE } from "../utils/ladderStandings";
 // eslint-disable-next-line import/first
 import {
   approveDispute,
@@ -101,7 +104,7 @@ const baseDispute: Dispute = {
 };
 
 const makeTx = (getResults: Array<ReturnType<typeof snapOf>>) => {
-  const get = jest.fn();
+  const get = jest.fn().mockResolvedValue(snapOf(false, undefined));
   getResults.forEach((r) => get.mockResolvedValueOnce(r));
   return { get, set: jest.fn(), update: jest.fn() };
 };
@@ -116,6 +119,31 @@ const resolvedPlan = () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGetDoc.mockResolvedValue(snapOf(false, undefined));
+});
+
+describe("once the ladder's standings are final", () => {
+  const finalLadder = snapOf(true, { standingsFinalisedAt: new Date() });
+
+  it("refuses to resolve a dispute", async () => {
+    const tx = makeTx([snapOf(true, makeMatch()), finalLadder]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+
+    await expect(approveDispute(baseDispute, "admin1")).rejects.toThrow(
+      STANDINGS_FINAL_MESSAGE,
+    );
+    expect(mockPlanDisputeResolution).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses an evidence request", async () => {
+    mockGetDoc.mockResolvedValueOnce(finalLadder);
+
+    await expect(
+      requestMoreEvidence(baseDispute, "admin1", "Send the video"),
+    ).rejects.toThrow(STANDINGS_FINAL_MESSAGE);
+    expect(mockUpdateDoc).not.toHaveBeenCalled();
+  });
 });
 
 // ── approveDispute / rejectDispute ──────────────────────────────────────
@@ -244,7 +272,11 @@ describe("fetchActiveDisputes", () => {
       participantIds: ["p1"],
       createdAt: new Date(2026, 0, 1),
       events: [
-        { type: DISPUTE_EVENT_TYPE.NOTES_SUBMITTED, createdBy: "p1", note: "x" },
+        {
+          type: DISPUTE_EVENT_TYPE.NOTES_SUBMITTED,
+          createdBy: "p1",
+          note: "x",
+        },
       ],
     };
     const waitingOnPlayer = {
