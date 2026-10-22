@@ -7,6 +7,8 @@ import {
 import type { LadderMatch } from "courtchamps-shared/types";
 import {
   buildLadderActivity,
+  buildLadderPhaseDates,
+  describeDaysAway,
   isLadderLocked,
   summarizeLadderMatches,
 } from "./ladderActivity";
@@ -139,5 +141,65 @@ describe("buildLadderActivity", () => {
     expect(activity.platformFees).toBe(0);
     expect(activity.prizePool).toBe(0);
     expect(activity.daysToPlayoffs).toBeNull();
+  });
+});
+
+describe("buildLadderPhaseDates", () => {
+  it("lists every phase date in order with days from today", () => {
+    const phaseDates = buildLadderPhaseDates(
+      {
+        registrationOpensAt: daysFromNow(-3),
+        seasonStartsAt: now,
+        registrationClosesAt: daysFromNow(61),
+        seasonEndsAt: daysFromNow(92),
+        playoffStartsAt: daysFromNow(92),
+        playoffEndsAt: daysFromNow(122),
+      },
+      now,
+    );
+
+    expect(
+      phaseDates.map(({ label, daysAway }) => [label, daysAway]),
+    ).toEqual([
+      ["Registration opens", -3],
+      ["Season starts", 0],
+      ["Registration closes", 61],
+      ["Season ends", 92],
+      ["Playoffs start", 92],
+      ["Playoffs end", 122],
+    ]);
+  });
+
+  it("treats a missing date as not set", () => {
+    const [registrationOpens] = buildLadderPhaseDates(
+      {
+        registrationOpensAt: new Date(0),
+        seasonStartsAt: now,
+        registrationClosesAt: now,
+        seasonEndsAt: now,
+        playoffStartsAt: now,
+        playoffEndsAt: now,
+      },
+      now,
+    );
+
+    expect(registrationOpens).toEqual({
+      label: "Registration opens",
+      date: null,
+      daysAway: null,
+    });
+  });
+});
+
+describe("describeDaysAway", () => {
+  it.each([
+    [null, undefined],
+    [0, "Today"],
+    [1, "Tomorrow"],
+    [-1, "Yesterday"],
+    [5, "In 5 days"],
+    [-12, "12 days ago"],
+  ])("describes %p as %p", (daysAway, expected) => {
+    expect(describeDaysAway(daysAway)).toBe(expected);
   });
 });
