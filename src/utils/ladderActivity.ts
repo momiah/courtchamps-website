@@ -158,16 +158,12 @@ const LADDER_PHASE_DATE_FIELDS: {
     | "registrationOpensAt"
     | "seasonStartsAt"
     | "registrationClosesAt"
-    | "seasonEndsAt"
-    | "playoffStartsAt"
-    | "playoffEndsAt";
+    | "playoffStartsAt";
 }[] = [
   { label: "Registration opens", field: "registrationOpensAt" },
   { label: "Season starts", field: "seasonStartsAt" },
   { label: "Registration closes", field: "registrationClosesAt" },
-  { label: "Season ends", field: "seasonEndsAt" },
   { label: "Playoffs start", field: "playoffStartsAt" },
-  { label: "Playoffs end", field: "playoffEndsAt" },
 ];
 
 const startOfDayMs = (date: Date): number =>

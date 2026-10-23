@@ -5,6 +5,7 @@ import {
   REPORT_STATUS,
 } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
+import { deriveLadderDates } from "courtchamps-shared/helpers";
 import {
   buildLadderActivity,
   buildLadderPhaseDates,
@@ -146,15 +147,9 @@ describe("buildLadderActivity", () => {
 
 describe("buildLadderPhaseDates", () => {
   it("lists every phase date in order with days from today", () => {
+    const registrationOpensAt = daysFromNow(-3);
     const phaseDates = buildLadderPhaseDates(
-      {
-        registrationOpensAt: daysFromNow(-3),
-        seasonStartsAt: now,
-        registrationClosesAt: daysFromNow(61),
-        seasonEndsAt: daysFromNow(92),
-        playoffStartsAt: daysFromNow(92),
-        playoffEndsAt: daysFromNow(122),
-      },
+      { registrationOpensAt, ...deriveLadderDates(registrationOpensAt) },
       now,
     );
 
@@ -162,11 +157,9 @@ describe("buildLadderPhaseDates", () => {
       phaseDates.map(({ label, daysAway }) => [label, daysAway]),
     ).toEqual([
       ["Registration opens", -3],
-      ["Season starts", 0],
-      ["Registration closes", 61],
-      ["Season ends", 92],
-      ["Playoffs start", 92],
-      ["Playoffs end", 122],
+      ["Season starts", 27],
+      ["Registration closes", 57],
+      ["Playoffs start", 87],
     ]);
   });
 
@@ -176,9 +169,7 @@ describe("buildLadderPhaseDates", () => {
         registrationOpensAt: new Date(0),
         seasonStartsAt: now,
         registrationClosesAt: now,
-        seasonEndsAt: now,
         playoffStartsAt: now,
-        playoffEndsAt: now,
       },
       now,
     );

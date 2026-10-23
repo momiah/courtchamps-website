@@ -93,14 +93,14 @@ function LadderEdit() {
           : input;
 
         if (ladderId && initialLadder) {
-          const seasonStartChanged =
-            inputToSave.seasonStartsAt.getTime() !==
-            initialLadder.seasonStartsAt.getTime();
+          const registrationOpensChanged =
+            inputToSave.registrationOpensAt.getTime() !==
+            initialLadder.registrationOpensAt.getTime();
           await updateLadder({
             ladderId,
             input: inputToSave,
             actorUserId,
-            seasonStartChanged,
+            registrationOpensChanged,
           });
         } else {
           await createLadder({ input: inputToSave, actorUserId });
