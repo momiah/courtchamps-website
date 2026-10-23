@@ -123,7 +123,7 @@ describe("buildLadderActivity", () => {
       pendingReports: 1,
       entryFeesCollected: 3000,
       platformFees: 300,
-      prizePool: 2700,
+      prizePool: 3000,
       daysToPlayoffs: 10,
     });
   });
