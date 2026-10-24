@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   doc,
   getCountFromServer,
@@ -10,6 +9,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
@@ -21,6 +21,8 @@ import {
   Ladder,
   LadderInput,
   LadderMatch,
+  LADDER_PRE_REGISTRATION_STATUS,
+  LADDER_PRE_REGISTRATIONS_COLLECTION,
   LADDER_STATUS,
   LadderType,
   LADDER_TYPE,
@@ -139,14 +141,18 @@ export const fetchLadder = async ({
 export const createLadder = async ({
   input,
   actorUserId,
+  preRegistrationId,
 }: {
   input: LadderInput;
   actorUserId: string;
+  preRegistrationId?: string | null;
 }): Promise<string> => {
   const derivedDates = deriveLadderDates(input.registrationOpensAt);
   const now = new Date();
+  const ladderReference = doc(collection(db, LADDERS_COLLECTION));
+  const batch = writeBatch(db);
 
-  const ladderReference = await addDoc(collection(db, LADDERS_COLLECTION), {
+  batch.set(ladderReference, {
     ...input,
     ...derivedDates,
     status: LADDER_STATUS.REGISTRATION_OPEN,
@@ -158,6 +164,19 @@ export const createLadder = async ({
     updatedAt: now,
   });
 
+  if (preRegistrationId) {
+    batch.update(
+      doc(db, LADDER_PRE_REGISTRATIONS_COLLECTION, preRegistrationId),
+      {
+        status: LADDER_PRE_REGISTRATION_STATUS.LAUNCHED,
+        ladderId: ladderReference.id,
+        updatedBy: actorUserId,
+        updatedAt: now,
+      },
+    );
+  }
+
+  await batch.commit();
   return ladderReference.id;
 };
 
