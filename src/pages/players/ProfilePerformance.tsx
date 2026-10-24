@@ -111,6 +111,18 @@ export default function ProfilePerformance({
             ))}
           </PrizeRow>
         </Card>
+
+        <Card>
+          <CardTitle>Ladder Victories</CardTitle>
+          <PrizeRow>
+            {PLACEMENTS.map((key, index) => (
+              <PrizeCard key={key}>
+                <PrizeImg src={`${PERF_BASE}/${medalIcons[index]}.png`} alt={PLACE_LABELS[index]} />
+                <PrizeText>{detail?.ladderStats?.[key] ?? 0}</PrizeText>
+              </PrizeCard>
+            ))}
+          </PrizeRow>
+        </Card>
       </Column>
     </Grid>
   );
