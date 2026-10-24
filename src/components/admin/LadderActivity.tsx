@@ -1,10 +1,15 @@
 import React, { memo, useEffect, useState } from "react";
 import styled from "styled-components";
+import { format } from "date-fns";
 
 import { Ladder, LADDER_TYPE } from "courtchamps-shared/types";
 import { LADDER_STATUS_LABELS } from "courtchamps-shared/helpers";
 import { fetchLadderActivity } from "../../services/ladders";
-import { LadderActivity as LadderActivityData } from "../../utils/ladderActivity";
+import {
+  LadderActivity as LadderActivityData,
+  buildLadderPhaseDates,
+  describeDaysAway,
+} from "../../utils/ladderActivity";
 
 interface ActivityStat {
   label: string;
@@ -55,6 +60,16 @@ const buildGroups = (
               : String(activity.daysToPlayoffs),
         },
       ],
+    },
+    {
+      title: "Dates",
+      stats: buildLadderPhaseDates(ladder).map((phaseDate) => ({
+        label: phaseDate.label,
+        value: phaseDate.date
+          ? format(phaseDate.date, "EEE d MMM yyyy")
+          : "Not set",
+        hint: describeDaysAway(phaseDate.daysAway),
+      })),
     },
     {
       title: "Matches",

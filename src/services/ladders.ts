@@ -28,7 +28,7 @@ import {
   REPORTS_COLLECTION,
 } from "courtchamps-shared/types";
 import { normalizeLadderStatus } from "courtchamps-shared/helpers";
-import { deriveLadderDates } from "../utils/ladderDates";
+import { deriveLadderDates } from "courtchamps-shared/helpers";
 import { buildLadderActivity, LadderActivity } from "../utils/ladderActivity";
 
 const LADDERS_COLLECTION = "ladders";
@@ -47,9 +47,7 @@ interface LadderDocumentData {
   registrationOpensAt?: Timestamp | null;
   registrationClosesAt?: Timestamp | null;
   seasonStartsAt?: Timestamp | null;
-  seasonEndsAt?: Timestamp | null;
   playoffStartsAt?: Timestamp | null;
-  playoffEndsAt?: Timestamp | null;
   entryFee?: number;
   currencyType?: string;
   minRank?: number;
@@ -82,9 +80,7 @@ const mapLadderDocument = (
   registrationOpensAt: toDate(data.registrationOpensAt),
   registrationClosesAt: toDate(data.registrationClosesAt),
   seasonStartsAt: toDate(data.seasonStartsAt),
-  seasonEndsAt: toDate(data.seasonEndsAt),
   playoffStartsAt: toDate(data.playoffStartsAt),
-  playoffEndsAt: toDate(data.playoffEndsAt),
   entryFee: data.entryFee ?? 0,
   currencyType: data.currencyType ?? "GBP",
   minRank: data.minRank ?? 0,
@@ -147,9 +143,7 @@ export const createLadder = async ({
   input: LadderInput;
   actorUserId: string;
 }): Promise<string> => {
-  const derivedDates = deriveLadderDates({
-    seasonStartsAt: input.seasonStartsAt,
-  });
+  const derivedDates = deriveLadderDates(input.registrationOpensAt);
   const now = new Date();
 
   const ladderReference = await addDoc(collection(db, LADDERS_COLLECTION), {
@@ -171,18 +165,18 @@ export const updateLadder = async ({
   ladderId,
   input,
   actorUserId,
-  seasonStartChanged,
+  registrationOpensChanged,
 }: {
   ladderId: string;
   input: LadderInput;
   actorUserId: string;
-  seasonStartChanged: boolean;
+  registrationOpensChanged: boolean;
 }): Promise<void> => {
   const ladderReference = doc(db, LADDERS_COLLECTION, ladderId);
   const now = new Date();
 
-  const derivedDates = seasonStartChanged
-    ? deriveLadderDates({ seasonStartsAt: input.seasonStartsAt })
+  const derivedDates = registrationOpensChanged
+    ? deriveLadderDates(input.registrationOpensAt)
     : {};
 
   await updateDoc(ladderReference, {

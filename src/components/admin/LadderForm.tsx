@@ -21,7 +21,7 @@ import {
   LadderType,
 } from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
-import { deriveLadderDates } from "../../utils/ladderDates";
+import { deriveLadderDates } from "courtchamps-shared/helpers";
 import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
 import FormField from "./FormField";
@@ -47,13 +47,11 @@ const REGION_DATALIST_ID = "ladder-region-options";
 type LadderFormState = Omit<
   LadderInput,
   | "registrationOpensAt"
-  | "seasonStartsAt"
   | "entryFee"
   | "minRank"
   | "maxPlayers"
 > & {
   registrationOpensAt: string;
-  seasonStartsAt: string;
   entryFee: string;
   minRank: string;
   maxPlayers: string;
@@ -87,9 +85,6 @@ const buildInitialState = (
   courtIds: initialLadder?.courtIds ?? [],
   registrationOpensAt: initialLadder
     ? toDateInputValue(initialLadder.registrationOpensAt)
-    : "",
-  seasonStartsAt: initialLadder
-    ? toDateInputValue(initialLadder.seasonStartsAt)
     : "",
   entryFee: initialLadder ? String(initialLadder.entryFee) : "0",
   currencyType: initialLadder?.currencyType ?? "GBP",
@@ -136,7 +131,7 @@ function LadderForm({
   });
 
   const courtIds = watch("courtIds");
-  const seasonStartsAt = watch("seasonStartsAt");
+  const registrationOpensAt = watch("registrationOpensAt");
   const entryFee = watch("entryFee");
   const maxPlayers = watch("maxPlayers");
   const image = watch("image");
@@ -265,12 +260,12 @@ function LadderForm({
   );
 
   const derivedDatesPreview = useMemo(() => {
-    const seasonStart = parseDateInputValue(seasonStartsAt);
-    if (!seasonStart) {
+    const registrationOpens = parseDateInputValue(registrationOpensAt);
+    if (!registrationOpens) {
       return null;
     }
-    return deriveLadderDates({ seasonStartsAt: seasonStart });
-  }, [seasonStartsAt]);
+    return deriveLadderDates(registrationOpens);
+  }, [registrationOpensAt]);
 
   const minScheduleDate = useMemo(() => {
     const todayInputValue = format(new Date(), "yyyy-MM-dd");
@@ -435,8 +430,7 @@ function LadderForm({
     }
 
     const registrationOpens = parseDateInputValue(values.registrationOpensAt);
-    const seasonStarts = parseDateInputValue(values.seasonStartsAt);
-    if (!registrationOpens || !seasonStarts) {
+    if (!registrationOpens) {
       return;
     }
 
@@ -451,7 +445,6 @@ function LadderForm({
         genderType: values.genderType,
         courtIds: values.courtIds,
         registrationOpensAt: registrationOpens,
-        seasonStartsAt: seasonStarts,
         entryFee: Number(values.entryFee),
         currencyType: values.currencyType,
         minRank: Number(values.minRank),
@@ -722,53 +715,18 @@ function LadderForm({
                   )}
                 />
               </FormField>
-
-              <FormField
-                label="Season starts"
-                htmlFor="ladder-season-starts"
-                error={errors.seasonStartsAt?.message ?? null}
-              >
-                <Controller
-                  control={control}
-                  name="seasonStartsAt"
-                  rules={{
-                    validate: (value) => {
-                      const seasonStart = parseDateInputValue(value);
-                      if (!seasonStart) {
-                        return "Season start date is required.";
-                      }
-                      if (value < minScheduleDate) {
-                        return "Season start date cannot be in the past.";
-                      }
-                      const registrationOpens = parseDateInputValue(
-                        getValues("registrationOpensAt"),
-                      );
-                      if (
-                        registrationOpens &&
-                        registrationOpens.getTime() >= seasonStart.getTime()
-                      ) {
-                        return "Season start must be after registration opens.";
-                      }
-                      return true;
-                    },
-                  }}
-                  render={({ field }) => (
-                    <TextInput
-                      id="ladder-season-starts"
-                      type="date"
-                      min={minScheduleDate}
-                      onClick={openDatePicker}
-                      {...field}
-                    />
-                  )}
-                />
-              </FormField>
             </DateRow>
 
             <DerivedPreview>
               <DerivedTitle>Derived schedule</DerivedTitle>
               {derivedDatesPreview ? (
                 <DerivedGrid>
+                  <DerivedItem>
+                    <DerivedLabel>Season starts</DerivedLabel>
+                    <DerivedValue>
+                      {formatPreviewDate(derivedDatesPreview.seasonStartsAt)}
+                    </DerivedValue>
+                  </DerivedItem>
                   <DerivedItem>
                     <DerivedLabel>Registration closes</DerivedLabel>
                     <DerivedValue>
@@ -778,27 +736,15 @@ function LadderForm({
                     </DerivedValue>
                   </DerivedItem>
                   <DerivedItem>
-                    <DerivedLabel>Season ends</DerivedLabel>
-                    <DerivedValue>
-                      {formatPreviewDate(derivedDatesPreview.seasonEndsAt)}
-                    </DerivedValue>
-                  </DerivedItem>
-                  <DerivedItem>
                     <DerivedLabel>Playoffs start</DerivedLabel>
                     <DerivedValue>
                       {formatPreviewDate(derivedDatesPreview.playoffStartsAt)}
                     </DerivedValue>
                   </DerivedItem>
-                  <DerivedItem>
-                    <DerivedLabel>Playoffs end</DerivedLabel>
-                    <DerivedValue>
-                      {formatPreviewDate(derivedDatesPreview.playoffEndsAt)}
-                    </DerivedValue>
-                  </DerivedItem>
                 </DerivedGrid>
               ) : (
                 <DerivedEmpty>
-                  Set a season start date to preview the derived schedule.
+                  Set the registration opening date to preview the derived schedule.
                 </DerivedEmpty>
               )}
             </DerivedPreview>
