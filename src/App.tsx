@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import Courts from "./pages/admin/Courts";
 import LadderList from "./pages/admin/LadderList";
 import LadderEdit from "./pages/admin/LadderEdit";
+import LadderPrizePayouts from "./pages/admin/LadderPrizePayouts";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
 import GameDisputes from "./pages/admin/GameDisputes";
@@ -85,6 +86,14 @@ function AppShell() {
           element={
             <RequireRole>
               <LadderEdit />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/ladders/:ladderId/payouts"
+          element={
+            <RequireRole>
+              <LadderPrizePayouts />
             </RequireRole>
           }
         />
