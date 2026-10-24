@@ -145,3 +145,52 @@ export const buildLadderActivity = ({
     daysToPlayoffs: msToPlayoffs > 0 ? Math.ceil(msToPlayoffs / DAY_MS) : null,
   };
 };
+
+export interface LadderPhaseDate {
+  label: string;
+  date: Date | null;
+  daysAway: number | null;
+}
+
+const LADDER_PHASE_DATE_FIELDS: {
+  label: string;
+  field:
+    | "registrationOpensAt"
+    | "seasonStartsAt"
+    | "registrationClosesAt"
+    | "playoffStartsAt";
+}[] = [
+  { label: "Registration opens", field: "registrationOpensAt" },
+  { label: "Season starts", field: "seasonStartsAt" },
+  { label: "Registration closes", field: "registrationClosesAt" },
+  { label: "Playoffs start", field: "playoffStartsAt" },
+];
+
+const startOfDayMs = (date: Date): number =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+export const buildLadderPhaseDates = (
+  ladder: Pick<Ladder, (typeof LADDER_PHASE_DATE_FIELDS)[number]["field"]>,
+  now: Date = new Date(),
+): LadderPhaseDate[] =>
+  LADDER_PHASE_DATE_FIELDS.map(({ label, field }) => {
+    const value = ladder[field];
+    const date = value && value.getTime() > 0 ? value : null;
+    return {
+      label,
+      date,
+      daysAway: date
+        ? Math.round((startOfDayMs(date) - startOfDayMs(now)) / DAY_MS)
+        : null,
+    };
+  });
+
+export const describeDaysAway = (
+  daysAway: number | null,
+): string | undefined => {
+  if (daysAway === null) return undefined;
+  if (daysAway === 0) return "Today";
+  if (daysAway === 1) return "Tomorrow";
+  if (daysAway === -1) return "Yesterday";
+  return daysAway > 0 ? `In ${daysAway} days` : `${-daysAway} days ago`;
+};

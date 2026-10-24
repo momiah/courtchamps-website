@@ -5,8 +5,11 @@ import {
   REPORT_STATUS,
 } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
+import { deriveLadderDates } from "courtchamps-shared/helpers";
 import {
   buildLadderActivity,
+  buildLadderPhaseDates,
+  describeDaysAway,
   isLadderLocked,
   summarizeLadderMatches,
 } from "./ladderActivity";
@@ -121,7 +124,7 @@ describe("buildLadderActivity", () => {
       pendingReports: 1,
       entryFeesCollected: 3000,
       platformFees: 300,
-      prizePool: 2700,
+      prizePool: 3000,
       daysToPlayoffs: 10,
     });
   });
@@ -139,5 +142,55 @@ describe("buildLadderActivity", () => {
     expect(activity.platformFees).toBe(0);
     expect(activity.prizePool).toBe(0);
     expect(activity.daysToPlayoffs).toBeNull();
+  });
+});
+
+describe("buildLadderPhaseDates", () => {
+  it("lists every phase date in order with days from today", () => {
+    const registrationOpensAt = daysFromNow(-3);
+    const phaseDates = buildLadderPhaseDates(
+      { registrationOpensAt, ...deriveLadderDates(registrationOpensAt) },
+      now,
+    );
+
+    expect(
+      phaseDates.map(({ label, daysAway }) => [label, daysAway]),
+    ).toEqual([
+      ["Registration opens", -3],
+      ["Season starts", 27],
+      ["Registration closes", 57],
+      ["Playoffs start", 87],
+    ]);
+  });
+
+  it("treats a missing date as not set", () => {
+    const [registrationOpens] = buildLadderPhaseDates(
+      {
+        registrationOpensAt: new Date(0),
+        seasonStartsAt: now,
+        registrationClosesAt: now,
+        playoffStartsAt: now,
+      },
+      now,
+    );
+
+    expect(registrationOpens).toEqual({
+      label: "Registration opens",
+      date: null,
+      daysAway: null,
+    });
+  });
+});
+
+describe("describeDaysAway", () => {
+  it.each([
+    [null, undefined],
+    [0, "Today"],
+    [1, "Tomorrow"],
+    [-1, "Yesterday"],
+    [5, "In 5 days"],
+    [-12, "12 days ago"],
+  ])("describes %p as %p", (daysAway, expected) => {
+    expect(describeDaysAway(daysAway)).toBe(expected);
   });
 });
