@@ -189,7 +189,7 @@ const JoinPage: React.FC = () => {
             <DateLabel>Start Date</DateLabel>
             <DateValue>{competition.startDate || "TBC"}</DateValue>
           </DateBlock>
-          {competition.prizeType === "Trophy" && (
+          {competitionType === "league" && (
             <>
               <DateDivider />
               <DateBlock>

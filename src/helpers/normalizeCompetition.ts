@@ -1,3 +1,5 @@
+import { getPrizeType } from "courtchamps-shared/helpers";
+
 /**
  * Competition Data Helper for Gradual Migration
  *
@@ -43,7 +45,7 @@ export const normalizeCompetition = ({ rawData, competitionType }) => {
     endDate: rawData?.endDate || "",
 
     // Prize & Entry
-    prizeType: rawData?.prizeType || "",
+    prizeType: getPrizeType(rawData?.entryFee),
     entryFee: rawData?.entryFee || 0,
     currencyType: rawData?.currencyType || "",
     prizesDistributed: rawData?.prizesDistributed || false,
