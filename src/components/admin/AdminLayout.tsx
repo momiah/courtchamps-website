@@ -18,6 +18,7 @@ import { CourtChampLogoIcon } from "../../assets";
 import { useAuth } from "../../context/AuthContext";
 import { GOOGLE_MAPS_API_KEY } from "../../maps/googleMapsConfig";
 import RoleBadge from "../auth/RoleBadge";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 interface AdminNavItem {
   label: string;
@@ -41,6 +42,8 @@ function AdminLayout({
   title: string;
   children: React.ReactNode;
 }) {
+  usePageMeta({ title: `${title} | Court Champs Admin`, noindex: true });
+
   const { currentUser, role, signOutUser } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 

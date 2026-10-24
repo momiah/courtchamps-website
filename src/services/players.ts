@@ -10,6 +10,8 @@ export interface PlayerListItem extends UserProfile {
   userId: string;
   /** 1-based rank across the whole ordered player set. */
   globalRank: number;
+  /** Set in the app's Edit Profile; missing means the player hasn't opted out. */
+  showInSearchEngines?: boolean;
 }
 
 export interface PaginatedPlayers {

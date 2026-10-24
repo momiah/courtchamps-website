@@ -9,6 +9,7 @@ import Tag from "../../components/Tag";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 type CompetitionRouteType = "league" | "tournament";
 
@@ -34,6 +35,14 @@ const JoinPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+
+  // Invite links: useful to share, not to rank.
+  usePageMeta({
+    title: competition
+      ? `Join ${competition.name} | Court Champs`
+      : "Join a Competition | Court Champs",
+    noindex: true,
+  });
 
   useEffect(() => {
     if (!competitionType || !competitionId) return;
