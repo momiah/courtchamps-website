@@ -158,19 +158,30 @@ export const countLadderPreRegistrants = async (
 ): Promise<number> =>
   (await getCountFromServer(registrantsRef(preRegistrationId))).data().count;
 
+export type LadderPreRegistrantExport = LadderPreRegistrant & {
+  email: string;
+};
+
+/** Registrants with their email, read from each player's profile. */
 export const fetchLadderPreRegistrants = async (
   preRegistrationId: string,
-): Promise<LadderPreRegistrant[]> => {
+): Promise<LadderPreRegistrantExport[]> => {
   const snapshot = await getDocs(
     query(registrantsRef(preRegistrationId), orderBy("createdAt", "asc")),
   );
-  return snapshot.docs.map((registrant) => {
-    const data = registrant.data();
-    return {
-      userId: String(data.userId ?? registrant.id),
-      email: String(data.email ?? ""),
-      createdAt: toDate(data.createdAt) ?? new Date(0),
-      notifiedAt: toDate(data.notifiedAt),
-    };
-  });
+  return Promise.all(
+    snapshot.docs.map(async (registrant) => {
+      const data = registrant.data();
+      const userId = String(data.userId ?? registrant.id);
+      const profile = await getDoc(doc(db, "users", userId));
+      return {
+        userId,
+        username: String(data.username ?? profile.data()?.username ?? ""),
+        profileImage: String(data.profileImage ?? ""),
+        email: String(profile.data()?.email ?? ""),
+        createdAt: toDate(data.createdAt) ?? new Date(0),
+        notifiedAt: toDate(data.notifiedAt),
+      };
+    }),
+  );
 };

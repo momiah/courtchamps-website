@@ -1,9 +1,9 @@
 import { LADDER_PRE_REGISTRATION_STATUS } from "courtchamps-shared/types";
 import type {
-  LadderPreRegistrant,
   LadderPreRegistration,
   LadderPreRegistrationStatus,
 } from "courtchamps-shared/types";
+import type { LadderPreRegistrantExport } from "../services/ladderPreRegistrations";
 import type { StatusTone } from "../components/admin/StatusPill";
 
 export const PRE_REGISTRATION_STATUS_STYLES: Record<
@@ -32,13 +32,14 @@ const isoOrEmpty = (date: Date | null): string =>
   date && date.getTime() > 0 ? date.toISOString() : "";
 
 export const buildRegistrantsCsv = (
-  registrants: LadderPreRegistrant[],
+  registrants: LadderPreRegistrantExport[],
 ): string =>
   [
-    "userId,email,registeredAt,notifiedAt",
+    "userId,username,email,registeredAt,notifiedAt",
     ...registrants.map((registrant) =>
       [
         registrant.userId,
+        registrant.username,
         registrant.email,
         isoOrEmpty(registrant.createdAt),
         isoOrEmpty(registrant.notifiedAt),
