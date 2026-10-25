@@ -1,4 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { format } from "date-fns";
 
@@ -139,6 +140,7 @@ const buildGroups = (
 function LadderActivity({ ladder }: { ladder: Ladder }) {
   const [activity, setActivity] = useState<LadderActivityData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isActive = true;
@@ -180,6 +182,18 @@ function LadderActivity({ ladder }: { ladder: Ladder }) {
           </Group>
         ))
       )}
+      {ladder.prizesDistributed ? (
+        <Group>
+          <GroupTitle>Prize payouts</GroupTitle>
+          <PayoutsButton
+            type="button"
+            data-testid="ladder-prize-payouts-link"
+            onClick={() => navigate(`/admin/ladders/${ladder.ladderId}/payouts`)}
+          >
+            View prize payouts and reviews
+          </PayoutsButton>
+        </Group>
+      ) : null}
     </Panel>
   );
 }
@@ -264,4 +278,16 @@ const LoadingText = styled.div({
 const ErrorText = styled.div({
   color: "#ff9a9a",
   fontSize: "0.85rem",
+});
+
+const PayoutsButton = styled.button({
+  alignSelf: "flex-start",
+  padding: "8px 16px",
+  borderRadius: "8px",
+  border: "1px solid rgba(0, 162, 255, 0.4)",
+  backgroundColor: "rgba(0, 162, 255, 0.12)",
+  color: "#00A2FF",
+  fontSize: "0.82rem",
+  fontWeight: 700,
+  cursor: "pointer",
 });
