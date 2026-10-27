@@ -19,6 +19,7 @@ import {
   Ladder,
   LadderInput,
   LadderType,
+  LadderPreRegistrationDetails,
 } from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "courtchamps-shared/helpers";
@@ -74,23 +75,27 @@ const parseDateInputValue = (value: string): Date | null => {
 
 const buildInitialState = (
   initialLadder: Ladder | null | undefined,
-): LadderFormState => ({
-  name: initialLadder?.name ?? "",
-  description: initialLadder?.description ?? "",
-  image: initialLadder?.image ?? "",
-  region: initialLadder?.region ?? "",
-  countryCode: initialLadder?.countryCode ?? "",
-  ladderType: initialLadder?.ladderType ?? "Singles",
-  genderType: initialLadder?.genderType ?? "Mixed",
-  courtIds: initialLadder?.courtIds ?? [],
-  registrationOpensAt: initialLadder
-    ? toDateInputValue(initialLadder.registrationOpensAt)
-    : "",
-  entryFee: initialLadder ? String(initialLadder.entryFee) : "0",
-  currencyType: initialLadder?.currencyType ?? "GBP",
-  minRank: initialLadder ? String(initialLadder.minRank) : "0",
-  maxPlayers: initialLadder ? String(initialLadder.maxPlayers) : "",
-});
+  prefill?: LadderPreRegistrationDetails | null,
+): LadderFormState => {
+  const details = initialLadder ?? prefill;
+  return {
+    name: details?.name ?? "",
+    description: details?.description ?? "",
+    image: details?.image ?? "",
+    region: details?.region ?? "",
+    countryCode: details?.countryCode ?? "",
+    ladderType: details?.ladderType ?? "Singles",
+    genderType: details?.genderType ?? "Mixed",
+    courtIds: initialLadder?.courtIds ?? [],
+    registrationOpensAt: initialLadder
+      ? toDateInputValue(initialLadder.registrationOpensAt)
+      : "",
+    entryFee: details ? String(details.entryFee) : "0",
+    currencyType: details?.currencyType ?? "GBP",
+    minRank: initialLadder ? String(initialLadder.minRank) : "0",
+    maxPlayers: details ? String(details.maxPlayers) : "",
+  };
+};
 
 const formatPreviewDate = (date: Date): string =>
   format(date, "EEE d MMM yyyy");
@@ -110,11 +115,13 @@ const openDatePicker = (
 
 function LadderForm({
   initialLadder,
+  prefill,
   onSubmit,
   submitting,
   locked = false,
 }: {
   initialLadder?: Ladder | null;
+  prefill?: LadderPreRegistrationDetails | null;
   onSubmit: (input: LadderInput, options: { imageFile: File | null }) => void;
   submitting: boolean;
   locked?: boolean;
@@ -127,7 +134,7 @@ function LadderForm({
     setValue,
     formState: { errors },
   } = useForm<LadderFormState>({
-    defaultValues: buildInitialState(initialLadder),
+    defaultValues: buildInitialState(initialLadder, prefill),
   });
 
   const courtIds = watch("courtIds");
@@ -415,8 +422,8 @@ function LadderForm({
   }, [imagePreviewUrl, image]);
 
   const initialFormState = useMemo(
-    () => buildInitialState(initialLadder),
-    [initialLadder],
+    () => buildInitialState(initialLadder, prefill),
+    [initialLadder, prefill],
   );
   const currentValues = watch();
   const hasChanges =

@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import styled from "styled-components";
 
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -12,25 +17,71 @@ import {
   fetchLadder,
   updateLadder,
 } from "../../services/ladders";
-import { Ladder, LadderInput } from "courtchamps-shared/types";
+import { fetchLadderPreRegistration } from "../../services/ladderPreRegistrations";
+import {
+  Ladder,
+  LadderInput,
+  LADDER_PRE_REGISTRATION_STATUS,
+  LadderPreRegistration,
+} from "courtchamps-shared/types";
 import { isLadderLocked } from "../../utils/ladderActivity";
 
 function LadderEdit() {
   const { ladderId } = useParams<{ ladderId: string }>();
+  const [searchParams] = useSearchParams();
+  const preRegistrationId = ladderId
+    ? null
+    : searchParams.get("preRegistrationId");
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
   const isEditMode = Boolean(ladderId);
 
   const [initialLadder, setInitialLadder] = useState<Ladder | null>(null);
-  const [loading, setLoading] = useState<boolean>(isEditMode);
+  const [preRegistration, setPreRegistration] =
+    useState<LadderPreRegistration | null>(null);
+  const [loading, setLoading] = useState<boolean>(
+    isEditMode || Boolean(preRegistrationId),
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
+    if (!preRegistrationId) return;
+
+    let isActive = true;
+    fetchLadderPreRegistration(preRegistrationId)
+      .then((loaded) => {
+        if (!isActive) return;
+        if (!loaded) {
+          setLoadError("This pre-registration could not be found.");
+        } else if (loaded.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED) {
+          setLoadError("This pre-registration already has a ladder.");
+        } else {
+          setPreRegistration(loaded);
+        }
+      })
+      .catch((fetchError) => {
+        console.error("Failed to load pre-registration", fetchError);
+        if (isActive) {
+          setLoadError(
+            "Could not load the pre-registration. Please try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) setLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [preRegistrationId]);
+
+  useEffect(() => {
     if (!ladderId) {
-      setLoading(false);
+      if (!preRegistrationId) setLoading(false);
       return;
     }
 
@@ -103,7 +154,11 @@ function LadderEdit() {
             registrationOpensChanged,
           });
         } else {
-          await createLadder({ input: inputToSave, actorUserId });
+          await createLadder({
+            input: inputToSave,
+            actorUserId,
+            preRegistrationId: preRegistration?.preRegistrationId ?? null,
+          });
         }
         navigate("/admin/ladders");
       } catch (saveError) {
@@ -112,7 +167,7 @@ function LadderEdit() {
         setSubmitting(false);
       }
     },
-    [currentUser, initialLadder, ladderId, navigate],
+    [currentUser, initialLadder, ladderId, navigate, preRegistration],
   );
 
   const pageTitle = isEditMode ? "Edit ladder" : "New ladder";
@@ -125,6 +180,11 @@ function LadderEdit() {
         </LoadingContainer>
       ) : loadError ? (
         <LoadError>{loadError}</LoadError>
+      ) : !isEditMode && !preRegistration ? (
+        <LoadError>
+          Ladders are created from a pre-registration.{" "}
+          <Link to="/admin/pre-registrations">Go to pre-registrations</Link>
+        </LoadError>
       ) : (
         <>
           {submitError ? <SubmitError>{submitError}</SubmitError> : null}
@@ -133,6 +193,7 @@ function LadderEdit() {
           ) : null}
           <LadderForm
             initialLadder={initialLadder}
+            prefill={preRegistration}
             onSubmit={handleSubmit}
             submitting={submitting}
             locked={!!initialLadder && isLadderLocked(initialLadder)}

@@ -21,6 +21,8 @@ import Login from "./pages/Login";
 import Courts from "./pages/admin/Courts";
 import LadderList from "./pages/admin/LadderList";
 import LadderEdit from "./pages/admin/LadderEdit";
+import LadderPreRegistrationList from "./pages/admin/LadderPreRegistrationList";
+import LadderPreRegistrationEdit from "./pages/admin/LadderPreRegistrationEdit";
 import LadderPrizePayouts from "./pages/admin/LadderPrizePayouts";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
@@ -94,6 +96,30 @@ function AppShell() {
           element={
             <RequireRole>
               <LadderPrizePayouts />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/pre-registrations"
+          element={
+            <RequireRole>
+              <LadderPreRegistrationList />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/pre-registrations/new"
+          element={
+            <RequireRole>
+              <LadderPreRegistrationEdit />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/pre-registrations/:preRegistrationId"
+          element={
+            <RequireRole>
+              <LadderPreRegistrationEdit />
             </RequireRole>
           }
         />

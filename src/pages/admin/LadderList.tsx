@@ -74,8 +74,8 @@ function LadderList() {
     };
   }, []);
 
-  const goToNewLadder = useCallback(() => {
-    navigate("/admin/ladders/new");
+  const goToPreRegistrations = useCallback(() => {
+    navigate("/admin/pre-registrations");
   }, [navigate]);
 
   const columns = useMemo<AdminTableColumn<Ladder>[]>(
@@ -125,9 +125,12 @@ function LadderList() {
   return (
     <AdminLayout title="Ladders">
       <HeaderRow>
-        <Subtitle>Manage competitive ladders</Subtitle>
-        <PrimaryButton type="button" onClick={goToNewLadder}>
-          New Ladder
+        <Subtitle>
+          Manage competitive ladders. New ladders are created from a
+          pre-registration.
+        </Subtitle>
+        <PrimaryButton type="button" onClick={goToPreRegistrations}>
+          Pre-registrations
         </PrimaryButton>
       </HeaderRow>
 
@@ -146,9 +149,11 @@ function LadderList() {
           emptyState={
             <>
               <EmptyTitle>No ladders yet</EmptyTitle>
-              <EmptyText>Create your first ladder to get started.</EmptyText>
-              <PrimaryButton type="button" onClick={goToNewLadder}>
-                New Ladder
+              <EmptyText>
+                Create a ladder from one of your pre-registrations.
+              </EmptyText>
+              <PrimaryButton type="button" onClick={goToPreRegistrations}>
+                Pre-registrations
               </PrimaryButton>
             </>
           }

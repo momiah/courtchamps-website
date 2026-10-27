@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import styled from "styled-components";
 import {
   FaBars,
+  FaClipboardList,
   FaCommentDots,
   FaFlag,
   FaListOl,
@@ -26,6 +27,11 @@ interface AdminNavItem {
 }
 
 const NAV_ITEMS: AdminNavItem[] = [
+  {
+    label: "Pre-registrations",
+    to: "/admin/pre-registrations",
+    icon: FaClipboardList,
+  },
   { label: "Ladders", to: "/admin/ladders", icon: FaListOl },
   { label: "Courts", to: "/admin/courts", icon: FaMapMarkerAlt },
   { label: "Support Tickets", to: "/admin/support", icon: FaTicketAlt },
