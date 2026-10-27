@@ -8,6 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import { CourtChampLogo } from "../assets";
 import { auth } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
+import { usePageMeta } from "../seo/usePageMeta";
 
 type AuthMode = "signIn" | "signUp";
 
@@ -32,6 +33,8 @@ const hasErrorCode = (
   typeof (candidateError as { code: unknown }).code === "string";
 
 export default function Login() {
+  usePageMeta({ title: "Sign In | Court Champs", noindex: true });
+
   const {
     currentUser,
     loading,

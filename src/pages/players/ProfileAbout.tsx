@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { transformDate } from "courtchamps-shared/helpers";
 
 import { PlayerListItem } from "../../services/players";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 interface ProfileAboutProps {
   profile: PlayerListItem;
@@ -11,7 +12,8 @@ interface ProfileAboutProps {
 export default function ProfileAbout({ profile }: ProfileAboutProps) {
   const detail = profile.profileDetail;
 
-  const name = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim();
+  // First name and last initial only, as promised in the privacy policy.
+  const name = formatDisplayName(profile);
 
   const locationText = [profile.location?.city, profile.location?.country]
     .filter(Boolean)

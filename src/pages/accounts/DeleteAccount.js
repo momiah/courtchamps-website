@@ -3,8 +3,11 @@ import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import CourtChampsLogo from "../../assets/court-champ-logo.png";
 import { LoadingOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { usePageMeta } from "../../seo/usePageMeta";
 
 export default function DeleteAccount() {
+  usePageMeta({ title: "Delete Your Account | Court Champs", noindex: true });
+
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
