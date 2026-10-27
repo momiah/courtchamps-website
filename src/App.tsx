@@ -23,6 +23,7 @@ import LadderList from "./pages/admin/LadderList";
 import LadderEdit from "./pages/admin/LadderEdit";
 import LadderPreRegistrationList from "./pages/admin/LadderPreRegistrationList";
 import LadderPreRegistrationEdit from "./pages/admin/LadderPreRegistrationEdit";
+import LadderPrizePayouts from "./pages/admin/LadderPrizePayouts";
 import SupportTickets from "./pages/admin/SupportTickets";
 import Feedback from "./pages/admin/Feedback";
 import GameDisputes from "./pages/admin/GameDisputes";
@@ -87,6 +88,14 @@ function AppShell() {
           element={
             <RequireRole>
               <LadderEdit />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/ladders/:ladderId/payouts"
+          element={
+            <RequireRole>
+              <LadderPrizePayouts />
             </RequireRole>
           }
         />
