@@ -16,6 +16,7 @@ import Players from "./pages/players/Players";
 import PlayerProfile from "./pages/players/PlayerProfile";
 import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
+import LadderPreRegistrationJoinPage from "./pages/join/LadderPreRegistrationJoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
 import Login from "./pages/Login";
 import Courts from "./pages/admin/Courts";
@@ -53,6 +54,10 @@ function AppShell() {
         <Route path="/players/:userId" element={<PlayerProfile />} />
         <Route path="/accounts/delete-account" element={<DeleteAccount />} />
         {/* e.g. https://courtchamps.com/join/league/abc123 */}
+        <Route
+          path="/join/ladder-pre-registration/:preRegistrationId"
+          element={<LadderPreRegistrationJoinPage />}
+        />
         <Route
           path="/join/:competitionType/:competitionId"
           element={<JoinPage />}
