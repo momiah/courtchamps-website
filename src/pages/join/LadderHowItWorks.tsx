@@ -461,14 +461,19 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
                 </span>
               </div>
             </Explainer>
+            <Explainer>
+              <CardIcon>
+                <IoEnterOutline />
+              </CardIcon>
+              <div>
+                <span>
+                  Once you <b>join the ladder</b>, you can enter the{" "}
+                  <Blue>Match Making arena</Blue> to post or find matches to
+                  progress in the competition.
+                </span>
+              </div>
+            </Explainer>
           </Explainers>
-          <Cards>
-            <Card icon={IoEnterOutline}>
-              Once you <b>join the ladder</b>, you can enter the{" "}
-              <Blue>Match Making arena</Blue> to post or find matches to
-              progress in the competition.
-            </Card>
-          </Cards>
         </Panel>
       </Hero>
 
@@ -880,7 +885,11 @@ const CardIcon = styled.span<{ $gold?: boolean }>`
 
 const Explainers = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   gap: 12px;
   align-self: stretch;
 `;
@@ -896,8 +905,11 @@ const Explainer = styled.div`
     animation: ${popIn} 0.45s ease-out 0.2s forwards;
   `)}
 
-  & + & {
+  &:nth-child(2) {
     animation-delay: 0.35s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.5s;
   }
 
   div {
@@ -906,10 +918,10 @@ const Explainer = styled.div`
     gap: 4px;
     min-width: 0;
   }
-  b {
+  div > b {
     font-size: 15px;
   }
-  span {
+  div > span {
     color: ${BODY};
     font-size: 14px;
     line-height: 1.5;
