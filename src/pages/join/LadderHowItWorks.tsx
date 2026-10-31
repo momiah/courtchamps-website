@@ -1,184 +1,51 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled, { css, keyframes } from "styled-components";
-import { FaCheck, FaMapMarkerAlt } from "react-icons/fa";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import {
+  IoAddCircleOutline,
+  IoCalendarOutline,
+  IoCheckmarkCircleOutline,
+  IoCreateOutline,
+  IoEnterOutline,
+  IoEyeOffOutline,
+  IoFlashOutline,
+  IoGitNetworkOutline,
+  IoHelp,
+  IoLockClosedOutline,
+  IoMapOutline,
+  IoPeopleOutline,
+  IoPerson,
+  IoPersonAddOutline,
+  IoPodiumOutline,
+  IoQrCodeOutline,
+  IoSwapHorizontalOutline,
+  IoTrendingUpOutline,
+  IoTrophyOutline,
+} from "react-icons/io5";
+import type { IconType } from "react-icons";
+import {
+  LADDER_MATCH_BEST_OF_OPTIONS,
+  LADDER_PLAYOFF_START_DAYS,
+  LADDER_PLAYOFF_TIE_DAYS,
+  LADDER_POSTING_CLOSE_DAYS,
+  LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_STATUS,
+} from "courtchamps-shared";
+import { LADDER_STATUS_LABELS } from "courtchamps-shared/helpers";
 
-import { LadderTrophy } from "../../assets";
+import { ladderTrophies } from "../../assets";
+
+const BLUE = "#00A2FF";
+const GOLD = "#FFC800";
+const BODY = "#c9d6e3";
+const MUTED = "#9fb8c8";
+
+const days = (count: number) => `${count} day${count === 1 ? "" : "s"}`;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-/** True once the element has scrolled into view; stays true after that. */
-const useInView = <T extends Element>(threshold = 0.35) => {
-  const ref = useRef<T>(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setInView(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, inView };
-};
-
-const useDelayedFlag = (start: boolean, delayMs: number) => {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    if (!start) return;
-    const timer = setTimeout(() => setOn(true), delayMs);
-    return () => clearTimeout(timer);
-  }, [start, delayMs]);
-  return on;
-};
-
-const PreRegisterVisual: React.FC<{ active: boolean; label: string }> = ({
-  active,
-  label,
-}) => {
-  const done = useDelayedFlag(active, 900);
-  return (
-    <VisualCard>
-      <PreRegisterButton $done={done}>
-        {done ? (
-          <>
-            <FaCheck /> {label}
-          </>
-        ) : (
-          "Pre-register"
-        )}
-      </PreRegisterButton>
-    </VisualCard>
-  );
-};
-
-const MatchVisual: React.FC<{ active: boolean }> = ({ active }) => {
-  const accepted = useDelayedFlag(active, 1100);
-  return (
-    <VisualCard>
-      <MatchRow>
-        <MatchTime>
-          <strong>Sat</strong>
-          <span>10:00</span>
-        </MatchTime>
-        <MatchInfo>
-          <MatchTitle>New match</MatchTitle>
-          <MatchPlace>
-            <FaMapMarkerAlt /> Courts near you
-          </MatchPlace>
-        </MatchInfo>
-        <AcceptedBadge $show={accepted}>Accepted</AcceptedBadge>
-      </MatchRow>
-    </VisualCard>
-  );
-};
-
-const RIVALS = [
-  { name: "Alex", cp: 1240 },
-  { name: "Sam", cp: 1180 },
-  { name: "Jordan", cp: 1050 },
-];
-const START_CP = 980;
-const CP_PER_WIN = 120;
-const ROW_HEIGHT = 34;
-
-const ClimbVisual: React.FC<{ active: boolean }> = ({ active }) => {
-  const [rank, setRank] = useState(RIVALS.length);
-  const [cp, setCp] = useState(START_CP);
-  const [resetting, setResetting] = useState(false);
-
-  useEffect(() => {
-    if (!active) return;
-    if (prefersReducedMotion()) {
-      setRank(0);
-      setCp(START_CP + CP_PER_WIN * RIVALS.length);
-      return;
-    }
-    let current = RIVALS.length;
-    let held = 0;
-    const timer = setInterval(() => {
-      if (current > 0) {
-        current -= 1;
-        setResetting(false);
-        setRank(current);
-        setCp((value) => value + CP_PER_WIN);
-      } else if (++held > 2) {
-        held = 0;
-        current = RIVALS.length;
-        setResetting(true);
-        setRank(current);
-        setCp(START_CP);
-      }
-    }, 1300);
-    return () => clearInterval(timer);
-  }, [active]);
-
-  return (
-    <VisualCard>
-      <LadderBoard style={{ height: ROW_HEIGHT * (RIVALS.length + 1) }}>
-        {RIVALS.map((rival, i) => {
-          const position = i + (i >= rank ? 1 : 0);
-          return (
-            <LadderRow
-              key={rival.name}
-              style={{ top: position * ROW_HEIGHT }}
-              $animate={!resetting}
-            >
-              <RankNumber>{position + 1}</RankNumber>
-              <RowName>{rival.name}</RowName>
-              <RowCp>{rival.cp.toLocaleString("en-GB")} CP</RowCp>
-            </LadderRow>
-          );
-        })}
-        <LadderRow
-          $you
-          style={{ top: rank * ROW_HEIGHT }}
-          $animate={!resetting}
-        >
-          <RankNumber $you>{rank + 1}</RankNumber>
-          <RowName>You</RowName>
-          <RowCp $you>
-            {cp.toLocaleString("en-GB")} CP
-            {cp > START_CP ? <CpPop key={cp}>+{CP_PER_WIN}</CpPop> : null}
-          </RowCp>
-        </LadderRow>
-      </LadderBoard>
-    </VisualCard>
-  );
-};
-
-const BracketVisual: React.FC<{ active: boolean }> = ({ active }) => (
-  <VisualCard>
-    <BracketSvg viewBox="0 0 240 120" $active={active} aria-hidden>
-      {[10, 40, 70, 100].map((y) => (
-        <rect key={y} x="4" y={y} width="56" height="14" rx="4" />
-      ))}
-      <path className="round1" d="M60 17 H84 V32 H100 M60 47 H84 V32" />
-      <path className="round1" d="M60 77 H84 V92 H100 M60 107 H84 V92" />
-      <rect className="semi" x="100" y="25" width="56" height="14" rx="4" />
-      <rect className="semi" x="100" y="85" width="56" height="14" rx="4" />
-      <path className="round2" d="M156 32 H176 V62 H190 M156 92 H176 V62" />
-      <rect className="final" x="190" y="52" width="46" height="20" rx="6" />
-      <text className="finalText" x="213" y="66" textAnchor="middle">
-        🏆
-      </text>
-    </BracketSvg>
-  </VisualCard>
-);
 
 const splitAmount = (prizePool: string) => {
   const match = prizePool.match(/[\d,]+/);
@@ -190,136 +57,353 @@ const splitAmount = (prizePool: string) => {
   };
 };
 
-const PrizeVisual: React.FC<{
-  active: boolean;
-  prizePool: string;
-  cash: boolean;
-}> = ({ active, prizePool, cash }) => {
+/** The prize pool counting up from zero the first time it scrolls into view. */
+const PrizeCount: React.FC<{ prizePool: string }> = ({ prizePool }) => {
+  const ref = useRef<HTMLDivElement>(null);
   const parts = splitAmount(prizePool);
-  const [shown, setShown] = useState(0);
+  const [shown, setShown] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!active || !parts) return;
-    if (prefersReducedMotion()) {
-      setShown(parts.value);
-      return;
-    }
+    const node = ref.current;
+    if (!node || !parts || prefersReducedMotion()) return;
+    if (typeof IntersectionObserver === "undefined") return;
     let frame = 0;
-    const startedAt = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min((now - startedAt) / 1400, 1);
-      setShown(Math.round(parts.value * (1 - Math.pow(1 - progress, 3))));
-      if (progress < 1) frame = requestAnimationFrame(tick);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        const startedAt = performance.now();
+        const tick = (now: number) => {
+          const progress = Math.min((now - startedAt) / 1400, 1);
+          setShown(Math.round(parts.value * (1 - Math.pow(1 - progress, 3))));
+          if (progress < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [active, parts?.value]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [parts?.value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <VisualCard>
-      <PrizeRow>
-        <TrophyWrap>
-          <TrophyGlow $cash={cash} />
-          <TrophyImage src={LadderTrophy} alt="" />
-        </TrophyWrap>
-        <div>
-          <PrizeCaption>Up to</PrizeCaption>
-          <PrizeFigure $cash={cash}>
-            {parts
-              ? `${parts.prefix}${shown.toLocaleString("en-GB")}${parts.suffix}`
-              : prizePool}
-          </PrizeFigure>
-          <PrizeCaption>to be won</PrizeCaption>
-        </div>
-      </PrizeRow>
-    </VisualCard>
+    <PoolValue ref={ref}>
+      {parts && shown !== null
+        ? `${parts.prefix}${shown.toLocaleString("en-GB")}${parts.suffix}`
+        : prizePool}
+    </PoolValue>
   );
 };
+
+const Card: React.FC<{
+  icon: IconType;
+  gold?: boolean;
+  children: React.ReactNode;
+}> = ({ icon: Icon, gold, children }) => (
+  <CardRow>
+    <CardIcon $gold={gold}>
+      <Icon />
+    </CardIcon>
+    <span>{children}</span>
+  </CardRow>
+);
+
+const PageIcon: React.FC<{ icon: IconType }> = ({ icon: Icon }) => (
+  <IconCircle>
+    <Icon />
+  </IconCircle>
+);
+
+const Matchup: React.FC<{ reveal?: boolean }> = ({ reveal }) => (
+  <MatchupRow>
+    <Avatar $user>
+      <IoPerson />
+    </Avatar>
+    <Versus>VS</Versus>
+    {reveal ? (
+      <Flip>
+        <Avatar className="face-hidden">
+          <IoHelp />
+        </Avatar>
+        <Avatar className="face-revealed" $revealed>
+          <IoPerson />
+        </Avatar>
+      </Flip>
+    ) : (
+      <Avatar>
+        <IoHelp />
+      </Avatar>
+    )}
+  </MatchupRow>
+);
+
+const DOUBLES_RIVALS = ["Alex & Priya", "Sam & Leo", "Jordan & Kai"];
+const SINGLES_RIVALS = ["Alex", "Sam", "Jordan"];
+const RIVAL_CP = [1240, 1180, 1050];
+
+const LadderClimb: React.FC<{ doubles: boolean }> = ({ doubles }) => (
+  <Board>
+    <Ranks>
+      {[1, 2, 3, 4].map((rank) => (
+        <span key={rank}>{rank}</span>
+      ))}
+    </Ranks>
+    <Lane>
+      {(doubles ? DOUBLES_RIVALS : SINGLES_RIVALS).map((name, i) => (
+        <LaneRow key={name} className={`rival-${i}`}>
+          {name}
+          <em>{RIVAL_CP[i].toLocaleString("en-GB")} CP</em>
+        </LaneRow>
+      ))}
+      <LaneRow className="you" $you>
+        {doubles ? "You & Partner" : "You"}
+        <em>climbing</em>
+      </LaneRow>
+    </Lane>
+  </Board>
+);
+
+const MATCH_STEPS: { icon: IconType; text: string }[] = [
+  { icon: IoQrCodeOutline, text: "Check in at the court" },
+  { icon: IoPeopleOutline, text: "Play your opponent" },
+  { icon: IoCreateOutline, text: "Report your scores" },
+];
+
+interface Phase {
+  icon: IconType;
+  label: string;
+  length?: string;
+  text: string;
+  gold?: boolean;
+}
+
+const seasonPhases = (
+  noun: string,
+  playoffSpots: number,
+  cash: boolean,
+): Phase[] => [
+  {
+    icon: IoPersonAddOutline,
+    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
+    length: `Day 1 - ${LADDER_REGISTRATION_CLOSE_DAYS}`,
+    text: "Sign up and start posting or accepting matches straight away.",
+  },
+  {
+    icon: IoLockClosedOutline,
+    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
+    length: `Day ${LADDER_REGISTRATION_CLOSE_DAYS + 1} - ${LADDER_PLAYOFF_START_DAYS}`,
+    text: `No new ${noun}s join. Keep climbing; new matches close ${days(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
+  },
+  {
+    icon: IoGitNetworkOutline,
+    label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
+    length: `${Math.log2(playoffSpots)} rounds`,
+    text: `The top ${playoffSpots} ${noun}s play a knockout, with ${days(LADDER_PLAYOFF_TIE_DAYS)} per round.`,
+  },
+  {
+    icon: IoTrophyOutline,
+    label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
+    text: cash
+      ? "The champion crowned. Cash paid. CP awarded."
+      : "The champion crowned. CP awarded.",
+    gold: true,
+  },
+];
 
 interface Step {
   title: string;
-  body: string;
-  visual: (active: boolean) => React.ReactNode;
+  highlight: string;
+  line: React.ReactNode;
+  gold?: boolean;
+  panel: React.ReactNode;
 }
 
-const StepItem: React.FC<{ step: Step; number: number; last: boolean }> = ({
-  step,
-  number,
-  last,
-}) => {
-  const { ref, inView } = useInView<HTMLLIElement>();
-  return (
-    <StepRow ref={ref} $visible={inView}>
-      <Rail>
-        <StepNumber $visible={inView}>{number}</StepNumber>
-        {last ? null : <RailLine $visible={inView} />}
-      </Rail>
-      <StepBody>
-        <StepTitle>{step.title}</StepTitle>
-        <StepText>{step.body}</StepText>
-        {step.visual(inView)}
-      </StepBody>
-    </StepRow>
-  );
-};
-
 export interface LadderHowItWorksProps {
-  noun: string;
+  noun: "player" | "team";
+  maxPlayers: number;
   playoffSpots: number;
-  tieDays: number;
+  inTheMoney: number;
   cash: boolean;
   prizePool: string;
-  launched: boolean;
   firstEntrant: boolean;
 }
 
-/** "How it works" as an animated timeline: join, play, climb, finals, prize. */
+/** How it works: the app's How to Play pages as numbered rows that alternate sides. */
 const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
   noun,
+  maxPlayers,
   playoffSpots,
-  tieDays,
+  inTheMoney,
   cash,
   prizePool,
-  launched,
   firstEntrant,
 }) => {
+  useEffect(() => {
+    AOS.init({ duration: 600, offset: 80, once: true, easing: "ease-in-out" });
+  }, []);
+
+  const doubles = noun === "team";
+  const firstBestOf = LADDER_MATCH_BEST_OF_OPTIONS[0];
+  const lastBestOf =
+    LADDER_MATCH_BEST_OF_OPTIONS[LADDER_MATCH_BEST_OF_OPTIONS.length - 1];
+
   const steps: Step[] = [
     {
-      title: launched ? "Join in the app" : "Pre-register free",
-      body: launched
-        ? "Download Court Champs and join the ladder."
-        : `Download Court Champs and pre-register. ${
-            cash ? "Nothing to pay today." : "It's free to enter."
-          }`,
-      visual: (active) => (
-        <PreRegisterVisual
-          active={active}
-          label={launched ? "Joined" : "Pre-registered"}
-        />
+      title: "Post a",
+      highlight: "Match",
+      line: "Your court. Your time.",
+      panel: (
+        <>
+          <PageIcon icon={IoAddCircleOutline} />
+          <Cards>
+            <Card icon={IoCalendarOutline}>
+              Choose your court and post a match. Pick a <b>day and time</b>{" "}
+              that suits you, then wait for another member to accept.
+            </Card>
+            <Card icon={IoEyeOffOutline}>
+              You&apos;ll <b>never know your opponent</b> until they accept your
+              match.
+            </Card>
+          </Cards>
+        </>
       ),
     },
     {
-      title: "Play near you",
-      body: "Post or accept matches at courts near you, at times that suit you.",
-      visual: (active) => <MatchVisual active={active} />,
+      title: "Accept a",
+      highlight: "Match",
+      line: "Rather play now? Jump into a live match near you.",
+      panel: (
+        <>
+          <Matchup reveal />
+          <Cards>
+            <Card icon={IoMapOutline}>
+              Rather explore? Browse <b>live matches</b> at courts across the
+              ladder and accept one that suits you.
+            </Card>
+            <Card icon={IoEyeOffOutline}>
+              Your opponent is <b>hidden</b> until you accept the match.
+            </Card>
+          </Cards>
+        </>
+      ),
     },
     {
-      title: "Win and climb",
-      body: "Every game you win earns CP (Court Points). The more CP, the higher you climb.",
-      visual: (active) => <ClimbVisual active={active} />,
+      title: "Match",
+      highlight: "Accepted",
+      line: "Show up, play, and it counts.",
+      panel: (
+        <>
+          <PageIcon icon={IoCheckmarkCircleOutline} />
+          <StepList>
+            {MATCH_STEPS.map(({ icon: Icon, text }, i) => (
+              <React.Fragment key={text}>
+                <StepRow>
+                  <StepIcon>
+                    <Icon />
+                  </StepIcon>
+                  <span>{text}</span>
+                </StepRow>
+                {i < MATCH_STEPS.length - 1 ? <StepLine /> : null}
+              </React.Fragment>
+            ))}
+          </StepList>
+        </>
+      ),
     },
     {
-      title: `Top ${playoffSpots} make the finals`,
-      body: `When the season ends, the top ${playoffSpots} ${noun}s play a knockout, ${tieDays} days a round.`,
-      visual: (active) => <BracketVisual active={active} />,
+      title: "The",
+      highlight: "Objective",
+      line: "Every win moves you up the ladder.",
+      panel: (
+        <>
+          <LadderClimb doubles={doubles} />
+          <Tiles>
+            <Tile>
+              <IoFlashOutline />
+              <b>
+                {firstBestOf}–{lastBestOf}
+              </b>
+              <small>games a match</small>
+            </Tile>
+            <Tile>
+              <IoTrendingUpOutline />
+              <b>Earn CP</b>
+              <small>every win</small>
+            </Tile>
+            <Tile $gold>
+              <IoTrophyOutline />
+              <b>Top {playoffSpots}</b>
+              <small>go to playoffs</small>
+            </Tile>
+          </Tiles>
+        </>
+      ),
     },
     {
-      title: "Take the prize",
-      body: cash
-        ? "The champion takes the biggest cash prize; the top places are all paid."
-        : "The champion takes the biggest CP prize.",
-      visual: (active) => (
-        <PrizeVisual active={active} prizePool={prizePool} cash={cash} />
+      title: "The",
+      highlight: "Season",
+      line: `${LADDER_PLAYOFF_START_DAYS} days. One shot at the playoffs.`,
+      panel: (
+        <>
+          <PageIcon icon={IoCalendarOutline} />
+          <Phases>
+            {seasonPhases(noun, playoffSpots, cash).map((phase, i, all) => (
+              <PhaseRow key={phase.label}>
+                <PhaseRail>
+                  <PhaseDot $gold={phase.gold}>
+                    <phase.icon />
+                  </PhaseDot>
+                  {i < all.length - 1 ? <PhaseLine /> : null}
+                </PhaseRail>
+                <PhaseBody>
+                  <PhaseHead>
+                    <PhaseLabel $gold={phase.gold}>{phase.label}</PhaseLabel>
+                    {phase.length ? (
+                      <PhaseLength>{phase.length}</PhaseLength>
+                    ) : null}
+                  </PhaseHead>
+                  <PhaseText>{phase.text}</PhaseText>
+                </PhaseBody>
+              </PhaseRow>
+            ))}
+          </Phases>
+        </>
+      ),
+    },
+    {
+      title: "Winning the",
+      highlight: "Final",
+      gold: true,
+      line: (
+        <>
+          Up to <Gold>{prizePool}</Gold> for the taking.
+        </>
+      ),
+      panel: (
+        <>
+          <TrophyHero>
+            <img src={ladderTrophies[0]} alt="" />
+          </TrophyHero>
+          <TrophyRow>
+            {ladderTrophies.slice(1).map((trophy: string) => (
+              <img key={trophy} src={trophy} alt="" />
+            ))}
+          </TrophyRow>
+          <Pool>
+            <small>Up to</small>
+            <PrizeCount prizePool={prizePool} />
+            <small>to be won</small>
+          </Pool>
+          <Cards>
+            <Card icon={IoTrophyOutline} gold>
+              Win the Final to be crowned <Gold>champion</Gold>! Top&nbsp;
+              {inTheMoney} {cash ? "paid" : "awarded CP"} in a full ladder.
+            </Card>
+          </Cards>
+        </>
       ),
     },
   ];
@@ -327,93 +411,184 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
   return (
     <Section>
       <Eyebrow>How it works</Eyebrow>
-      <Headline>From first match to champion</Headline>
-      {firstEntrant ? (
-        <FirstBadge>Be the first {noun} to pre-register</FirstBadge>
-      ) : null}
-      <Steps>
-        {steps.map((step, i) => (
-          <StepItem
-            key={step.title}
-            step={step}
-            number={i + 1}
-            last={i === steps.length - 1}
-          />
-        ))}
-      </Steps>
+      <Intro data-aos="fade-up">
+        <SeasonLabel>Season one</SeasonLabel>
+        <Headline>
+          <span>Climb.</span>
+          <span>Compete.</span>
+          <span className="gold">Conquer.</span>
+        </Headline>
+        <Tagline>
+          {maxPlayers.toLocaleString("en-GB")} {noun}s. One champion.
+        </Tagline>
+        {firstEntrant ? (
+          <FirstBadge>Be the first {noun} to pre-register</FirstBadge>
+        ) : null}
+      </Intro>
+
+      <Hero>
+        <TextBlock $centre data-aos="fade-up">
+          <BigNumber aria-hidden>00</BigNumber>
+          <RowTitle>
+            Matchmaking, made <Highlight>simple</Highlight>
+          </RowTitle>
+        </TextBlock>
+        <Panel $wide data-aos="fade-up">
+          <Matchup />
+          <Explainers>
+            <Explainer>
+              <CardIcon>
+                <IoPodiumOutline />
+              </CardIcon>
+              <div>
+                <b>What&apos;s a ladder?</b>
+                <span>
+                  A ranked competition where a large group of {noun}s compete
+                  across a wide region. When the season ends, the top {noun}s go
+                  head to head in a knockout tournament.
+                </span>
+              </div>
+            </Explainer>
+            <Explainer>
+              <CardIcon>
+                <IoSwapHorizontalOutline />
+              </CardIcon>
+              <div>
+                <b>What&apos;s matchmaking?</b>
+                <span>
+                  Matchmaking lets you schedule games with other {noun}s in the
+                  ladder, on your time and your terms.
+                </span>
+              </div>
+            </Explainer>
+            <Explainer>
+              <CardIcon>
+                <IoEnterOutline />
+              </CardIcon>
+              <div>
+                <span>
+                  Once you <b>join the ladder</b>, you can enter the{" "}
+                  <Blue>Match Making arena</Blue> to post or find matches to
+                  progress in the competition.
+                </span>
+              </div>
+            </Explainer>
+          </Explainers>
+        </Panel>
+      </Hero>
+
+      <Rows>
+        {steps.map((step, i) => {
+          const reverse = i % 2 === 1;
+          return (
+            <Row key={step.title + step.highlight} $reverse={reverse}>
+              <Panel data-aos={reverse ? "fade-left" : "fade-right"}>
+                {step.panel}
+              </Panel>
+              <TextBlock
+                $reverse={reverse}
+                data-aos={reverse ? "fade-right" : "fade-left"}
+              >
+                <BigNumber aria-hidden>
+                  {String(i + 1).padStart(2, "0")}
+                </BigNumber>
+                <RowTitle>
+                  {step.title}{" "}
+                  <Highlight $gold={step.gold}>{step.highlight}</Highlight>
+                </RowTitle>
+                <Punch $reverse={reverse}>{step.line}</Punch>
+              </TextBlock>
+            </Row>
+          );
+        })}
+      </Rows>
     </Section>
   );
 };
 
 export default LadderHowItWorks;
 
-const BLUE = "#00A2FF";
-const GOLD = "#ffc800";
-
-const fadeUp = keyframes`
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
+const ring = keyframes`
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.45); opacity: 0; }
 `;
-
-const pulse = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(0, 162, 255, 0.55); }
-  70% { box-shadow: 0 0 0 12px rgba(0, 162, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 162, 255, 0); }
+const fromRight = keyframes`
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
 `;
-
-const pop = keyframes`
+const popIn = keyframes`
   0% { opacity: 0; transform: scale(0.6); }
-  60% { opacity: 1; transform: scale(1.12); }
+  70% { opacity: 1; transform: scale(1.08); }
   100% { opacity: 1; transform: scale(1); }
 `;
-
-const floatUp = keyframes`
-  0% { opacity: 0; transform: translateY(6px); }
-  20% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-8px); }
+const slideIn = keyframes`
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 `;
-
-const draw = keyframes`
-  to { stroke-dashoffset: 0; }
-`;
-
-const fadeIn = keyframes`
-  to { opacity: 1; }
-`;
-
-const hover = keyframes`
+const float = keyframes`
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 `;
-
-const glow = keyframes`
-  0%, 100% { opacity: 0.55; transform: scale(0.95); }
-  50% { opacity: 1; transform: scale(1.08); }
+const flip = keyframes`
+  0%, 24% { transform: scaleX(1); }
+  29% { transform: scaleX(0); }
+  34%, 74% { transform: scaleX(1); }
+  79% { transform: scaleX(0); }
+  84%, 100% { transform: scaleX(1); }
+`;
+const hiddenFace = keyframes`
+  0% { opacity: 1; } 29% { opacity: 0; } 79% { opacity: 1; }
+`;
+const revealedFace = keyframes`
+  0% { opacity: 0; } 29% { opacity: 1; } 79% { opacity: 0; }
+`;
+const youClimb = keyframes`
+  0%, 10% { top: 120px; } 20%, 30% { top: 80px; } 40%, 50% { top: 40px; }
+  60%, 92% { top: 0; } 100% { top: 120px; }
+`;
+const rival0 = keyframes`
+  0%, 50% { top: 0; } 60%, 92% { top: 40px; } 100% { top: 0; }
+`;
+const rival1 = keyframes`
+  0%, 30% { top: 40px; } 40%, 92% { top: 80px; } 100% { top: 40px; }
+`;
+const rival2 = keyframes`
+  0%, 10% { top: 80px; } 20%, 92% { top: 120px; } 100% { top: 80px; }
 `;
 
-const shimmer = keyframes`
-  to { background-position: 200% center; }
+const revealed = (animation: ReturnType<typeof css>) => css`
+  opacity: 0;
+  .aos-animate & {
+    ${animation}
+  }
+`;
+
+const pulseRing = (colour: string) => css`
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 2px solid ${colour};
+    animation: ${ring} 2.2s ease-out infinite;
+  }
 `;
 
 const Section = styled.section`
   width: 100%;
-  max-width: 680px;
+  max-width: 1080px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0 24px;
   box-sizing: border-box;
-  margin-bottom: 12px;
-  padding: 24px 20px 8px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(
-      120% 60% at 0% 0%,
-      rgba(0, 162, 255, 0.12) 0%,
-      transparent 60%
-    ),
-    rgba(255, 255, 255, 0.03);
 
-  @media (max-width: 480px) {
-    padding: 20px 14px 4px;
-    border-radius: 12px;
+  @media (max-width: 768px) {
+    padding: 32px 8px 16px;
+  }
+
+  b {
+    color: #fff;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -423,35 +598,65 @@ const Section = styled.section`
       animation: none !important;
       transition: none !important;
       opacity: 1 !important;
-      stroke-dashoffset: 0 !important;
     }
   }
 `;
 
-const Eyebrow = styled.h3`
+const Eyebrow = styled.div`
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   color: ${BLUE};
-  margin: 0 0 6px;
+`;
+
+const Intro = styled.div`
+  text-align: center;
+  margin: 12px 0 64px;
+`;
+
+const SeasonLabel = styled.div`
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: ${MUTED};
 `;
 
 const Headline = styled.h2`
-  font-size: 26px;
+  margin: 8px 0 0;
+  font-size: 48px;
+  line-height: 1.08;
   font-weight: 800;
+  letter-spacing: -0.5px;
   color: #fff;
-  margin: 0 0 18px;
-  line-height: 1.2;
 
-  @media (max-width: 480px) {
-    font-size: 21px;
+  span {
+    display: block;
+    animation: ${slideIn} 0.6s ease-out both;
   }
+  span:nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  span.gold {
+    color: ${GOLD};
+    animation: ${popIn} 0.5s ease-out 0.5s both;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 38px;
+  }
+`;
+
+const Tagline = styled.p`
+  color: ${MUTED};
+  margin: 14px 0 0;
+  font-size: 16px;
 `;
 
 const FirstBadge = styled.div`
   display: inline-block;
-  margin: -6px 0 18px;
+  margin-top: 16px;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -461,332 +666,641 @@ const FirstBadge = styled.div`
   border: 1px solid rgba(255, 200, 0, 0.35);
 `;
 
-const Steps = styled.ol`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const StepRow = styled.li<{ $visible: boolean }>`
-  display: flex;
-  gap: 14px;
-  opacity: 0;
-  ${({ $visible }) =>
-    $visible &&
-    css`
-      animation: ${fadeUp} 0.6s ease-out forwards;
-    `}
-`;
-
-const Rail = styled.div`
+const Hero = styled.div`
+  width: 100%;
+  max-width: 960px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex-shrink: 0;
+  gap: 28px;
+  margin-bottom: 88px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 64px;
+  }
 `;
 
-const StepNumber = styled.div<{ $visible: boolean }>`
-  width: 34px;
-  height: 34px;
+const Rows = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 88px;
+  width: 100%;
+  max-width: 960px;
+
+  @media (max-width: 768px) {
+    gap: 64px;
+  }
+`;
+
+const Row = styled.div<{ $reverse: boolean }>`
+  display: flex;
+  flex-direction: ${({ $reverse }) => ($reverse ? "row-reverse" : "row")};
+  align-items: center;
+  justify-content: center;
+  gap: 56px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 26px;
+  }
+`;
+
+const Panel = styled.div<{ $wide?: boolean }>`
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: ${({ $wide }) => ($wide ? "100%" : "420px")};
+  max-width: 100%;
+  border-radius: 24px;
+  padding: ${({ $wide }) => ($wide ? "36px 40px" : "30px 24px")};
+  background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      rgba(0, 162, 255, 0.14),
+      transparent 65%
+    ),
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 22px 16px;
+  }
+`;
+
+const TextBlock = styled.div<{ $reverse?: boolean; $centre?: boolean }>`
+  max-width: ${({ $centre }) => ($centre ? "640px" : "400px")};
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: ${({ $reverse, $centre }) =>
+    $centre ? "center" : $reverse ? "flex-end" : "flex-start"};
+  text-align: ${({ $reverse, $centre }) =>
+    $centre ? "center" : $reverse ? "right" : "left"};
+
+  @media (max-width: 768px) {
+    order: -1;
+    align-items: center;
+    text-align: center;
+    padding: 0 4px;
+  }
+`;
+
+const BigNumber = styled.span`
+  font-size: 88px;
+  font-weight: 800;
+  line-height: 0.85;
+  letter-spacing: -2px;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(0, 162, 255, 0.45);
+  margin-bottom: 6px;
+
+  @media (max-width: 768px) {
+    font-size: 64px;
+  }
+`;
+
+const RowTitle = styled.h3`
+  font-size: 44px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #fff;
+  margin: 0;
+  text-wrap: balance;
+
+  @media (max-width: 768px) {
+    font-size: 34px;
+  }
+`;
+
+const Highlight = styled.span<{ $gold?: boolean }>`
+  background: linear-gradient(
+    90deg,
+    ${({ $gold }) => ($gold ? `${GOLD}, #ffe48a` : `${BLUE}, #6fd0ff`)}
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+`;
+
+const Punch = styled.p<{ $reverse: boolean }>`
+  position: relative;
+  margin: 16px 0 0;
+  padding-top: 16px;
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: ${BODY};
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    ${({ $reverse }) => ($reverse ? "right: 0;" : "left: 0;")}
+    width: 44px;
+    height: 3px;
+    border-radius: 2px;
+    background: ${BLUE};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+
+    &::before {
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+    }
+  }
+`;
+
+const Gold = styled.span`
+  color: ${GOLD};
+  font-weight: 700;
+`;
+
+const Blue = styled.span`
+  color: ${BLUE};
+  font-weight: 700;
+`;
+
+const IconCircle = styled.div`
+  position: relative;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 15px;
-  color: #fff;
-  background: linear-gradient(135deg, ${BLUE} 0%, #0066cc 100%);
-  ${({ $visible }) =>
-    $visible &&
-    css`
-      animation: ${pulse} 1.6s ease-out 0.2s 2;
-    `}
+  background: rgba(0, 162, 255, 0.12);
+  border: 1px solid rgba(0, 162, 255, 0.35);
+  color: ${BLUE};
+  font-size: 40px;
+  ${pulseRing(BLUE)}
 `;
 
-const RailLine = styled.div<{ $visible: boolean }>`
-  width: 2px;
-  flex: 1;
-  margin: 6px 0;
-  background: linear-gradient(${BLUE}, rgba(0, 162, 255, 0.1));
-  transform-origin: top;
-  transform: scaleY(${({ $visible }) => ($visible ? 1 : 0)});
-  transition: transform 0.9s ease-out 0.3s;
-`;
-
-const StepBody = styled.div`
-  flex: 1;
-  min-width: 0;
-  padding-bottom: 22px;
-`;
-
-const StepTitle = styled.div`
-  font-size: 17px;
-  font-weight: 800;
-  color: #fff;
-  margin: 6px 0 4px;
-`;
-
-const StepText = styled.p`
-  font-size: 14px;
-  color: #c9d6e3;
-  line-height: 1.55;
-  margin: 0 0 12px;
-`;
-
-const VisualCard = styled.div`
-  border-radius: 12px;
-  padding: 12px;
-  background: rgba(3, 16, 31, 0.7);
-  border: 1px solid rgba(0, 162, 255, 0.18);
-  overflow: hidden;
-`;
-
-const PreRegisterButton = styled.div<{ $done: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 14px;
-  color: #fff;
-  background: ${({ $done }) => ($done ? "#1f9d55" : BLUE)};
-  transition: background 0.3s;
-  ${({ $done }) =>
-    $done &&
-    css`
-      animation: ${pop} 0.45s ease-out;
-    `}
-`;
-
-const MatchRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const MatchTime = styled.div`
+const Cards = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(0, 162, 255, 0.12);
-  color: ${BLUE};
-  font-size: 12px;
-  line-height: 1.3;
+  gap: 10px;
+  align-self: stretch;
+`;
 
-  strong {
+const CardRow = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: ${BODY};
+  font-size: 14.5px;
+  line-height: 1.45;
+  ${revealed(css`
+    animation: ${fromRight} 0.5s ease-out 0.3s forwards;
+  `)}
+
+  & + & {
+    animation-delay: 0.45s;
+  }
+`;
+
+const CardIcon = styled.span<{ $gold?: boolean }>`
+  flex: 0 0 34px;
+  height: 34px;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  background: ${({ $gold }) =>
+    $gold ? "rgba(255, 200, 0, 0.12)" : "rgba(0, 162, 255, 0.15)"};
+  color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
+`;
+
+const Explainers = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  gap: 12px;
+  align-self: stretch;
+`;
+
+const Explainer = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(0, 162, 255, 0.07);
+  border: 1px solid rgba(0, 162, 255, 0.25);
+  ${revealed(css`
+    animation: ${popIn} 0.45s ease-out 0.2s forwards;
+  `)}
+
+  &:nth-child(2) {
+    animation-delay: 0.35s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.5s;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  div > b {
+    font-size: 15px;
+  }
+  div > span {
+    color: ${BODY};
+    font-size: 14px;
+    line-height: 1.5;
+  }
+`;
+
+const MatchupRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 6px 0;
+`;
+
+const Avatar = styled.div<{ $user?: boolean; $revealed?: boolean }>`
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: #7f97a8;
+  border: 2px dashed #33445a;
+  background: rgba(255, 255, 255, 0.04);
+
+  ${({ $user }) =>
+    $user &&
+    css`
+      border: 2px solid ${BLUE};
+      background: transparent;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(0, 162, 255, 0.75);
+      ${pulseRing(BLUE)}
+    `}
+
+  ${({ $revealed }) =>
+    $revealed &&
+    css`
+      border: 2px solid ${GOLD};
+      background: transparent;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(255, 200, 0, 0.7);
+    `}
+`;
+
+const Versus = styled.span`
+  color: ${GOLD};
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+`;
+
+const Flip = styled.div`
+  position: relative;
+  width: 72px;
+  height: 72px;
+  animation: ${flip} 5s ease-in-out infinite;
+
+  & > div {
+    position: absolute;
+    inset: 0;
+  }
+  .face-hidden {
+    animation: ${hiddenFace} 5s step-end infinite;
+  }
+  .face-revealed {
+    animation: ${revealedFace} 5s step-end infinite;
+  }
+`;
+
+const StepList = styled.div`
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+`;
+
+const StepRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  ${revealed(css`
+    animation: ${fromRight} 0.5s ease-out 0.3s forwards;
+  `)}
+
+  &:nth-child(3) {
+    animation-delay: 0.5s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.7s;
+  }
+`;
+
+const StepIcon = styled.span`
+  width: 46px;
+  height: 46px;
+  border-radius: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: rgba(0, 162, 255, 0.12);
+  border: 1px solid rgba(0, 162, 255, 0.35);
+  color: ${BLUE};
+`;
+
+const StepLine = styled.div`
+  width: 2px;
+  height: 22px;
+  margin: 4px 0 4px 22px;
+  border-radius: 1px;
+  background: rgba(0, 162, 255, 0.35);
+`;
+
+const Board = styled.div`
+  display: flex;
+  gap: 8px;
+  align-self: stretch;
+`;
+
+const Ranks = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  span {
+    height: 40px;
+    width: 18px;
+    display: flex;
+    align-items: center;
+    color: #7f97a8;
+    font-weight: 800;
     font-size: 14px;
   }
 `;
 
-const MatchInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const MatchTitle = styled.div`
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-`;
-
-const MatchPlace = styled.div`
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  color: #8a9bab;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const AcceptedBadge = styled.div<{ $show: boolean }>`
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  background: #1f9d55;
-  opacity: 0;
-  ${({ $show }) =>
-    $show &&
-    css`
-      animation: ${pop} 0.45s ease-out forwards;
-    `}
-`;
-
-const LadderBoard = styled.div`
+const Lane = styled.div`
   position: relative;
+  flex: 1;
+  height: 160px;
+
+  .rival-0 {
+    top: 0;
+    animation-name: ${rival0};
+  }
+  .rival-1 {
+    top: 40px;
+    animation-name: ${rival1};
+  }
+  .rival-2 {
+    top: 80px;
+    animation-name: ${rival2};
+  }
+  .you {
+    top: 120px;
+    animation-name: ${youClimb};
+  }
 `;
 
-const LadderRow = styled.div<{ $you?: boolean; $animate: boolean }>`
+const LaneRow = styled.div<{ $you?: boolean }>`
   position: absolute;
   left: 0;
   right: 0;
-  height: 30px;
+  height: 34px;
+  box-sizing: border-box;
+  border-radius: 9px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  box-sizing: border-box;
-  transition: ${({ $animate }) => ($animate ? "top 0.6s ease-in-out" : "none")};
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  animation-duration: 7s;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
   background: ${({ $you }) =>
-    $you ? "rgba(0, 162, 255, 0.2)" : "rgba(255, 255, 255, 0.04)"};
+    $you ? "rgba(0, 162, 255, 0.2)" : "rgba(255, 255, 255, 0.05)"};
   border: 1px solid
     ${({ $you }) => ($you ? "rgba(0, 162, 255, 0.6)" : "transparent")};
   z-index: ${({ $you }) => ($you ? 1 : 0)};
+
+  em {
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    color: ${({ $you }) => ($you ? BLUE : BODY)};
+  }
 `;
 
-const RankNumber = styled.span<{ $you?: boolean }>`
-  width: 16px;
-  font-weight: 800;
-  color: ${({ $you }) => ($you ? BLUE : "#8a9bab")};
+const Tiles = styled.div`
+  display: flex;
+  gap: 8px;
+  align-self: stretch;
 `;
 
-const RowName = styled.span`
+const Tile = styled.div<{ $gold?: boolean }>`
   flex: 1;
-  font-weight: 700;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 4px;
+  border-radius: 14px;
+  font-size: 20px;
+  border: 1px solid
+    ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.3)" : "rgba(0, 162, 255, 0.3)")};
+  background: ${({ $gold }) =>
+    $gold ? "rgba(255, 200, 0, 0.08)" : "rgba(0, 162, 255, 0.08)"};
+  color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
+  ${revealed(css`
+    animation: ${popIn} 0.45s ease-out 0.3s forwards;
+  `)}
+
+  &:nth-child(2) {
+    animation-delay: 0.42s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.54s;
+  }
+
+  b {
+    color: ${({ $gold }) => ($gold ? GOLD : "#fff")};
+    font-size: 17px;
+    white-space: nowrap;
+  }
+  small {
+    color: ${MUTED};
+    font-size: 11.5px;
+    text-align: center;
+  }
 `;
 
-const RowCp = styled.span<{ $you?: boolean }>`
-  position: relative;
-  font-weight: 700;
-  color: ${({ $you }) => ($you ? BLUE : "#c9d6e3")};
+const Phases = styled.div`
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
 `;
 
-const CpPop = styled.span`
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 0;
-  font-size: 12px;
-  font-weight: 800;
-  color: ${GOLD};
-  animation: ${floatUp} 1.1s ease-out forwards;
+const PhaseRow = styled.div`
+  display: flex;
+  gap: 14px;
+  ${revealed(css`
+    animation: ${fromRight} 0.5s ease-out 0.3s forwards;
+  `)}
+
+  &:nth-child(2) {
+    animation-delay: 0.45s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+  &:nth-child(4) {
+    animation-delay: 0.75s;
+  }
 `;
 
-const BracketSvg = styled.svg<{ $active: boolean }>`
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  height: auto;
-
-  rect {
-    fill: rgba(255, 255, 255, 0.08);
-  }
-
-  path {
-    fill: none;
-    stroke: ${BLUE};
-    stroke-width: 2;
-    stroke-dasharray: 120;
-    stroke-dashoffset: 120;
-  }
-
-  .semi,
-  .final,
-  .finalText {
-    opacity: 0;
-  }
-
-  .semi {
-    fill: rgba(0, 162, 255, 0.25);
-  }
-
-  .final {
-    fill: rgba(255, 200, 0, 0.2);
-    stroke: ${GOLD};
-    stroke-width: 1.5;
-  }
-
-  .finalText {
-    font-size: 12px;
-  }
-
-  ${({ $active }) =>
-    $active &&
-    css`
-      .round1 {
-        animation: ${draw} 0.8s ease-out 0.2s forwards;
-      }
-      .semi {
-        animation: ${fadeIn} 0.4s ease-out 0.9s forwards;
-      }
-      .round2 {
-        animation: ${draw} 0.8s ease-out 1.2s forwards;
-      }
-      .final,
-      .finalText {
-        animation: ${fadeIn} 0.5s ease-out 1.9s forwards;
-      }
-    `}
+const PhaseRail = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const PrizeRow = styled.div`
+const PhaseDot = styled.div<{ $gold?: boolean }>`
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  font-size: 18px;
+  background: ${({ $gold }) =>
+    $gold ? "rgba(255, 200, 0, 0.12)" : "rgba(0, 162, 255, 0.12)"};
+  border: 1px solid
+    ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)")};
+  color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
 `;
 
-const TrophyWrap = styled.div`
+const PhaseLine = styled.div`
+  flex: 1;
+  width: 2px;
+  min-height: 14px;
+  margin: 4px 0;
+  border-radius: 1px;
+  background: rgba(0, 162, 255, 0.35);
+`;
+
+const PhaseBody = styled.div`
+  padding: 7px 0 12px;
+  min-width: 0;
+`;
+
+const PhaseHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+const PhaseLabel = styled.span<{ $gold?: boolean }>`
+  font-weight: 700;
+  font-size: 15px;
+  color: ${({ $gold }) => ($gold ? GOLD : "#fff")};
+`;
+
+const PhaseLength = styled.span`
+  font-size: 11.5px;
+  font-weight: 700;
+  color: ${BLUE};
+  background: rgba(0, 162, 255, 0.12);
+  border-radius: 999px;
+  padding: 2px 8px;
+`;
+
+const PhaseText = styled.div`
+  color: ${BODY};
+  font-size: 13.5px;
+  line-height: 1.45;
+  margin-top: 3px;
+`;
+
+const TrophyHero = styled.div`
   position: relative;
-  width: 64px;
-  height: 84px;
-  flex-shrink: 0;
-`;
-
-const TrophyGlow = styled.div<{ $cash: boolean }>`
-  position: absolute;
-  inset: -14px;
+  width: 128px;
+  height: 128px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    ${({ $cash }) => ($cash ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)")}
-      0%,
-    transparent 70%
-  );
-  animation: ${glow} 2.4s ease-in-out infinite;
-`;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 200, 0, 0.12);
+  border: 1px solid rgba(255, 200, 0, 0.35);
+  ${pulseRing(GOLD)}
 
-const TrophyImage = styled.img`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  animation: ${hover} 3s ease-in-out infinite;
-`;
-
-const PrizeCaption = styled.div`
-  font-size: 13px;
-  color: #c9d6e3;
-`;
-
-const PrizeFigure = styled.div<{ $cash: boolean }>`
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  background: linear-gradient(
-    90deg,
-    ${({ $cash }) => ($cash ? GOLD : BLUE)} 0%,
-    #ffffff 50%,
-    ${({ $cash }) => ($cash ? GOLD : BLUE)} 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: ${shimmer} 3s linear infinite;
-
-  @media (max-width: 480px) {
-    font-size: 28px;
+  img {
+    width: 84px;
+    height: 84px;
+    object-fit: contain;
+    animation: ${float} 3s ease-in-out infinite;
   }
+`;
+
+const TrophyRow = styled.div`
+  display: flex;
+  gap: 14px;
+
+  img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    ${revealed(css`
+      animation: ${popIn} 0.45s ease-out 0.3s forwards;
+    `)}
+  }
+  img:nth-child(2) {
+    animation-delay: 0.45s;
+  }
+  img:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+`;
+
+const Pool = styled.div`
+  text-align: center;
+
+  small {
+    color: ${MUTED};
+    font-size: 13px;
+  }
+`;
+
+const PoolValue = styled.div`
+  color: ${GOLD};
+  font-size: 36px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 `;

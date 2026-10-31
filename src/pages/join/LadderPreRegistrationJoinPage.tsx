@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import {
-  LADDER_PLAYOFF_TIE_DAYS,
   formatCurrency,
   getLadderEntryPrice,
   getLadderPlayoffStructure,
@@ -117,6 +116,9 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
 
   const cash = isCashLadder(preRegistration);
   const noun = getLadderEntrantNoun(preRegistration.ladderType);
+  const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(
+    preRegistration.maxPlayers,
+  );
   const launched =
     preRegistration.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED;
   const { entryFee, platformFee } = getLadderEntryPrice(
@@ -201,13 +203,11 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
 
       <LadderHowItWorks
         noun={noun}
-        playoffSpots={
-          getLadderPlayoffStructure(preRegistration.maxPlayers).playoffSpots
-        }
-        tieDays={LADDER_PLAYOFF_TIE_DAYS}
+        maxPlayers={preRegistration.maxPlayers}
+        playoffSpots={playoffSpots}
+        inTheMoney={inTheMoney}
         cash={cash}
         prizePool={formatLadderPrizePool(preRegistration)}
-        launched={launched}
         firstEntrant={registeredCount === 0}
       />
 
