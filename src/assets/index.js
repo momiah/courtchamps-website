@@ -7,6 +7,7 @@ const AppleLogo = require("./apple-logo.png");
 
 const playStoreBadge = require("./play-store-mobile-download-button.png");
 const appStoreBadge = require("./app-store-mobile-download-button.png");
+const LadderTrophy = require("./ladder-trophy.png");
 
 export {
   CourtChampLogo,
@@ -16,4 +17,5 @@ export {
   AppleLogo,
   playStoreBadge,
   appStoreBadge,
+  LadderTrophy,
 };
