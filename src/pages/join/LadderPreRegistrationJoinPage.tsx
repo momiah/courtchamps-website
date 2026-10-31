@@ -19,6 +19,7 @@ import { ccImageEndpoint } from "courtchamps-shared/schema";
 
 import { CourtChampLogo } from "../../assets";
 import Tag from "../../components/Tag";
+import LadderHowItWorks from "./LadderHowItWorks";
 import {
   countLadderPreRegistrants,
   fetchLadderPreRegistration,
@@ -48,23 +49,6 @@ import {
   StoreBadges,
   TagsRow,
 } from "./joinParts";
-
-const howItWorks = (
-  details: LadderPreRegistration,
-  registeredCount: number,
-): string[] => {
-  const noun = getLadderEntrantNoun(details.ladderType);
-  const { playoffSpots } = getLadderPlayoffStructure(details.maxPlayers);
-  return [
-    "Post or accept matches at courts near you, at times that suit you.",
-    "Every game you win earns CP (Court Points). The more CP, the higher you climb.",
-    `When the season ends, the top ${playoffSpots} ${noun}s play a knockout, ${LADDER_PLAYOFF_TIE_DAYS} days a round.`,
-    isCashLadder(details)
-      ? "The champion takes the biggest cash prize; the top places are all paid."
-      : "The champion takes the biggest CP prize.",
-    ...(registeredCount > 0 ? [] : [`Be the first ${noun} to pre-register.`]),
-  ];
-};
 
 /** The page a shared pre-registration link opens: the prize, how it works and the store links. */
 const LadderPreRegistrationJoinPage: React.FC = () => {
@@ -215,14 +199,17 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
         </Note>
       </SectionCard>
 
-      <SectionCard>
-        <SectionTitle>How it works</SectionTitle>
-        <Steps>
-          {howItWorks(preRegistration, registeredCount).map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </Steps>
-      </SectionCard>
+      <LadderHowItWorks
+        noun={noun}
+        playoffSpots={
+          getLadderPlayoffStructure(preRegistration.maxPlayers).playoffSpots
+        }
+        tieDays={LADDER_PLAYOFF_TIE_DAYS}
+        cash={cash}
+        prizePool={formatLadderPrizePool(preRegistration)}
+        launched={launched}
+        firstEntrant={registeredCount === 0}
+      />
 
       <CTACard>
         <CTATitle>{launched ? "Registration is open" : "Be first in"}</CTATitle>
@@ -306,15 +293,6 @@ const PrizeTable = styled.table({
 const PlaceCell = styled.td({ color: "#00A2FF !important" });
 
 const CashCell = styled.td({ color: "#ffc800 !important" });
-
-const Steps = styled.ul({
-  margin: 0,
-  paddingLeft: 18,
-  color: "#c9d6e3",
-  fontSize: 14,
-  lineHeight: 1.6,
-  li: { marginBottom: 6 },
-});
 
 const Note = styled.p({
   fontSize: 12,
