@@ -117,7 +117,7 @@ function LadderEdit() {
     return () => {
       isActive = false;
     };
-  }, [ladderId]);
+  }, [ladderId, preRegistrationId]);
 
   const handleSubmit = useCallback(
     async (
