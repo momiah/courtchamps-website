@@ -387,7 +387,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
       gold: true,
       line: (
         <>
-          Up to <Gold>{prizePool}</Gold> for the taking.
+          Prize pool up to <Gold>{prizePool}</Gold>
         </>
       ),
       panel: (
@@ -401,9 +401,8 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
             ))}
           </TrophyRow>
           <Pool>
-            <small>Up to</small>
+            <small>Prize pool up to</small>
             <PrizeCount prizePool={prizePool} />
-            <small>to be won</small>
           </Pool>
           <Cards>
             <Card>

@@ -157,10 +157,10 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
       </HeroCard>
 
       <PrizeCard>
-        <PrizeLabel>Up to</PrizeLabel>
+        <PrizeLabel>Prize pool up to</PrizeLabel>
         <PrizeAmount>{formatLadderPrizePool(preRegistration)}</PrizeAmount>
         <PrizeLabel>
-          to be won with a full ladder of {places} {noun}s
+          with a full ladder of {places} {noun}s
         </PrizeLabel>
       </PrizeCard>
 
