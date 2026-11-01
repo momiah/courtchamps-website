@@ -15,7 +15,6 @@ import { fetchAllCourts } from "../../services/courts";
 import { fetchLadders } from "../../services/ladders";
 import {
   Court,
-  GenderType,
   Ladder,
   LadderInput,
   LadderType,
@@ -27,6 +26,11 @@ import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
 import CityInput, { mostCommonCity } from "./CityInput";
 import FormField from "./FormField";
+import {
+  MIXED_SINGLES_ERROR,
+  genderOptionsFor,
+  isGenderAllowed,
+} from "../../utils/ladderGender";
 import Modal from "./Modal";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
 import {
@@ -40,7 +44,6 @@ import {
 const CURRENCY_OPTIONS = ["GBP", "USD", "EUR"] as const;
 const MAX_PLAYERS_OPTIONS = [128, 256, 512, 1024, 2048];
 const LADDER_TYPE_OPTIONS: LadderType[] = ["Singles", "Doubles"];
-const GENDER_TYPE_OPTIONS: GenderType[] = ["Mens", "Womens", "Mixed"];
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 const REGION_DATALIST_ID = "ladder-region-options";
 
@@ -85,7 +88,7 @@ const buildInitialState = (
     city: details?.city ?? "",
     countryCode: details?.countryCode ?? "",
     ladderType: details?.ladderType ?? "Singles",
-    genderType: details?.genderType ?? "Mixed",
+    genderType: details?.genderType ?? "Mens",
     courtIds: initialLadder?.courtIds ?? [],
     registrationOpensAt: initialLadder
       ? toDateInputValue(initialLadder.registrationOpensAt)
@@ -143,6 +146,7 @@ function LadderForm({
   const maxPlayers = watch("maxPlayers");
   const image = watch("image");
   const countryCode = watch("countryCode");
+  const ladderType = watch("ladderType");
 
   const [courts, setCourts] = useState<Court[]>([]);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
@@ -585,13 +589,21 @@ function LadderForm({
                   />
                 </FormField>
 
-                <FormField label="Gender">
+                <FormField
+                  label="Gender"
+                  error={errors.genderType?.message ?? null}
+                >
                   <Controller
                     control={control}
                     name="genderType"
+                    rules={{
+                      validate: (value) =>
+                        isGenderAllowed(getValues("ladderType"), value) ||
+                        MIXED_SINGLES_ERROR,
+                    }}
                     render={({ field }) => (
                       <RadioRow role="radiogroup" aria-label="Gender type">
-                        {GENDER_TYPE_OPTIONS.map((option) => (
+                        {genderOptionsFor(ladderType).map((option) => (
                           <RadioChip
                             key={option}
                             $selected={field.value === option}
