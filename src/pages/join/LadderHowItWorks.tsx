@@ -99,14 +99,16 @@ const PrizeCount: React.FC<{ prizePool: string }> = ({ prizePool }) => {
 };
 
 const Card: React.FC<{
-  icon: IconType;
+  icon?: IconType;
   gold?: boolean;
   children: React.ReactNode;
 }> = ({ icon: Icon, gold, children }) => (
-  <CardRow>
-    <CardIcon $gold={gold}>
-      <Icon />
-    </CardIcon>
+  <CardRow $centre={!Icon}>
+    {Icon ? (
+      <CardIcon $gold={gold}>
+        <Icon />
+      </CardIcon>
+    ) : null}
     <span>{children}</span>
   </CardRow>
 );
@@ -404,7 +406,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
             <small>to be won</small>
           </Pool>
           <Cards>
-            <Card icon={IoTrophyOutline} gold>
+            <Card>
               Win the Final to be crowned <Gold>champion</Gold>! Top&nbsp;
               {inTheMoney} {cash ? "paid" : "awarded CP"} in a full ladder.
             </Card>
@@ -856,10 +858,12 @@ const Cards = styled.div`
   align-self: stretch;
 `;
 
-const CardRow = styled.div`
+const CardRow = styled.div<{ $centre?: boolean }>`
   display: flex;
   gap: 12px;
   align-items: center;
+  justify-content: ${({ $centre }) => ($centre ? "center" : "flex-start")};
+  text-align: ${({ $centre }) => ($centre ? "center" : "left")};
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
