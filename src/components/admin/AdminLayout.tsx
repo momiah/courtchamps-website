@@ -1,8 +1,9 @@
-import React, { memo, useCallback, useState } from "react";
-import { NavLink } from "react-router-dom";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
   FaBars,
+  FaCheckCircle,
   FaClipboardList,
   FaCommentDots,
   FaFlag,
@@ -57,83 +58,105 @@ function AdminLayout({
   }, [signOutUser]);
 
   const signedInEmail = currentUser?.email ?? "";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const savedMessage = (location.state as { saved?: string } | null)?.saved;
+
+  useEffect(() => {
+    if (!savedMessage) return;
+    const timer = setTimeout(
+      () =>
+        navigate(`${location.pathname}${location.search}`, {
+          replace: true,
+          state: null,
+        }),
+      3000,
+    );
+    return () => clearTimeout(timer);
+  }, [savedMessage, location.pathname, location.search, navigate]);
 
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-    <LayoutRoot>
-      <TopHeader>
-        <HeaderBrand to="/">
-          <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
-        </HeaderBrand>
-        <HeaderRight>
-          <HamburgerButton
-            type="button"
-            aria-label="Open menu"
-            onClick={openDrawer}
-          >
-            <FaBars />
-          </HamburgerButton>
-        </HeaderRight>
-      </TopHeader>
+      <LayoutRoot>
+        <TopHeader>
+          <HeaderBrand to="/">
+            <BrandLogo src={CourtChampLogoIcon} alt="Court Champs" />
+          </HeaderBrand>
+          <HeaderRight>
+            <HamburgerButton
+              type="button"
+              aria-label="Open menu"
+              onClick={openDrawer}
+            >
+              <FaBars />
+            </HamburgerButton>
+          </HeaderRight>
+        </TopHeader>
 
-      <BodyRow>
-        <Sidebar open={isDrawerOpen}>
-          <SidebarInner>
-            <SidebarTop>
-              <SidebarHeading>Admin</SidebarHeading>
-              <DrawerCloseButton
-                type="button"
-                aria-label="Close menu"
-                onClick={closeDrawer}
-              >
-                <FaTimes />
-              </DrawerCloseButton>
-            </SidebarTop>
+        <BodyRow>
+          <Sidebar open={isDrawerOpen}>
+            <SidebarInner>
+              <SidebarTop>
+                <SidebarHeading>Admin</SidebarHeading>
+                <DrawerCloseButton
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={closeDrawer}
+                >
+                  <FaTimes />
+                </DrawerCloseButton>
+              </SidebarTop>
 
-            <NavList>
-              {NAV_ITEMS.map((navItem) => {
-                const NavIcon = navItem.icon;
-                return (
-                  <NavItemLink
-                    key={navItem.to}
-                    to={navItem.to}
-                    onClick={closeDrawer}
-                  >
-                    <NavIcon aria-hidden />
-                    <span>{navItem.label}</span>
-                  </NavItemLink>
-                );
-              })}
-            </NavList>
+              <NavList>
+                {NAV_ITEMS.map((navItem) => {
+                  const NavIcon = navItem.icon;
+                  return (
+                    <NavItemLink
+                      key={navItem.to}
+                      to={navItem.to}
+                      onClick={closeDrawer}
+                    >
+                      <NavIcon aria-hidden />
+                      <span>{navItem.label}</span>
+                    </NavItemLink>
+                  );
+                })}
+              </NavList>
 
-            <SidebarFooter>
-              <FooterIdentity>
-                <FooterEmail title={signedInEmail}>
-                  {signedInEmail}
-                </FooterEmail>
-                {role !== null ? (
-                  <PillScale>
-                    <RoleBadge role={role} />
-                  </PillScale>
-                ) : null}
-              </FooterIdentity>
-              <SignOutButton type="button" onClick={handleSignOut}>
-                Sign Out
-              </SignOutButton>
-            </SidebarFooter>
-          </SidebarInner>
-        </Sidebar>
+              <SidebarFooter>
+                <FooterIdentity>
+                  <FooterEmail title={signedInEmail}>
+                    {signedInEmail}
+                  </FooterEmail>
+                  {role !== null ? (
+                    <PillScale>
+                      <RoleBadge role={role} />
+                    </PillScale>
+                  ) : null}
+                </FooterIdentity>
+                <SignOutButton type="button" onClick={handleSignOut}>
+                  Sign Out
+                </SignOutButton>
+              </SidebarFooter>
+            </SidebarInner>
+          </Sidebar>
 
-        {isDrawerOpen ? <DrawerBackdrop onClick={closeDrawer} /> : null}
+          {isDrawerOpen ? <DrawerBackdrop onClick={closeDrawer} /> : null}
 
-        <ContentColumn>
-          <MainContent>
-            <PageTitle>{title}</PageTitle>
-            {children}
-          </MainContent>
-        </ContentColumn>
-      </BodyRow>
-    </LayoutRoot>
+          <ContentColumn>
+            <MainContent>
+              <PageTitle>{title}</PageTitle>
+              {children}
+              {savedMessage ? (
+                <SavedToast role="status" aria-live="polite">
+                  <FaCheckCircle aria-hidden />
+                  {savedMessage}
+                </SavedToast>
+              ) : null}
+            </MainContent>
+          </ContentColumn>
+        </BodyRow>
+      </LayoutRoot>
     </APIProvider>
   );
 }
@@ -385,4 +408,23 @@ const PageTitle = styled.h1({
   "@media (min-width: 901px)": {
     display: "none",
   },
+});
+
+const SavedToast = styled.div({
+  position: "fixed",
+  bottom: "24px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: 1000,
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "12px 18px",
+  borderRadius: "10px",
+  backgroundColor: "#0d3b1f",
+  border: "1px solid rgba(71, 213, 133, 0.5)",
+  color: "#47d585",
+  fontSize: "0.9rem",
+  fontWeight: 700,
+  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.35)",
 });

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FaPencilAlt, FaTrashAlt } from "react-icons/fa";
 
@@ -24,6 +25,7 @@ import { findCountryName } from "../../utils/countries";
 type CourtFilterTab = "all" | "unverified" | "verified" | "submitted";
 
 function Courts() {
+  const navigate = useNavigate();
   const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -74,9 +76,7 @@ function Courts() {
   const countryScopedCourts = useMemo(
     () =>
       countryFilter.length > 0
-        ? courts.filter(
-            (court) => court.location.countryCode === countryFilter,
-          )
+        ? courts.filter((court) => court.location.countryCode === countryFilter)
         : courts,
     [courts, countryFilter],
   );
@@ -145,18 +145,25 @@ function Courts() {
     });
   }, [courts, activeTab, searchTerm, countryFilter]);
 
-  const handleCourtSaved = useCallback((savedCourt: Court) => {
-    setCourts((previous) => {
-      const withoutSaved = previous.filter(
-        (existing) => existing.courtId !== savedCourt.courtId,
-      );
-      return [...withoutSaved, savedCourt].sort((first, second) =>
-        first.courtName.localeCompare(second.courtName),
-      );
-    });
-    setIsAddModalOpen(false);
-    setCourtBeingEdited(null);
-  }, []);
+  const handleCourtSaved = useCallback(
+    (savedCourt: Court) => {
+      setCourts((previous) => {
+        const withoutSaved = previous.filter(
+          (existing) => existing.courtId !== savedCourt.courtId,
+        );
+        return [...withoutSaved, savedCourt].sort((first, second) =>
+          first.courtName.localeCompare(second.courtName),
+        );
+      });
+      setIsAddModalOpen(false);
+      setCourtBeingEdited(null);
+      navigate("/admin/courts", {
+        replace: true,
+        state: { saved: "Court saved" },
+      });
+    },
+    [navigate],
+  );
 
   const closeCourtModal = useCallback(() => {
     setIsAddModalOpen(false);
@@ -201,7 +208,11 @@ function Courts() {
     const courtName = courtPendingDelete?.courtName ?? "this court";
     const base = `Delete "${courtName}"? This permanently removes the court and cannot be undone.`;
     const submission = courtPendingDelete?.submission;
-    if (courtPendingDelete && submission && isPendingCourtSubmission(courtPendingDelete)) {
+    if (
+      courtPendingDelete &&
+      submission &&
+      isPendingCourtSubmission(courtPendingDelete)
+    ) {
       return `${base} @${submission.submittedByUsername || submission.submittedBy} will be notified that it was not accepted for ${submission.ladderName}.`;
     }
     if (referencingLadderCount && referencingLadderCount > 0) {

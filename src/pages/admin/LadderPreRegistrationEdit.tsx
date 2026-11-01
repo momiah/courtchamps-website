@@ -157,6 +157,9 @@ function LadderPreRegistrationEdit() {
 
   const launched =
     preRegistration?.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED;
+  const hasChanges =
+    !isEditMode ||
+    JSON.stringify(form) !== JSON.stringify(toFormState(preRegistration));
 
   const setField = <Key extends keyof FormState>(
     key: Key,
@@ -185,12 +188,19 @@ function LadderPreRegistrationEdit() {
           actorUserId,
         });
         await load();
+        navigate(`/admin/pre-registrations/${preRegistrationId}`, {
+          replace: true,
+          state: { saved: "Pre-registration saved" },
+        });
       } else {
         const createdId = await createLadderPreRegistration({
           input,
           actorUserId,
         });
-        navigate(`/admin/pre-registrations/${createdId}`, { replace: true });
+        navigate(`/admin/pre-registrations/${createdId}`, {
+          replace: true,
+          state: { saved: "Pre-registration created" },
+        });
       }
     } catch (saveError) {
       console.error("Failed to save pre-registration", saveError);
@@ -206,12 +216,20 @@ function LadderPreRegistrationEdit() {
     setBusy(true);
     setError(null);
     try {
+      const open =
+        preRegistration.status !== LADDER_PRE_REGISTRATION_STATUS.OPEN;
       await setLadderPreRegistrationOpen({
         preRegistrationId,
-        open: preRegistration.status !== LADDER_PRE_REGISTRATION_STATUS.OPEN,
+        open,
         actorUserId,
       });
       await load();
+      navigate(`/admin/pre-registrations/${preRegistrationId}`, {
+        replace: true,
+        state: {
+          saved: open ? "Pre-registration opened" : "Pre-registration closed",
+        },
+      });
     } catch (toggleError) {
       console.error("Failed to change pre-registration status", toggleError);
       setError("Could not change the status. Please try again.");
@@ -477,7 +495,7 @@ function LadderPreRegistrationEdit() {
               <ActionRow>
                 <PrimaryButton
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !hasChanges}
                   onClick={handleSave}
                 >
                   {isEditMode ? "Save changes" : "Create pre-registration"}
