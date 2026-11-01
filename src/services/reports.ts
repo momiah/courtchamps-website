@@ -9,10 +9,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
-import {
-  assertLadderStandingsOpen,
-  isLadderStandingsLocked,
-} from "../utils/ladderStandings";
+import { isLadderStandingsLocked } from "../utils/ladderStandings";
 import {
   REPORT_STATUS,
   REPORT_REASONS,
@@ -242,14 +239,22 @@ const prepareStrikeDelta = async (
   };
 };
 
-const assertReportLadderOpen = async (
+const isReportLadderOpen = async (
   report: Report,
-  tx?: Transaction,
-): Promise<void> => {
-  const ladderRef = doc(db, LADDERS, report.ladderId);
-  const ladderSnap = tx ? await tx.get(ladderRef) : await getDoc(ladderRef);
-  assertLadderStandingsOpen(ladderSnap.data() as Ladder | undefined);
+  tx: Transaction,
+): Promise<boolean> => {
+  const ladderSnap = await tx.get(doc(db, LADDERS, report.ladderId));
+  return !isLadderStandingsLocked(ladderSnap.data() as Ladder | undefined);
 };
+
+export const WALKOVER_FINAL_MESSAGE =
+  "This walkover is part of standings that are now final, so it can't be reversed.";
+
+const ranWalkover = (report: Report): boolean =>
+  report.status === REPORT_STATUS.APPROVED &&
+  report.reason === REPORT_REASONS.NO_SHOW &&
+  !!report.walkover &&
+  report.walkoverApplied !== false;
 
 export const approveReport = async (
   report: Report,
@@ -258,10 +263,10 @@ export const approveReport = async (
   const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
 
   await runTransaction(db, async (tx) => {
-    await assertReportLadderOpen(report, tx);
+    const standingsOpen = await isReportLadderOpen(report, tx);
     const writeStrikes = await prepareStrikeDelta(tx, report, "apply");
     const writeWalkover =
-      isNoShow && report.walkover
+      isNoShow && report.walkover && standingsOpen
         ? await prepareWalkoverSettlement(
             tx,
             report,
@@ -276,6 +281,7 @@ export const approveReport = async (
       status: REPORT_STATUS.APPROVED,
       resolvedAt: new Date(),
       resolvedBy: adminUserId,
+      walkoverApplied: !!writeWalkover,
     });
   });
 };
@@ -284,7 +290,6 @@ export const rejectReport = async (
   report: Report,
   adminUserId: string,
 ): Promise<void> => {
-  await assertReportLadderOpen(report);
   const batch = writeBatch(db);
   batch.update(doc(db, REPORTS, report.reportId), {
     status: REPORT_STATUS.REJECTED,
@@ -308,12 +313,15 @@ export const revertReport = async (
   const isNoShow = report.reason === REPORT_REASONS.NO_SHOW;
 
   await runTransaction(db, async (tx) => {
-    await assertReportLadderOpen(report, tx);
+    const standingsOpen = await isReportLadderOpen(report, tx);
+    if (ranWalkover(report) && !standingsOpen) {
+      throw new Error(WALKOVER_FINAL_MESSAGE);
+    }
     let writeStrikes: (() => void) | null = null;
     let writeWalkover: (() => void) | null = null;
     if (wasApproved) {
       writeStrikes = await prepareStrikeDelta(tx, report, "remove");
-      if (isNoShow && report.walkover) {
+      if (ranWalkover(report) && report.walkover) {
         writeWalkover = await prepareWalkoverSettlement(
           tx,
           report,
@@ -337,6 +345,7 @@ export const revertReport = async (
       resolvedBy: null,
       revertedAt: new Date(),
       revertedBy: adminUserId,
+      walkoverApplied: null,
     });
   });
 };
