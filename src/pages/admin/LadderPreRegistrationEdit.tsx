@@ -5,6 +5,11 @@ import { format } from "date-fns";
 
 import AdminLayout from "../../components/admin/AdminLayout";
 import CityInput from "../../components/admin/CityInput";
+import {
+  MIXED_SINGLES_ERROR,
+  genderOptionsFor,
+  isGenderAllowed,
+} from "../../utils/ladderGender";
 import FormField from "../../components/admin/FormField";
 import StatusPill from "../../components/admin/StatusPill";
 import {
@@ -65,7 +70,7 @@ const toFormState = (
   city: preRegistration?.city ?? "",
   countryCode: preRegistration?.countryCode ?? "GB",
   ladderType: preRegistration?.ladderType ?? LADDER_TYPE.SINGLES,
-  genderType: preRegistration?.genderType ?? GENDER_TYPE.MIXED,
+  genderType: preRegistration?.genderType ?? GENDER_TYPE.MENS,
   entryFee: preRegistration ? String(preRegistration.entryFee) : "0",
   currencyType: preRegistration?.currencyType ?? "GBP",
   maxPlayers: String(preRegistration?.maxPlayers ?? 2048),
@@ -98,6 +103,9 @@ const validate = (state: FormState): string | null => {
   if (!state.name.trim()) return "Give the pre-registration a name.";
   if (!state.region.trim()) return "Add the region the ladder is for.";
   if (!state.city.trim()) return "Add the city the ladder is in.";
+  if (!isGenderAllowed(state.ladderType, state.genderType)) {
+    return MIXED_SINGLES_ERROR;
+  }
   const entryFee = Number(state.entryFee);
   if (!Number.isFinite(entryFee) || entryFee < 0) {
     return "Entry fee must be 0 or more.";
@@ -419,7 +427,12 @@ function LadderPreRegistrationEdit() {
                     setField("genderType", event.target.value as GenderType)
                   }
                 >
-                  {Object.values(GENDER_TYPE).map((genderType) => (
+                  {isGenderAllowed(form.ladderType, form.genderType) ? null : (
+                    <option value={form.genderType} disabled hidden>
+                      Choose Mens or Womens
+                    </option>
+                  )}
+                  {genderOptionsFor(form.ladderType).map((genderType) => (
                     <option key={genderType} value={genderType}>
                       {genderType}
                     </option>
