@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["R66MT5YKZR.com.courtchamp"],
+        "components": [
+          { "/": "/join/ladder-pre-registration/*" },
+          { "/": "/preview/ladder-pre-registration/*" }
+        ]
+      },
+      {
+        "appID": "R66MT5YKZR.com.courtchamp",
+        "paths": [
+          "/join/ladder-pre-registration/*",
+          "/preview/ladder-pre-registration/*"
+        ]
+      }
+    ]
+  }
+}
