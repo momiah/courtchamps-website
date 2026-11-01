@@ -160,7 +160,9 @@ function LadderEdit() {
             preRegistrationId: preRegistration?.preRegistrationId ?? null,
           });
         }
-        navigate("/admin/ladders");
+        navigate("/admin/ladders", {
+          state: { saved: ladderId ? "Ladder saved" : "Ladder created" },
+        });
       } catch (saveError) {
         console.error("Failed to save ladder", saveError);
         setSubmitError("Could not save the ladder. Please try again.");
