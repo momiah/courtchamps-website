@@ -204,7 +204,7 @@ const seasonPhases = (
     icon: IoGitNetworkOutline,
     label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
     length: `${Math.log2(playoffSpots)} rounds`,
-    text: `The top ${playoffSpots} ${noun}s play a knockout, with ${days(LADDER_PLAYOFF_TIE_DAYS)} per round.`,
+    text: `The top ${playoffSpots} ${noun}s play a knockout. Each round is two matches, home and away, played within ${days(LADDER_PLAYOFF_TIE_DAYS)}.`,
   },
   {
     icon: IoTrophyOutline,
@@ -445,11 +445,11 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
           <Matchup />
           <Explainers>
             <Explainer>
-              <CardIcon>
+              <ExplainerIcon>
                 <IoSwapHorizontalOutline />
-              </CardIcon>
+              </ExplainerIcon>
               <div>
-                <b>What&apos;s matchmaking?</b>
+                <b>What&apos;s Matchmaking?</b>
                 <span>
                   Matchmaking lets you schedule games with other {noun}s in the
                   ladder, on your time and your terms.
@@ -457,11 +457,11 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
               </div>
             </Explainer>
             <Explainer>
-              <CardIcon>
+              <ExplainerIcon>
                 <IoPodiumOutline />
-              </CardIcon>
+              </ExplainerIcon>
               <div>
-                <b>What&apos;s a ladder?</b>
+                <b>What&apos;s a Ladder?</b>
                 <span>
                   A ranked competition where a large group of {noun}s compete
                   across a wide region. When the season ends, the top {noun}s go
@@ -470,9 +470,9 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
               </div>
             </Explainer>
             <Explainer>
-              <CardIcon>
+              <ExplainerIcon>
                 <IoEnterOutline />
-              </CardIcon>
+              </ExplainerIcon>
               <div>
                 <span>
                   Once you <b>join the ladder</b>, you can enter the{" "}
@@ -891,6 +891,20 @@ const CardIcon = styled.span<{ $gold?: boolean }>`
   background: ${({ $gold }) =>
     $gold ? "rgba(255, 200, 0, 0.12)" : "rgba(0, 162, 255, 0.15)"};
   color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
+`;
+
+const ExplainerIcon = styled.span`
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: rgba(0, 162, 255, 0.15);
+  border: 1px solid rgba(0, 162, 255, 0.35);
+  color: ${BLUE};
 `;
 
 const Explainers = styled.div`
