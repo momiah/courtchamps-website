@@ -99,14 +99,16 @@ const PrizeCount: React.FC<{ prizePool: string }> = ({ prizePool }) => {
 };
 
 const Card: React.FC<{
-  icon: IconType;
+  icon?: IconType;
   gold?: boolean;
   children: React.ReactNode;
 }> = ({ icon: Icon, gold, children }) => (
-  <CardRow>
-    <CardIcon $gold={gold}>
-      <Icon />
-    </CardIcon>
+  <CardRow $centre={!Icon}>
+    {Icon ? (
+      <CardIcon $gold={gold}>
+        <Icon />
+      </CardIcon>
+    ) : null}
     <span>{children}</span>
   </CardRow>
 );
@@ -174,6 +176,7 @@ const MATCH_STEPS: { icon: IconType; text: string }[] = [
 
 interface Phase {
   icon: IconType;
+  image?: string;
   label: string;
   length?: string;
   text: string;
@@ -205,6 +208,7 @@ const seasonPhases = (
   },
   {
     icon: IoTrophyOutline,
+    image: ladderTrophies[0],
     label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
     text: cash
       ? "The champion crowned. Cash paid. CP awarded."
@@ -354,7 +358,11 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
               <PhaseRow key={phase.label}>
                 <PhaseRail>
                   <PhaseDot $gold={phase.gold}>
-                    <phase.icon />
+                    {phase.image ? (
+                      <img src={phase.image} alt="" />
+                    ) : (
+                      <phase.icon />
+                    )}
                   </PhaseDot>
                   {i < all.length - 1 ? <PhaseLine /> : null}
                 </PhaseRail>
@@ -398,7 +406,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
             <small>to be won</small>
           </Pool>
           <Cards>
-            <Card icon={IoTrophyOutline} gold>
+            <Card>
               Win the Final to be crowned <Gold>champion</Gold>! Top&nbsp;
               {inTheMoney} {cash ? "paid" : "awarded CP"} in a full ladder.
             </Card>
@@ -850,10 +858,12 @@ const Cards = styled.div`
   align-self: stretch;
 `;
 
-const CardRow = styled.div`
+const CardRow = styled.div<{ $centre?: boolean }>`
   display: flex;
   gap: 12px;
   align-items: center;
+  justify-content: ${({ $centre }) => ($centre ? "center" : "flex-start")};
+  text-align: ${({ $centre }) => ($centre ? "center" : "left")};
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
@@ -1207,6 +1217,12 @@ const PhaseDot = styled.div<{ $gold?: boolean }>`
   border: 1px solid
     ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)")};
   color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
 `;
 
 const PhaseLine = styled.div`
