@@ -41,6 +41,7 @@ interface LadderDocumentData {
   description?: string;
   image?: string;
   region?: string;
+  city?: string;
   countryCode?: string;
   ladderType?: string;
   genderType?: string;
@@ -74,6 +75,7 @@ const mapLadderDocument = (
   description: data.description ?? "",
   image: data.image ?? "",
   region: data.region ?? "",
+  city: data.city ?? "",
   countryCode: data.countryCode ?? "",
   ladderType: (data.ladderType as LadderType) ?? LADDER_TYPE.SINGLES,
   genderType: (data.genderType as GenderType) ?? GENDER_TYPE.MIXED,

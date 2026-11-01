@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { format } from "date-fns";
 
 import AdminLayout from "../../components/admin/AdminLayout";
+import CityInput from "../../components/admin/CityInput";
 import FormField from "../../components/admin/FormField";
 import StatusPill from "../../components/admin/StatusPill";
 import {
@@ -45,6 +46,7 @@ interface FormState {
   name: string;
   description: string;
   region: string;
+  city: string;
   countryCode: string;
   ladderType: LadderType;
   genderType: GenderType;
@@ -60,6 +62,7 @@ const toFormState = (
   name: preRegistration?.name ?? "",
   description: preRegistration?.description ?? "",
   region: preRegistration?.region ?? "",
+  city: preRegistration?.city ?? "",
   countryCode: preRegistration?.countryCode ?? "GB",
   ladderType: preRegistration?.ladderType ?? LADDER_TYPE.SINGLES,
   genderType: preRegistration?.genderType ?? GENDER_TYPE.MIXED,
@@ -79,6 +82,7 @@ const toInput = (
   description: state.description.trim(),
   image,
   region: state.region.trim(),
+  city: state.city.trim(),
   countryCode: state.countryCode,
   ladderType: state.ladderType,
   genderType: state.genderType,
@@ -93,6 +97,7 @@ const toInput = (
 const validate = (state: FormState): string | null => {
   if (!state.name.trim()) return "Give the pre-registration a name.";
   if (!state.region.trim()) return "Add the region the ladder is for.";
+  if (!state.city.trim()) return "Add the city the ladder is in.";
   const entryFee = Number(state.entryFee);
   if (!Number.isFinite(entryFee) || entryFee < 0) {
     return "Entry fee must be 0 or more.";
@@ -357,6 +362,19 @@ function LadderPreRegistrationEdit() {
                     </option>
                   ))}
                 </SelectInput>
+              </FormField>
+              <FormField
+                label="City"
+                htmlFor="pre-registration-city"
+                hint="Shown on ladder cards with the country code, e.g. London, GB."
+              >
+                <CityInput
+                  id="pre-registration-city"
+                  countryCode={form.countryCode}
+                  value={form.city}
+                  disabled={launched}
+                  onChange={(event) => setField("city", event.target.value)}
+                />
               </FormField>
               <FormField label="Type" htmlFor="pre-registration-type">
                 <SelectInput

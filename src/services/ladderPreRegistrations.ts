@@ -42,6 +42,7 @@ const mapPreRegistration = (
   description: String(data.description ?? ""),
   image: String(data.image ?? ""),
   region: String(data.region ?? ""),
+  city: String(data.city ?? ""),
   countryCode: String(data.countryCode ?? ""),
   ladderType: (data.ladderType as LadderType) ?? "Singles",
   genderType: (data.genderType as GenderType) ?? "Mixed",

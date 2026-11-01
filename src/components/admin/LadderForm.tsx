@@ -25,6 +25,7 @@ import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
 import { deriveLadderDates } from "courtchamps-shared/helpers";
 import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
+import CityInput, { mostCommonCity } from "./CityInput";
 import FormField from "./FormField";
 import Modal from "./Modal";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
@@ -47,11 +48,9 @@ const REGION_DATALIST_ID = "ladder-region-options";
 // held as strings until parsed/validated on submit.
 type LadderFormState = Omit<
   LadderInput,
-  | "registrationOpensAt"
-  | "entryFee"
-  | "minRank"
-  | "maxPlayers"
+  "registrationOpensAt" | "entryFee" | "minRank" | "maxPlayers"
 > & {
+  city: string;
   registrationOpensAt: string;
   entryFee: string;
   minRank: string;
@@ -83,6 +82,7 @@ const buildInitialState = (
     description: details?.description ?? "",
     image: details?.image ?? "",
     region: details?.region ?? "",
+    city: details?.city ?? "",
     countryCode: details?.countryCode ?? "",
     ladderType: details?.ladderType ?? "Singles",
     genderType: details?.genderType ?? "Mixed",
@@ -142,12 +142,28 @@ function LadderForm({
   const entryFee = watch("entryFee");
   const maxPlayers = watch("maxPlayers");
   const image = watch("image");
+  const countryCode = watch("countryCode");
 
   const [courts, setCourts] = useState<Court[]>([]);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
   const [regionCourtGroups, setRegionCourtGroups] = useState<
     { region: string; courtIds: string[] }[]
   >([]);
+  const selectedCourtCities = useMemo(
+    () =>
+      courts
+        .filter((court) => courtIds.includes(court.courtId))
+        .map((court) => court.location?.city),
+    [courts, courtIds],
+  );
+  const courtCity = mostCommonCity(selectedCourtCities);
+
+  useEffect(() => {
+    if (courtCity && !getValues("city").trim()) {
+      setValue("city", courtCity);
+    }
+  }, [courtCity, getValues, setValue]);
+
   const [isCourtModalOpen, setIsCourtModalOpen] = useState<boolean>(false);
   const [isCourtsModalOpen, setIsCourtsModalOpen] = useState<boolean>(false);
   const [courtCountryFilter, setCourtCountryFilter] = useState<string>("");
@@ -206,9 +222,7 @@ function LadderForm({
               region,
               courtIds: Array.from(courtIdSet),
             }))
-            .sort((first, second) =>
-              first.region.localeCompare(second.region),
-            ),
+            .sort((first, second) => first.region.localeCompare(second.region)),
         );
       } catch (loadError) {
         console.error("Failed to load ladder reference data", loadError);
@@ -288,10 +302,7 @@ function LadderForm({
       : todayInputValue;
   }, [initialLadder]);
 
-  const isEntryFeeZero = useMemo(
-    () => Number(entryFee) === 0,
-    [entryFee],
-  );
+  const isEntryFeeZero = useMemo(() => Number(entryFee) === 0, [entryFee]);
 
   const maxPlayersOptions = useMemo(() => {
     const currentValue = Number(maxPlayers);
@@ -447,6 +458,7 @@ function LadderForm({
         description: values.description.trim(),
         image: values.image.trim(),
         region: values.region.trim(),
+        city: values.city.trim(),
         countryCode: values.countryCode,
         ladderType: values.ladderType,
         genderType: values.genderType,
@@ -470,421 +482,448 @@ function LadderForm({
           </LockedNote>
         ) : null}
         <LockableFieldset disabled={locked}>
-        <Section>
-          <DetailsRow>
-            <DetailsColumn>
-              <SectionTitle>Details</SectionTitle>
-
-              <FormField
-                label="Name"
-                htmlFor="ladder-name"
-                error={errors.name?.message ?? null}
-              >
-                <Controller
-                  control={control}
-                  name="name"
-                  rules={{
-                    validate: (value) =>
-                      value.trim().length > 0 || "Name is required.",
-                  }}
-                  render={({ field }) => (
-                    <TextInput id="ladder-name" type="text" {...field} />
-                  )}
-                />
-              </FormField>
-
-              <FormField
-                label="Description"
-                htmlFor="ladder-description"
-                error={errors.description?.message ?? null}
-              >
-                <Controller
-                  control={control}
-                  name="description"
-                  rules={{
-                    validate: (value) =>
-                      value.trim().length > 0 || "Description is required.",
-                  }}
-                  render={({ field }) => (
-                    <TextArea id="ladder-description" {...field} />
-                  )}
-                />
-              </FormField>
-
-              <FormField
-                label="Image"
-                hint="Uploaded to storage when the ladder is saved."
-              >
-                <HiddenFileInput
-                  ref={imageInputRef}
-                  id="ladder-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageFileChange}
-                />
-                <ImageUploadRow>
-                  <SecondaryButton type="button" onClick={openImagePicker}>
-                    {imagePreviewSource ? "Change image" : "Upload image"}
-                  </SecondaryButton>
-                  {imageFile ? (
-                    <FileNameText>{imageFile.name}</FileNameText>
-                  ) : null}
-                  {imagePreviewSource ? (
-                    <RemoveImageButton type="button" onClick={clearImage}>
-                      Remove
-                    </RemoveImageButton>
-                  ) : null}
-                </ImageUploadRow>
-                {imagePreviewSource ? (
-                  <ImagePreview src={imagePreviewSource} alt="Ladder preview" />
-                ) : null}
-              </FormField>
-            </DetailsColumn>
-
-            <TeamTypeColumn>
-              <SectionTitle>Team type</SectionTitle>
-
-              <FormField label="Format">
-                <Controller
-                  control={control}
-                  name="ladderType"
-                  render={({ field }) => (
-                    <RadioRow role="radiogroup" aria-label="Ladder type">
-                      {LADDER_TYPE_OPTIONS.map((option) => (
-                        <RadioChip
-                          key={option}
-                          $selected={field.value === option}
-                        >
-                          <HiddenRadio
-                            type="radio"
-                            name="ladder-type"
-                            value={option}
-                            checked={field.value === option}
-                            onChange={() => field.onChange(option)}
-                          />
-                          {option}
-                        </RadioChip>
-                      ))}
-                    </RadioRow>
-                  )}
-                />
-              </FormField>
-
-              <FormField label="Gender">
-                <Controller
-                  control={control}
-                  name="genderType"
-                  render={({ field }) => (
-                    <RadioRow role="radiogroup" aria-label="Gender type">
-                      {GENDER_TYPE_OPTIONS.map((option) => (
-                        <RadioChip
-                          key={option}
-                          $selected={field.value === option}
-                        >
-                          <HiddenRadio
-                            type="radio"
-                            name="ladder-gender-type"
-                            value={option}
-                            checked={field.value === option}
-                            onChange={() => field.onChange(option)}
-                          />
-                          {option}
-                        </RadioChip>
-                      ))}
-                    </RadioRow>
-                  )}
-                />
-              </FormField>
-            </TeamTypeColumn>
-          </DetailsRow>
-        </Section>
-
-        <SectionRow>
           <Section>
-            <SectionTitle>Region and courts</SectionTitle>
+            <DetailsRow>
+              <DetailsColumn>
+                <SectionTitle>Details</SectionTitle>
 
-            <FormField
-              label="Region"
-              htmlFor="ladder-region"
-              hint="e.g. North London"
-              error={errors.region?.message ?? null}
-            >
-              <Controller
-                control={control}
-                name="region"
-                rules={{
-                  validate: (value) =>
-                    value.trim().length > 0 || "Region is required.",
-                }}
-                render={({ field }) => (
-                  <TextInput
-                    id="ladder-region"
-                    type="text"
-                    list={REGION_DATALIST_ID}
-                    {...field}
-                  />
-                )}
-              />
-              <datalist id={REGION_DATALIST_ID}>
-                {existingRegions.map((region) => (
-                  <option key={region} value={region} />
-                ))}
-              </datalist>
-            </FormField>
-
-            <FormField
-              label="Country"
-              htmlFor="ladder-country"
-              error={errors.countryCode?.message ?? null}
-            >
-              <Controller
-                control={control}
-                name="countryCode"
-                rules={{
-                  validate: (value) =>
-                    COUNTRY_CODE_PATTERN.test(value) || "Select a country.",
-                }}
-                render={({ field }) => (
-                  <SelectInput id="ladder-country" {...field}>
-                    <option value="">Select a country</option>
-                    {COUNTRY_OPTIONS.map((country) => (
-                      <option key={country.code} value={country.code}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </SelectInput>
-                )}
-              />
-            </FormField>
-
-            <Controller
-              control={control}
-              name="courtIds"
-              rules={{
-                validate: (value) =>
-                  value.length > 0 || "Select at least one court.",
-              }}
-              render={({ field }) => (
                 <FormField
-                  label="Courts"
-                  error={errors.courtIds?.message ?? null}
+                  label="Name"
+                  htmlFor="ladder-name"
+                  error={errors.name?.message ?? null}
                 >
-                  <CourtsSelectButton
-                    type="button"
-                    onClick={() => setIsCourtsModalOpen(true)}
-                  >
-                    <span>Select courts</span>
-                    <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
-                  </CourtsSelectButton>
-                  <SelectedSummary>
-                    {field.value.length === 0
-                      ? "No courts selected"
-                      : `${field.value.length} ${
-                          field.value.length === 1 ? "court" : "courts"
-                        } selected`}
-                  </SelectedSummary>
+                  <Controller
+                    control={control}
+                    name="name"
+                    rules={{
+                      validate: (value) =>
+                        value.trim().length > 0 || "Name is required.",
+                    }}
+                    render={({ field }) => (
+                      <TextInput id="ladder-name" type="text" {...field} />
+                    )}
+                  />
                 </FormField>
-              )}
-            />
+
+                <FormField
+                  label="Description"
+                  htmlFor="ladder-description"
+                  error={errors.description?.message ?? null}
+                >
+                  <Controller
+                    control={control}
+                    name="description"
+                    rules={{
+                      validate: (value) =>
+                        value.trim().length > 0 || "Description is required.",
+                    }}
+                    render={({ field }) => (
+                      <TextArea id="ladder-description" {...field} />
+                    )}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Image"
+                  hint="Uploaded to storage when the ladder is saved."
+                >
+                  <HiddenFileInput
+                    ref={imageInputRef}
+                    id="ladder-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                  />
+                  <ImageUploadRow>
+                    <SecondaryButton type="button" onClick={openImagePicker}>
+                      {imagePreviewSource ? "Change image" : "Upload image"}
+                    </SecondaryButton>
+                    {imageFile ? (
+                      <FileNameText>{imageFile.name}</FileNameText>
+                    ) : null}
+                    {imagePreviewSource ? (
+                      <RemoveImageButton type="button" onClick={clearImage}>
+                        Remove
+                      </RemoveImageButton>
+                    ) : null}
+                  </ImageUploadRow>
+                  {imagePreviewSource ? (
+                    <ImagePreview
+                      src={imagePreviewSource}
+                      alt="Ladder preview"
+                    />
+                  ) : null}
+                </FormField>
+              </DetailsColumn>
+
+              <TeamTypeColumn>
+                <SectionTitle>Team type</SectionTitle>
+
+                <FormField label="Format">
+                  <Controller
+                    control={control}
+                    name="ladderType"
+                    render={({ field }) => (
+                      <RadioRow role="radiogroup" aria-label="Ladder type">
+                        {LADDER_TYPE_OPTIONS.map((option) => (
+                          <RadioChip
+                            key={option}
+                            $selected={field.value === option}
+                          >
+                            <HiddenRadio
+                              type="radio"
+                              name="ladder-type"
+                              value={option}
+                              checked={field.value === option}
+                              onChange={() => field.onChange(option)}
+                            />
+                            {option}
+                          </RadioChip>
+                        ))}
+                      </RadioRow>
+                    )}
+                  />
+                </FormField>
+
+                <FormField label="Gender">
+                  <Controller
+                    control={control}
+                    name="genderType"
+                    render={({ field }) => (
+                      <RadioRow role="radiogroup" aria-label="Gender type">
+                        {GENDER_TYPE_OPTIONS.map((option) => (
+                          <RadioChip
+                            key={option}
+                            $selected={field.value === option}
+                          >
+                            <HiddenRadio
+                              type="radio"
+                              name="ladder-gender-type"
+                              value={option}
+                              checked={field.value === option}
+                              onChange={() => field.onChange(option)}
+                            />
+                            {option}
+                          </RadioChip>
+                        ))}
+                      </RadioRow>
+                    )}
+                  />
+                </FormField>
+              </TeamTypeColumn>
+            </DetailsRow>
           </Section>
 
-          <Section>
-            <SectionTitle>Schedule</SectionTitle>
+          <SectionRow>
+            <Section>
+              <SectionTitle>Region and courts</SectionTitle>
 
-            <DateRow>
               <FormField
-                label="Registration opens"
-                htmlFor="ladder-registration-opens"
-                error={errors.registrationOpensAt?.message ?? null}
+                label="Region"
+                htmlFor="ladder-region"
+                hint="e.g. North London"
+                error={errors.region?.message ?? null}
               >
                 <Controller
                   control={control}
-                  name="registrationOpensAt"
+                  name="region"
+                  rules={{
+                    validate: (value) =>
+                      value.trim().length > 0 || "Region is required.",
+                  }}
+                  render={({ field }) => (
+                    <TextInput
+                      id="ladder-region"
+                      type="text"
+                      list={REGION_DATALIST_ID}
+                      {...field}
+                    />
+                  )}
+                />
+                <datalist id={REGION_DATALIST_ID}>
+                  {existingRegions.map((region) => (
+                    <option key={region} value={region} />
+                  ))}
+                </datalist>
+              </FormField>
+
+              <FormField
+                label="Country"
+                htmlFor="ladder-country"
+                error={errors.countryCode?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="countryCode"
+                  rules={{
+                    validate: (value) =>
+                      COUNTRY_CODE_PATTERN.test(value) || "Select a country.",
+                  }}
+                  render={({ field }) => (
+                    <SelectInput id="ladder-country" {...field}>
+                      <option value="">Select a country</option>
+                      {COUNTRY_OPTIONS.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  )}
+                />
+              </FormField>
+
+              <FormField
+                label="City"
+                htmlFor="ladder-city"
+                hint="Shown on ladder cards with the country code, e.g. London, GB. Pick from the list or type it."
+                error={errors.city?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="city"
+                  rules={{
+                    validate: (value) =>
+                      value.trim().length > 0 || "City is required.",
+                  }}
+                  render={({ field }) => (
+                    <CityInput
+                      id="ladder-city"
+                      countryCode={countryCode}
+                      suggestions={courtCity ? [courtCity] : []}
+                      {...field}
+                    />
+                  )}
+                />
+              </FormField>
+
+              <Controller
+                control={control}
+                name="courtIds"
+                rules={{
+                  validate: (value) =>
+                    value.length > 0 || "Select at least one court.",
+                }}
+                render={({ field }) => (
+                  <FormField
+                    label="Courts"
+                    error={errors.courtIds?.message ?? null}
+                  >
+                    <CourtsSelectButton
+                      type="button"
+                      onClick={() => setIsCourtsModalOpen(true)}
+                    >
+                      <span>Select courts</span>
+                      <CourtsSelectChevron aria-hidden>›</CourtsSelectChevron>
+                    </CourtsSelectButton>
+                    <SelectedSummary>
+                      {field.value.length === 0
+                        ? "No courts selected"
+                        : `${field.value.length} ${
+                            field.value.length === 1 ? "court" : "courts"
+                          } selected`}
+                    </SelectedSummary>
+                  </FormField>
+                )}
+              />
+            </Section>
+
+            <Section>
+              <SectionTitle>Schedule</SectionTitle>
+
+              <DateRow>
+                <FormField
+                  label="Registration opens"
+                  htmlFor="ladder-registration-opens"
+                  error={errors.registrationOpensAt?.message ?? null}
+                >
+                  <Controller
+                    control={control}
+                    name="registrationOpensAt"
+                    rules={{
+                      validate: (value) => {
+                        if (!parseDateInputValue(value)) {
+                          return "Registration opening date is required.";
+                        }
+                        if (value < minScheduleDate) {
+                          return "Registration opening date cannot be in the past.";
+                        }
+                        return true;
+                      },
+                    }}
+                    render={({ field }) => (
+                      <TextInput
+                        id="ladder-registration-opens"
+                        type="date"
+                        min={minScheduleDate}
+                        onClick={openDatePicker}
+                        {...field}
+                      />
+                    )}
+                  />
+                </FormField>
+              </DateRow>
+
+              <DerivedPreview>
+                <DerivedTitle>Derived schedule</DerivedTitle>
+                {derivedDatesPreview ? (
+                  <DerivedGrid>
+                    <DerivedItem>
+                      <DerivedLabel>Season starts</DerivedLabel>
+                      <DerivedValue>
+                        {formatPreviewDate(derivedDatesPreview.seasonStartsAt)}
+                      </DerivedValue>
+                    </DerivedItem>
+                    <DerivedItem>
+                      <DerivedLabel>Registration closes</DerivedLabel>
+                      <DerivedValue>
+                        {formatPreviewDate(
+                          derivedDatesPreview.registrationClosesAt,
+                        )}
+                      </DerivedValue>
+                    </DerivedItem>
+                    <DerivedItem>
+                      <DerivedLabel>Playoffs start</DerivedLabel>
+                      <DerivedValue>
+                        {formatPreviewDate(derivedDatesPreview.playoffStartsAt)}
+                      </DerivedValue>
+                    </DerivedItem>
+                  </DerivedGrid>
+                ) : (
+                  <DerivedEmpty>
+                    Set the registration opening date to preview the derived
+                    schedule.
+                  </DerivedEmpty>
+                )}
+              </DerivedPreview>
+            </Section>
+          </SectionRow>
+
+          <Section>
+            <SectionTitle>Access and fees</SectionTitle>
+
+            <FeeRow>
+              <FormField
+                label="Entry fee"
+                htmlFor="ladder-entry-fee"
+                hint="0 means a free ladder"
+                error={errors.entryFee?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="entryFee"
                   rules={{
                     validate: (value) => {
-                      if (!parseDateInputValue(value)) {
-                        return "Registration opening date is required.";
-                      }
-                      if (value < minScheduleDate) {
-                        return "Registration opening date cannot be in the past.";
+                      const parsed = Number(value);
+                      if (
+                        value.trim().length === 0 ||
+                        Number.isNaN(parsed) ||
+                        parsed < 0
+                      ) {
+                        return "Entry fee must be 0 or greater.";
                       }
                       return true;
                     },
                   }}
                   render={({ field }) => (
                     <TextInput
-                      id="ladder-registration-opens"
-                      type="date"
-                      min={minScheduleDate}
-                      onClick={openDatePicker}
+                      id="ladder-entry-fee"
+                      type="number"
+                      min={0}
                       {...field}
                     />
                   )}
                 />
               </FormField>
-            </DateRow>
 
-            <DerivedPreview>
-              <DerivedTitle>Derived schedule</DerivedTitle>
-              {derivedDatesPreview ? (
-                <DerivedGrid>
-                  <DerivedItem>
-                    <DerivedLabel>Season starts</DerivedLabel>
-                    <DerivedValue>
-                      {formatPreviewDate(derivedDatesPreview.seasonStartsAt)}
-                    </DerivedValue>
-                  </DerivedItem>
-                  <DerivedItem>
-                    <DerivedLabel>Registration closes</DerivedLabel>
-                    <DerivedValue>
-                      {formatPreviewDate(
-                        derivedDatesPreview.registrationClosesAt,
-                      )}
-                    </DerivedValue>
-                  </DerivedItem>
-                  <DerivedItem>
-                    <DerivedLabel>Playoffs start</DerivedLabel>
-                    <DerivedValue>
-                      {formatPreviewDate(derivedDatesPreview.playoffStartsAt)}
-                    </DerivedValue>
-                  </DerivedItem>
-                </DerivedGrid>
-              ) : (
-                <DerivedEmpty>
-                  Set the registration opening date to preview the derived schedule.
-                </DerivedEmpty>
-              )}
-            </DerivedPreview>
+              <FormField label="Currency" htmlFor="ladder-currency">
+                <Controller
+                  control={control}
+                  name="currencyType"
+                  render={({ field }) => (
+                    <SelectInput
+                      id="ladder-currency"
+                      disabled={isEntryFeeZero}
+                      {...field}
+                    >
+                      {CURRENCY_OPTIONS.map((currency) => (
+                        <option key={currency} value={currency}>
+                          {currency}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  )}
+                />
+              </FormField>
+            </FeeRow>
+
+            <FeeRow>
+              <FormField
+                label="Minimum rank to enter (0 = open to all)"
+                htmlFor="ladder-min-rank"
+                error={errors.minRank?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="minRank"
+                  rules={{
+                    validate: (value) => {
+                      const parsed = Number(value);
+                      if (
+                        value.trim().length === 0 ||
+                        Number.isNaN(parsed) ||
+                        parsed < 0
+                      ) {
+                        return "Minimum rank must be 0 or greater.";
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextInput
+                      id="ladder-min-rank"
+                      type="number"
+                      min={0}
+                      {...field}
+                    />
+                  )}
+                />
+              </FormField>
+
+              <FormField
+                label="Maximum players"
+                htmlFor="ladder-max-players"
+                error={errors.maxPlayers?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="maxPlayers"
+                  rules={{
+                    validate: (value) => {
+                      const parsed = Number(value);
+                      if (
+                        value.trim().length === 0 ||
+                        Number.isNaN(parsed) ||
+                        parsed < 2
+                      ) {
+                        return "Maximum players must be 2 or greater.";
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <SelectInput id="ladder-max-players" {...field}>
+                      <option value="">Select</option>
+                      {maxPlayersOptions.map((option) => (
+                        <option key={option} value={String(option)}>
+                          {option}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  )}
+                />
+              </FormField>
+            </FeeRow>
           </Section>
-        </SectionRow>
-
-        <Section>
-          <SectionTitle>Access and fees</SectionTitle>
-
-          <FeeRow>
-            <FormField
-              label="Entry fee"
-              htmlFor="ladder-entry-fee"
-              hint="0 means a free ladder"
-              error={errors.entryFee?.message ?? null}
-            >
-              <Controller
-                control={control}
-                name="entryFee"
-                rules={{
-                  validate: (value) => {
-                    const parsed = Number(value);
-                    if (
-                      value.trim().length === 0 ||
-                      Number.isNaN(parsed) ||
-                      parsed < 0
-                    ) {
-                      return "Entry fee must be 0 or greater.";
-                    }
-                    return true;
-                  },
-                }}
-                render={({ field }) => (
-                  <TextInput
-                    id="ladder-entry-fee"
-                    type="number"
-                    min={0}
-                    {...field}
-                  />
-                )}
-              />
-            </FormField>
-
-            <FormField label="Currency" htmlFor="ladder-currency">
-              <Controller
-                control={control}
-                name="currencyType"
-                render={({ field }) => (
-                  <SelectInput
-                    id="ladder-currency"
-                    disabled={isEntryFeeZero}
-                    {...field}
-                  >
-                    {CURRENCY_OPTIONS.map((currency) => (
-                      <option key={currency} value={currency}>
-                        {currency}
-                      </option>
-                    ))}
-                  </SelectInput>
-                )}
-              />
-            </FormField>
-          </FeeRow>
-
-          <FeeRow>
-            <FormField
-              label="Minimum rank to enter (0 = open to all)"
-              htmlFor="ladder-min-rank"
-              error={errors.minRank?.message ?? null}
-            >
-              <Controller
-                control={control}
-                name="minRank"
-                rules={{
-                  validate: (value) => {
-                    const parsed = Number(value);
-                    if (
-                      value.trim().length === 0 ||
-                      Number.isNaN(parsed) ||
-                      parsed < 0
-                    ) {
-                      return "Minimum rank must be 0 or greater.";
-                    }
-                    return true;
-                  },
-                }}
-                render={({ field }) => (
-                  <TextInput
-                    id="ladder-min-rank"
-                    type="number"
-                    min={0}
-                    {...field}
-                  />
-                )}
-              />
-            </FormField>
-
-            <FormField
-              label="Maximum players"
-              htmlFor="ladder-max-players"
-              error={errors.maxPlayers?.message ?? null}
-            >
-              <Controller
-                control={control}
-                name="maxPlayers"
-                rules={{
-                  validate: (value) => {
-                    const parsed = Number(value);
-                    if (
-                      value.trim().length === 0 ||
-                      Number.isNaN(parsed) ||
-                      parsed < 2
-                    ) {
-                      return "Maximum players must be 2 or greater.";
-                    }
-                    return true;
-                  },
-                }}
-                render={({ field }) => (
-                  <SelectInput id="ladder-max-players" {...field}>
-                    <option value="">Select</option>
-                    {maxPlayersOptions.map((option) => (
-                      <option key={option} value={String(option)}>
-                        {option}
-                      </option>
-                    ))}
-                  </SelectInput>
-                )}
-              />
-            </FormField>
-          </FeeRow>
-        </Section>
-
         </LockableFieldset>
 
         {locked ? null : (
