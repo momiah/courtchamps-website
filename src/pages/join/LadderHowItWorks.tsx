@@ -461,7 +461,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
                 <IoPodiumOutline />
               </ExplainerIcon>
               <div>
-                <b>What&apos;s a ladder?</b>
+                <b>What&apos;s a Ladder?</b>
                 <span>
                   A ranked competition where a large group of {noun}s compete
                   across a wide region. When the season ends, the top {noun}s go
