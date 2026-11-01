@@ -174,6 +174,7 @@ const MATCH_STEPS: { icon: IconType; text: string }[] = [
 
 interface Phase {
   icon: IconType;
+  image?: string;
   label: string;
   length?: string;
   text: string;
@@ -205,6 +206,7 @@ const seasonPhases = (
   },
   {
     icon: IoTrophyOutline,
+    image: ladderTrophies[0],
     label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
     text: cash
       ? "The champion crowned. Cash paid. CP awarded."
@@ -354,7 +356,11 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
               <PhaseRow key={phase.label}>
                 <PhaseRail>
                   <PhaseDot $gold={phase.gold}>
-                    <phase.icon />
+                    {phase.image ? (
+                      <img src={phase.image} alt="" />
+                    ) : (
+                      <phase.icon />
+                    )}
                   </PhaseDot>
                   {i < all.length - 1 ? <PhaseLine /> : null}
                 </PhaseRail>
@@ -1207,6 +1213,12 @@ const PhaseDot = styled.div<{ $gold?: boolean }>`
   border: 1px solid
     ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)")};
   color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
 `;
 
 const PhaseLine = styled.div`
