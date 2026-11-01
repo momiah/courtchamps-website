@@ -274,7 +274,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
     {
       title: "Accept a",
       highlight: "Match",
-      line: "Rather play now? Jump into a live match near you.",
+      line: "See a match you like? Take it.",
       panel: (
         <>
           <Matchup reveal />
@@ -896,8 +896,11 @@ const Explainers = styled.div`
 
 const Explainer = styled.div`
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 12px;
-  padding: 16px;
+  padding: 20px 16px;
   border-radius: 14px;
   background: rgba(0, 162, 255, 0.07);
   border: 1px solid rgba(0, 162, 255, 0.25);
