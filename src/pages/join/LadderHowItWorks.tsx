@@ -407,7 +407,8 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
           </Pool>
           <Cards>
             <Card>
-              Win the Final to be crowned <Gold>champion</Gold>! Top&nbsp;
+              Win the Final to be crowned <Gold>champion</Gold>! <br />{" "}
+              Top&nbsp;
               {inTheMoney} {cash ? "paid" : "awarded CP"} in a full ladder.
             </Card>
           </Cards>
@@ -446,6 +447,18 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
           <Explainers>
             <Explainer>
               <CardIcon>
+                <IoSwapHorizontalOutline />
+              </CardIcon>
+              <div>
+                <b>What&apos;s matchmaking?</b>
+                <span>
+                  Matchmaking lets you schedule games with other {noun}s in the
+                  ladder, on your time and your terms.
+                </span>
+              </div>
+            </Explainer>
+            <Explainer>
+              <CardIcon>
                 <IoPodiumOutline />
               </CardIcon>
               <div>
@@ -454,18 +467,6 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
                   A ranked competition where a large group of {noun}s compete
                   across a wide region. When the season ends, the top {noun}s go
                   head to head in a knockout tournament.
-                </span>
-              </div>
-            </Explainer>
-            <Explainer>
-              <CardIcon>
-                <IoSwapHorizontalOutline />
-              </CardIcon>
-              <div>
-                <b>What&apos;s matchmaking?</b>
-                <span>
-                  Matchmaking lets you schedule games with other {noun}s in the
-                  ladder, on your time and your terms.
                 </span>
               </div>
             </Explainer>
@@ -1146,7 +1147,8 @@ const Tile = styled.div<{ $gold?: boolean }>`
   border-radius: 14px;
   font-size: 20px;
   border: 1px solid
-    ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.3)" : "rgba(0, 162, 255, 0.3)")};
+    ${({ $gold }) =>
+      $gold ? "rgba(255, 200, 0, 0.3)" : "rgba(0, 162, 255, 0.3)"};
   background: ${({ $gold }) =>
     $gold ? "rgba(255, 200, 0, 0.08)" : "rgba(0, 162, 255, 0.08)"};
   color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
@@ -1215,7 +1217,8 @@ const PhaseDot = styled.div<{ $gold?: boolean }>`
   background: ${({ $gold }) =>
     $gold ? "rgba(255, 200, 0, 0.12)" : "rgba(0, 162, 255, 0.12)"};
   border: 1px solid
-    ${({ $gold }) => ($gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)")};
+    ${({ $gold }) =>
+      $gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)"};
   color: ${({ $gold }) => ($gold ? GOLD : BLUE)};
 
   img {
