@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.courtchamp",
+      "sha256_cert_fingerprints": [
+        "F7:39:8D:38:82:44:32:15:C0:52:FA:A9:E6:21:6B:03:E9:95:E2:D1:B5:54:C5:12:56:56:01:6C:59:CF:06:36"
+      ]
+    }
+  }
+]
