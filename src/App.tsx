@@ -17,6 +17,7 @@ import PlayerProfile from "./pages/players/PlayerProfile";
 import DeleteAccount from "./pages/accounts/DeleteAccount";
 import JoinPage from "./pages/join/JoinPage";
 import LadderPreRegistrationJoinPage from "./pages/join/LadderPreRegistrationJoinPage";
+import ClubJoinPage from "./pages/join/ClubJoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
 import Login from "./pages/Login";
 import Courts from "./pages/admin/Courts";
@@ -58,6 +59,7 @@ function AppShell() {
           path="/join/ladder-pre-registration/:preRegistrationId"
           element={<LadderPreRegistrationJoinPage />}
         />
+        <Route path="/join/club/:clubId" element={<ClubJoinPage />} />
         <Route
           path="/join/:competitionType/:competitionId"
           element={<JoinPage />}
