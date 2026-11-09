@@ -55,6 +55,7 @@ interface LadderDocumentData {
   currencyType?: string;
   minRank?: number;
   maxPlayers?: number;
+  eligibilityRadiusMiles?: number;
   participantCount?: number;
   prizesDistributed?: boolean;
   createdBy?: string;
@@ -89,6 +90,9 @@ const mapLadderDocument = (
   currencyType: data.currencyType ?? "GBP",
   minRank: data.minRank ?? 0,
   maxPlayers: data.maxPlayers ?? 0,
+  ...(typeof data.eligibilityRadiusMiles === "number"
+    ? { eligibilityRadiusMiles: data.eligibilityRadiusMiles }
+    : {}),
   participantCount: data.participantCount ?? 0,
   prizesDistributed: data.prizesDistributed === true,
   createdBy: data.createdBy ?? "",

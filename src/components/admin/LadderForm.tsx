@@ -21,7 +21,11 @@ import {
   LadderPreRegistrationDetails,
 } from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
-import { deriveLadderDates } from "courtchamps-shared/helpers";
+import {
+  LADDER_ELIGIBILITY_RADIUS_MILES,
+  deriveLadderDates,
+  getLadderEligibilityRadiusMiles,
+} from "courtchamps-shared/helpers";
 import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
 import CityInput, { mostCommonCity } from "./CityInput";
@@ -51,13 +55,18 @@ const REGION_DATALIST_ID = "ladder-region-options";
 // held as strings until parsed/validated on submit.
 type LadderFormState = Omit<
   LadderInput,
-  "registrationOpensAt" | "entryFee" | "minRank" | "maxPlayers"
+  | "registrationOpensAt"
+  | "entryFee"
+  | "minRank"
+  | "maxPlayers"
+  | "eligibilityRadiusMiles"
 > & {
   city: string;
   registrationOpensAt: string;
   entryFee: string;
   minRank: string;
   maxPlayers: string;
+  eligibilityRadiusMiles: string;
 };
 
 const toDateInputValue = (date: Date): string => {
@@ -97,6 +106,9 @@ const buildInitialState = (
     currencyType: details?.currencyType ?? "GBP",
     minRank: initialLadder ? String(initialLadder.minRank) : "0",
     maxPlayers: details ? String(details.maxPlayers) : "",
+    eligibilityRadiusMiles: String(
+      getLadderEligibilityRadiusMiles(details ?? {}),
+    ),
   };
 };
 
@@ -472,6 +484,9 @@ function LadderForm({
         currencyType: values.currencyType,
         minRank: Number(values.minRank),
         maxPlayers: Number(values.maxPlayers),
+        ...(Number(values.entryFee) === 0
+          ? { eligibilityRadiusMiles: Number(values.eligibilityRadiusMiles) }
+          : {}),
       },
       { imageFile },
     );
@@ -841,6 +856,42 @@ function LadderForm({
                       id="ladder-entry-fee"
                       type="number"
                       min={0}
+                      {...field}
+                    />
+                  )}
+                />
+              </FormField>
+
+              <FormField
+                label="Join radius (miles)"
+                htmlFor="ladder-eligibility-radius"
+                hint={`Free ladders only: players must be within this distance of one of the ladder's courts to join. Default ${LADDER_ELIGIBILITY_RADIUS_MILES}.`}
+                error={errors.eligibilityRadiusMiles?.message ?? null}
+              >
+                <Controller
+                  control={control}
+                  name="eligibilityRadiusMiles"
+                  rules={{
+                    validate: (value) => {
+                      if (!isEntryFeeZero) return true;
+                      const parsed = Number(value);
+                      if (
+                        value.trim().length === 0 ||
+                        !Number.isFinite(parsed) ||
+                        parsed <= 0
+                      ) {
+                        return "Join radius must be more than 0 miles.";
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextInput
+                      id="ladder-eligibility-radius"
+                      data-testid="ladder-eligibility-radius"
+                      type="number"
+                      min={1}
+                      disabled={!isEntryFeeZero}
                       {...field}
                     />
                   )}

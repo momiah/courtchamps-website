@@ -34,7 +34,11 @@ import {
   buildRegistrantsCsv,
   PRE_REGISTRATION_STATUS_STYLES,
 } from "../../utils/ladderPreRegistrationDisplay";
-import { LADDER_PLAYOFF_SIZES, getPrizeType } from "courtchamps-shared/helpers";
+import {
+  LADDER_PLAYOFF_SIZES,
+  getLadderEligibilityRadiusMiles,
+  getPrizeType,
+} from "courtchamps-shared/helpers";
 import { currencyTypes } from "courtchamps-shared/schema";
 import {
   GENDER_TYPE,
@@ -58,6 +62,7 @@ interface FormState {
   entryFee: string;
   currencyType: string;
   maxPlayers: string;
+  eligibilityRadiusMiles: string;
   expectedOpensAt: string;
 }
 
@@ -74,6 +79,9 @@ const toFormState = (
   entryFee: preRegistration ? String(preRegistration.entryFee) : "0",
   currencyType: preRegistration?.currencyType ?? "GBP",
   maxPlayers: String(preRegistration?.maxPlayers ?? 2048),
+  eligibilityRadiusMiles: String(
+    getLadderEligibilityRadiusMiles(preRegistration ?? {}),
+  ),
   expectedOpensAt: preRegistration?.expectedOpensAt
     ? format(preRegistration.expectedOpensAt, "yyyy-MM-dd")
     : "",
@@ -94,6 +102,9 @@ const toInput = (
   entryFee: Number(state.entryFee),
   currencyType: state.currencyType,
   maxPlayers: Number(state.maxPlayers),
+  ...(Number(state.entryFee) === 0
+    ? { eligibilityRadiusMiles: Number(state.eligibilityRadiusMiles) }
+    : {}),
   expectedOpensAt: state.expectedOpensAt
     ? new Date(`${state.expectedOpensAt}T00:00:00`)
     : null,
@@ -109,6 +120,10 @@ const validate = (state: FormState): string | null => {
   const entryFee = Number(state.entryFee);
   if (!Number.isFinite(entryFee) || entryFee < 0) {
     return "Entry fee must be 0 or more.";
+  }
+  const radius = Number(state.eligibilityRadiusMiles);
+  if (entryFee === 0 && (!Number.isFinite(radius) || radius <= 0)) {
+    return "Join radius must be more than 0 miles.";
   }
   return null;
 };
@@ -468,6 +483,23 @@ function LadderPreRegistrationEdit() {
                     </option>
                   ))}
                 </SelectInput>
+              </FormField>
+              <FormField
+                label="Join radius (miles)"
+                htmlFor="pre-registration-eligibility-radius"
+                hint="Community Ladders only: how far from one of the ladder's courts a player may be to join. Shown on the app's sign-up screen."
+              >
+                <TextInput
+                  id="pre-registration-eligibility-radius"
+                  data-testid="pre-registration-eligibility-radius"
+                  type="number"
+                  min={1}
+                  value={form.eligibilityRadiusMiles}
+                  disabled={launched || Number(form.entryFee) !== 0}
+                  onChange={(event) =>
+                    setField("eligibilityRadiusMiles", event.target.value)
+                  }
+                />
               </FormField>
               <FormField
                 label="Max players"

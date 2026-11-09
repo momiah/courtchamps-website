@@ -49,6 +49,9 @@ const mapPreRegistration = (
   entryFee: Number(data.entryFee ?? 0),
   currencyType: String(data.currencyType ?? "GBP"),
   maxPlayers: Number(data.maxPlayers ?? 0),
+  ...(typeof data.eligibilityRadiusMiles === "number"
+    ? { eligibilityRadiusMiles: data.eligibilityRadiusMiles }
+    : {}),
   status:
     (data.status as LadderPreRegistrationStatus) ??
     LADDER_PRE_REGISTRATION_STATUS.CLOSED,
