@@ -3,17 +3,47 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["R66MT5YKZR.com.courtchamp"],
+        "appIDs": [
+          "R66MT5YKZR.com.courtchamp"
+        ],
         "components": [
-          { "/": "/join/ladder-pre-registration/*" },
-          { "/": "/preview/ladder-pre-registration/*" }
+          {
+            "/": "/join/ladder-pre-registration/*"
+          },
+          {
+            "/": "/preview/ladder-pre-registration/*"
+          },
+          {
+            "/": "/preview/club/*"
+          },
+          {
+            "/": "/join/club/*"
+          },
+          {
+            "/": "/join/league/*"
+          },
+          {
+            "/": "/preview/league/*"
+          },
+          {
+            "/": "/join/tournament/*"
+          },
+          {
+            "/": "/preview/tournament/*"
+          }
         ]
       },
       {
         "appID": "R66MT5YKZR.com.courtchamp",
         "paths": [
           "/join/ladder-pre-registration/*",
-          "/preview/ladder-pre-registration/*"
+          "/preview/ladder-pre-registration/*",
+          "/preview/club/*",
+          "/join/club/*",
+          "/join/league/*",
+          "/preview/league/*",
+          "/join/tournament/*",
+          "/preview/tournament/*"
         ]
       }
     ]
