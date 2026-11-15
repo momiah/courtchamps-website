@@ -17,9 +17,7 @@ jest.mock("firebase/firestore", () => ({
 }));
 
 // eslint-disable-next-line import/first
-import { STANDINGS_FINAL_MESSAGE } from "../utils/ladderStandings";
-// eslint-disable-next-line import/first
-import { approveReport, rejectReport } from "./reports";
+import { WALKOVER_FINAL_MESSAGE, approveReport, rejectReport, revertReport } from "./reports";
 
 const snapOf = (data: unknown) => ({
   exists: () => data !== undefined,
@@ -43,6 +41,7 @@ const store: Record<string, unknown> = {};
 const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
 
 beforeEach(() => {
+  jest.clearAllMocks();
   Object.keys(store).forEach((key) => delete store[key]);
   tx.get.mockImplementation(async (ref: { path: string }) =>
     snapOf(store[ref.path]),
@@ -96,23 +95,66 @@ describe("approveReport", () => {
     );
   });
 
-  it("refuses once the ladder's standings are final", async () => {
-    store["ladders/L1"] = { standingsFinalisedAt: new Date() };
-    await expect(approveReport(report, "admin")).rejects.toThrow(
-      STANDINGS_FINAL_MESSAGE,
+  it("adds a strike only, with no walkover, once the ladder's standings are final", async () => {
+    store["ladders/L1"] = { standingsFinalisedAt: new Date(), status: "completed" };
+    store["ladders/L1/ladderMatches/m1"] = { matchStatus: "accepted", playoffTieId: "r3-s0" };
+
+    await approveReport(report, "admin");
+
+    const paths = tx.update.mock.calls.map(([ref]) => (ref as { path: string }).path);
+    expect(paths).toEqual(["reports/r1"]);
+    expect(tx.update.mock.calls[0][1]).toMatchObject({
+      status: REPORT_STATUS.APPROVED,
+      walkoverApplied: false,
+    });
+    expect(tx.set).toHaveBeenCalledWith(
+      { path: "ladders/L1/reportCounts/b" },
+      expect.objectContaining({ strikes: { no_show: 1 } }),
+      { merge: true },
     );
-    expect(tx.update).not.toHaveBeenCalled();
+    expect(tx.set).toHaveBeenCalledWith(
+      { path: "users/b" },
+      expect.objectContaining({ conduct: expect.objectContaining({ strikes: { no_show: 1 } }) }),
+      { merge: true },
+    );
   });
 });
 
 describe("rejectReport", () => {
-  it("refuses once the ladder's standings are final", async () => {
-    mockGetDoc.mockResolvedValueOnce(
-      snapOf({ standingsFinalisedAt: new Date() }),
+  it("dismisses a report even once the ladder's standings are final", async () => {
+    await rejectReport(report, "admin");
+    expect(mockBatchUpdate).toHaveBeenCalledWith(
+      { path: "reports/r1" },
+      expect.objectContaining({ status: REPORT_STATUS.REJECTED, resolvedBy: "admin" }),
     );
-    await expect(rejectReport(report, "admin")).rejects.toThrow(
-      STANDINGS_FINAL_MESSAGE,
+    expect(mockBatchCommit).toHaveBeenCalled();
+  });
+});
+
+describe("revertReport", () => {
+  const approved = { ...report, status: REPORT_STATUS.APPROVED, resolvedAt: new Date() };
+
+  it("removes a strike-only approval after the standings are final", async () => {
+    store["ladders/L1"] = { standingsFinalisedAt: new Date() };
+    store["ladders/L1/reportCounts/b"] = { strikes: { no_show: 1 } };
+    store["users/b"] = { conduct: { strikes: { no_show: 1 } } };
+
+    await revertReport({ ...approved, walkoverApplied: false }, "admin");
+
+    expect(tx.update).toHaveBeenCalledWith(
+      { path: "reports/r1" },
+      expect.objectContaining({ status: REPORT_STATUS.PENDING, walkoverApplied: null }),
     );
-    expect(mockBatchCommit).not.toHaveBeenCalled();
+    expect(tx.set).toHaveBeenCalledWith(
+      { path: "ladders/L1/reportCounts/b" },
+      expect.objectContaining({ strikes: {} }),
+      { merge: true },
+    );
+  });
+
+  it("won't reverse a walkover once the standings are final", async () => {
+    store["ladders/L1"] = { standingsFinalisedAt: new Date() };
+    await expect(revertReport(approved, "admin")).rejects.toThrow(WALKOVER_FINAL_MESSAGE);
+    expect(tx.update).not.toHaveBeenCalled();
   });
 });

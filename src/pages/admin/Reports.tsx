@@ -19,6 +19,9 @@ import {
   EnrichedReport,
 } from "../../services/reports";
 import type { StatusTone } from "../../components/admin/StatusPill";
+import { ACCOUNT_STRIKE_LIMIT, ACCOUNT_STRIKE_MONTHS } from "courtchamps-shared/helpers";
+import type { AccountStrikes } from "courtchamps-shared/helpers";
+import { fetchAccountStrikesFor, liftLadderBlock } from "../../services/accountStrikes";
 
 type ActionType = "approve" | "reject" | "revert";
 
@@ -74,12 +77,18 @@ function Reports() {
   const [actionBusy, setActionBusy] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [accountStrikes, setAccountStrikes] = useState<Map<string, AccountStrikes>>(new Map());
+  const [liftingUserId, setLiftingUserId] = useState<string | null>(null);
 
   const loadReports = useCallback(async (): Promise<void> => {
     setLoading(true);
     setLoadError(null);
     try {
-      setReports(await fetchReports());
+      const loaded = await fetchReports();
+      setReports(loaded);
+      setAccountStrikes(
+        await fetchAccountStrikesFor(loaded.flatMap((report) => report.target.userIds ?? [])),
+      );
     } catch (fetchError) {
       console.error("Failed to load reports", fetchError);
       setLoadError("Could not load reports. Please refresh to try again.");
@@ -99,6 +108,27 @@ function Reports() {
   useEffect(() => {
     void loadReports();
   }, [loadReports]);
+
+  const refreshAccountStrikes = useCallback(async (userIds: string[]) => {
+    const updated = await fetchAccountStrikesFor(userIds);
+    setAccountStrikes((prev) => new Map([...Array.from(prev), ...Array.from(updated)]));
+  }, []);
+
+  const handleLift = useCallback(
+    async (userId: string): Promise<void> => {
+      setLiftingUserId(userId);
+      try {
+        await liftLadderBlock(userId);
+        await refreshAccountStrikes([userId]);
+      } catch (liftError) {
+        console.error("Failed to lift ladder block", liftError);
+        setActionError("Could not lift the block. Please try again.");
+      } finally {
+        setLiftingUserId(null);
+      }
+    },
+    [refreshAccountStrikes],
+  );
 
   const handleResolve = async (): Promise<void> => {
     if (!pendingAction) return;
@@ -126,6 +156,7 @@ function Reports() {
         ),
       );
       setPendingAction(null);
+      await refreshAccountStrikes(report.target.userIds ?? []);
     } catch (resolveError) {
       console.error("Failed to resolve report", resolveError);
       setActionError(
@@ -196,6 +227,40 @@ function Reports() {
         ),
       },
       {
+        key: "accountStrikes",
+        header: "Account strikes",
+        render: (report) => (
+          <TargetCell>
+            {(report.target.userIds ?? []).map((userId) => {
+              const strikes = accountStrikes.get(userId);
+              if (!strikes) return <MatchMeta key={userId}>—</MatchMeta>;
+              return (
+                <StrikeLine key={userId} data-testid={`account-strikes-${userId}`}>
+                  <span>
+                    {strikes.count} / {ACCOUNT_STRIKE_LIMIT} in {ACCOUNT_STRIKE_MONTHS} months
+                  </span>
+                  {strikes.blocked ? (
+                    <>
+                      <StatusPill tone="danger">Blocked from ladders</StatusPill>
+                      {strikes.unblocksAt ? (
+                        <MatchMeta>Until {format(strikes.unblocksAt, "d MMM yyyy")}</MatchMeta>
+                      ) : null}
+                      <RevertButton
+                        type="button"
+                        disabled={liftingUserId === userId}
+                        onClick={() => void handleLift(userId)}
+                      >
+                        {liftingUserId === userId ? "Lifting…" : "Lift block"}
+                      </RevertButton>
+                    </>
+                  ) : null}
+                </StrikeLine>
+              );
+            })}
+          </TargetCell>
+        ),
+      },
+      {
         key: "reporter",
         header: "Reported by",
         render: (report) => report.reporterLabel,
@@ -206,26 +271,30 @@ function Reports() {
         align: "right",
         render: (report) => {
           const resolved = !isPending(report);
-          const locked = report.standingsLocked;
+          const revertLocked =
+            report.standingsLocked &&
+            isNoShow(report) &&
+            !!report.walkover &&
+            report.walkoverApplied !== false;
           return (
             <ActionRow>
               <ApproveButton
                 type="button"
-                disabled={resolved || locked}
+                disabled={resolved}
                 onClick={() => setPendingAction({ report, type: "approve" })}
               >
                 Approve
               </ApproveButton>
               <RejectButton
                 type="button"
-                disabled={resolved || locked}
+                disabled={resolved}
                 onClick={() => setPendingAction({ report, type: "reject" })}
               >
                 Reject
               </RejectButton>
               <RevertButton
                 type="button"
-                disabled={!resolved || locked}
+                disabled={!resolved || (report.status === REPORT_STATUS.APPROVED && revertLocked)}
                 onClick={() => setPendingAction({ report, type: "revert" })}
               >
                 Revert
@@ -235,21 +304,24 @@ function Reports() {
         },
       },
     ],
-    [],
+    [accountStrikes, liftingUserId, handleLift],
   );
 
   const dialogMessage = ({ report, type }: PendingAction): string => {
+    if (type === "approve" && report.standingsLocked) {
+      return `This ladder's standings are final, so upholding this ${report.reasonLabel} report adds a strike against ${report.targetLabel} only: no walkover, and results and prizes stay as they are. It counts towards their account strikes.`;
+    }
     if (type === "approve") {
       return isNoShow(report)
         ? `Uphold the no-show against ${report.targetLabel}: award the walkover and add a no-show strike. No games are recorded.`
-        : `Uphold this ${report.reasonLabel} report and add a strike against ${report.targetLabel} in this ladder. Enough strikes disqualify them.`;
+        : `Uphold this ${report.reasonLabel} report and add a strike against ${report.targetLabel} in this ladder. Enough strikes disqualify them, and strikes also count towards their account.`;
     }
     if (type === "reject") {
       return `Dismiss this report against ${report.targetLabel}. No strike is applied.`;
     }
     return report.status === REPORT_STATUS.APPROVED
       ? `Undo the approval against ${report.targetLabel}: remove the strike${
-          isNoShow(report) ? " and reverse the walkover" : ""
+          isNoShow(report) && report.walkoverApplied !== false ? " and reverse the walkover" : ""
         }. The report returns to pending.`
       : `Reopen this dismissed report against ${report.targetLabel}. It returns to pending.`;
   };
@@ -263,7 +335,11 @@ function Reports() {
         awards the walkover. Rejecting dismisses the report with no strike.
         Decide every report by its date: a day before the playoffs the
         ladder&apos;s standings become final and anything still open is closed
-        automatically.
+        automatically. After that, upholding a report (including one on a
+        playoff match or a finished ladder) adds a strike only. Strikes also
+        count against the player&apos;s account: {ACCOUNT_STRIKE_LIMIT} upheld
+        in {ACCOUNT_STRIKE_MONTHS} months blocks them from joining ladders,
+        until the oldest expire or you lift the block.
       </Intro>
 
       <FilterRow>
@@ -436,4 +512,12 @@ const EmptyState = styled.div({
   flexDirection: "column",
   gap: "6px",
   color: "#8fa3b8",
+});
+
+const StrikeLine = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "4px",
+  fontSize: "0.85rem",
 });
