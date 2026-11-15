@@ -36,6 +36,11 @@ import {
   ErrorText,
   FooterText,
   StoreBadges,
+  ParticipantGrid,
+  ParticipantChip,
+  Avatar,
+  AvatarImage,
+  ParticipantName,
 } from "./joinParts";
 
 type CompetitionRouteType = "league" | "tournament";
@@ -364,56 +369,4 @@ const PlayTimeDay = styled.div({
 const PlayTimeHours = styled.div({
   fontSize: 11,
   color: "#888",
-});
-
-// ─── Participants ─────────────────────────────────────────────────────────────
-
-const ParticipantGrid = styled.div({
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 8,
-});
-
-const ParticipantChip = styled.div<{ muted?: boolean; clickable?: boolean }>(
-  ({ muted, clickable }) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: muted ? "rgba(255,255,255,0.04)" : "rgba(0,162,255,0.08)",
-    border: `1px solid ${muted ? "rgba(255,255,255,0.08)" : "rgba(0,162,255,0.2)"}`,
-    borderRadius: 20,
-    padding: "4px 10px 4px 4px",
-    cursor: clickable ? "pointer" : "default",
-    transition: "opacity 0.2s",
-    ":hover": clickable ? { opacity: 0.7 } : {},
-  }),
-);
-
-const Avatar = styled.div<{ hasProfileImage?: boolean }>(
-  ({ hasProfileImage }) => ({
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: hasProfileImage ? "transparent" : "#00A2FF",
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: 700,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    flexShrink: 0,
-  }),
-);
-
-const AvatarImage = styled.img({
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-});
-
-const ParticipantName = styled.span({
-  fontSize: 12,
-  color: "#ccc",
-  fontWeight: 500,
 });
