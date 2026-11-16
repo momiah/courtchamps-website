@@ -1,23 +1,30 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
+const { defineSecret } = require("firebase-functions/params");
 const cors = require("cors")({ origin: "https://courtchamps.com" });
 
 admin.initializeApp();
 
-// Configure Nodemailer for Namecheap Private Email
-const transporter = nodemailer.createTransport({
-  host: "mail.privateemail.com",
-  port: "465",
-  secure: true,
-  auth: {
-    user: "info@courtchamps.com",
-    pass: "Speedyam1!",
-  },
-});
+// Namecheap Private Email. The password lives in Secret Manager
+// (SMTP_PASSWORD_COURTCHAMPS, shared with the Trigger Email extension), never in git.
+const smtpPassword = defineSecret("SMTP_PASSWORD_COURTCHAMPS");
+
+const createTransporter = () =>
+  nodemailer.createTransport({
+    host: "mail.privateemail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "info@courtchamps.com",
+      pass: smtpPassword.value(),
+    },
+  });
 
 //Request account deletion
-exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
+exports.requestAccountDeletion = functions.https.onRequest(
+  { secrets: [smtpPassword] },
+  async (req, res) => {
   cors(req, res, async () => {
     const { email } = req.body;
 
@@ -55,7 +62,7 @@ exports.requestAccountDeletion = functions.https.onRequest(async (req, res) => {
         `,
       };
 
-      await transporter.sendMail(mailOptions);
+      await createTransporter().sendMail(mailOptions);
 
       res.status(200).json({ message: "Verification email sent" });
     } catch (error) {
