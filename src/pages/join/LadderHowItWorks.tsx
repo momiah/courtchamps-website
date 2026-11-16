@@ -20,6 +20,7 @@ import {
   IoPodiumOutline,
   IoQrCodeOutline,
   IoSwapHorizontalOutline,
+  IoTennisballOutline,
   IoTrendingUpOutline,
   IoTrophyOutline,
 } from "react-icons/io5";
@@ -27,12 +28,12 @@ import type { IconType } from "react-icons";
 import {
   LADDER_MATCH_BEST_OF_OPTIONS,
   LADDER_PLAYOFF_START_DAYS,
-  LADDER_PLAYOFF_TIE_DAYS,
-  LADDER_POSTING_CLOSE_DAYS,
-  LADDER_REGISTRATION_CLOSE_DAYS,
-  LADDER_STATUS,
 } from "courtchamps-shared";
-import { LADDER_STATUS_LABELS } from "courtchamps-shared/helpers";
+import {
+  LADDER_SEASON_PHASE,
+  getLadderSeasonPhases,
+} from "courtchamps-shared/helpers";
+import type { LadderSeasonPhaseKey } from "courtchamps-shared/helpers";
 
 import { ladderTrophies } from "../../assets";
 
@@ -40,8 +41,6 @@ const BLUE = "#00A2FF";
 const GOLD = "#FFC800";
 const BODY = "#c9d6e3";
 const MUTED = "#9fb8c8";
-
-const days = (count: number) => `${count} day${count === 1 ? "" : "s"}`;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
@@ -183,39 +182,29 @@ interface Phase {
   gold?: boolean;
 }
 
+const PHASE_ICONS: Record<LadderSeasonPhaseKey, IconType> = {
+  [LADDER_SEASON_PHASE.REGISTRATION_OPEN]: IoPersonAddOutline,
+  [LADDER_SEASON_PHASE.SEASON_STARTS]: IoTennisballOutline,
+  [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: IoLockClosedOutline,
+  [LADDER_SEASON_PHASE.PLAYOFFS]: IoGitNetworkOutline,
+  [LADDER_SEASON_PHASE.COMPLETED]: IoTrophyOutline,
+};
+
 const seasonPhases = (
-  noun: string,
+  noun: "player" | "team",
   playoffSpots: number,
   cash: boolean,
-): Phase[] => [
-  {
-    icon: IoPersonAddOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
-    length: `Day 1 - ${LADDER_REGISTRATION_CLOSE_DAYS}`,
-    text: "Sign up and start posting or accepting matches straight away.",
-  },
-  {
-    icon: IoLockClosedOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
-    length: `Day ${LADDER_REGISTRATION_CLOSE_DAYS + 1} - ${LADDER_PLAYOFF_START_DAYS}`,
-    text: `No new ${noun}s join. Keep climbing; new matches close ${days(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
-  },
-  {
-    icon: IoGitNetworkOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
-    length: `${Math.log2(playoffSpots)} rounds`,
-    text: `The top ${playoffSpots} ${noun}s play a knockout. Each round is two matches, home and away, played within ${days(LADDER_PLAYOFF_TIE_DAYS)}.`,
-  },
-  {
-    icon: IoTrophyOutline,
-    image: ladderTrophies[0],
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
-    text: cash
-      ? "The champion crowned. Cash paid. CP awarded."
-      : "The champion crowned. CP awarded.",
-    gold: true,
-  },
-];
+): Phase[] =>
+  getLadderSeasonPhases({ noun, playoffSpots, isPaid: cash }).map((phase) => {
+    const completed = phase.key === LADDER_SEASON_PHASE.COMPLETED;
+    return {
+      icon: PHASE_ICONS[phase.key],
+      label: phase.label,
+      length: phase.length,
+      text: phase.text,
+      ...(completed ? { image: ladderTrophies[0], gold: true } : {}),
+    };
+  });
 
 interface Step {
   title: string;

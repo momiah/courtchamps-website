@@ -5,7 +5,12 @@ import {
   REPORT_STATUS,
 } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
-import { deriveLadderDates } from "courtchamps-shared/helpers";
+import {
+  LADDER_PLAYOFF_START_DAYS,
+  LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_SEASON_START_DAYS,
+  deriveLadderDates,
+} from "courtchamps-shared/helpers";
 import {
   buildLadderActivity,
   buildLadderPhaseDates,
@@ -157,9 +162,12 @@ describe("buildLadderPhaseDates", () => {
       phaseDates.map(({ label, daysAway }) => [label, daysAway]),
     ).toEqual([
       ["Registration opens", -3],
-      ["Season starts", 27],
-      ["Registration closes", 57],
-      ["Playoffs start", 87],
+      ["Season starts", LADDER_SEASON_START_DAYS - 3],
+      [
+        "Registration closes",
+        LADDER_SEASON_START_DAYS + LADDER_REGISTRATION_CLOSE_DAYS - 3,
+      ],
+      ["Playoffs start", LADDER_SEASON_START_DAYS + LADDER_PLAYOFF_START_DAYS - 3],
     ]);
   });
 
