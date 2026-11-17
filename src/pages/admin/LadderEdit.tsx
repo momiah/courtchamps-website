@@ -15,12 +15,12 @@ import { uploadLadderImage } from "../../services/ladderImages";
 import {
   createLadder,
   fetchLadder,
+  LadderFormInput,
   updateLadder,
 } from "../../services/ladders";
 import { fetchLadderPreRegistration } from "../../services/ladderPreRegistrations";
 import {
   Ladder,
-  LadderInput,
   LADDER_PRE_REGISTRATION_STATUS,
   LadderPreRegistration,
 } from "courtchamps-shared/types";
@@ -121,7 +121,7 @@ function LadderEdit() {
 
   const handleSubmit = useCallback(
     async (
-      input: LadderInput,
+      input: LadderFormInput,
       { imageFile }: { imageFile: File | null },
     ): Promise<void> => {
       if (initialLadder && isLadderLocked(initialLadder)) {
@@ -139,7 +139,7 @@ function LadderEdit() {
       setSubmitError(null);
 
       try {
-        const inputToSave: LadderInput = imageFile
+        const inputToSave: LadderFormInput = imageFile
           ? { ...input, image: await uploadLadderImage({ file: imageFile }) }
           : input;
 
