@@ -34,7 +34,11 @@ import {
   buildRegistrantsCsv,
   PRE_REGISTRATION_STATUS_STYLES,
 } from "../../utils/ladderPreRegistrationDisplay";
-import { LADDER_PLAYOFF_SIZES, getPrizeType } from "courtchamps-shared/helpers";
+import {
+  LADDER_PLAYOFF_SIZES,
+  getLadderName,
+  getPrizeType,
+} from "courtchamps-shared/helpers";
 import { currencyTypes } from "courtchamps-shared/schema";
 import {
   GENDER_TYPE,
@@ -48,7 +52,6 @@ import type {
 } from "courtchamps-shared/types";
 
 interface FormState {
-  name: string;
   description: string;
   region: string;
   city: string;
@@ -64,7 +67,6 @@ interface FormState {
 const toFormState = (
   preRegistration: LadderPreRegistration | null,
 ): FormState => ({
-  name: preRegistration?.name ?? "",
   description: preRegistration?.description ?? "",
   region: preRegistration?.region ?? "",
   city: preRegistration?.city ?? "",
@@ -83,7 +85,6 @@ const toInput = (
   state: FormState,
   image: string,
 ): LadderPreRegistrationInput => ({
-  name: state.name.trim(),
   description: state.description.trim(),
   image,
   region: state.region.trim(),
@@ -100,7 +101,6 @@ const toInput = (
 });
 
 const validate = (state: FormState): string | null => {
-  if (!state.name.trim()) return "Give the pre-registration a name.";
   if (!state.region.trim()) return "Add the region the ladder is for.";
   if (!state.city.trim()) return "Add the city the ladder is in.";
   if (!isGenderAllowed(state.ladderType, state.genderType)) {
@@ -341,12 +341,17 @@ function LadderPreRegistrationEdit() {
           ) : null}
 
           <Panel>
-            <FormField label="Name" htmlFor="pre-registration-name">
+            <FormField
+              label="Name"
+              htmlFor="pre-registration-name"
+              hint="Worked out from the city and team type, so it matches the ladder ticket."
+            >
               <TextInput
                 id="pre-registration-name"
-                value={form.name}
-                disabled={launched}
-                onChange={(event) => setField("name", event.target.value)}
+                value={getLadderName(form)}
+                placeholder="Set the city and team type"
+                readOnly
+                disabled
               />
             </FormField>
             <FormField

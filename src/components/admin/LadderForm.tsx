@@ -12,16 +12,15 @@ import { format } from "date-fns";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 
 import { fetchAllCourts } from "../../services/courts";
-import { fetchLadders } from "../../services/ladders";
+import { fetchLadders, LadderFormInput } from "../../services/ladders";
 import {
   Court,
   Ladder,
-  LadderInput,
   LadderType,
   LadderPreRegistrationDetails,
 } from "courtchamps-shared/types";
 import { COUNTRY_OPTIONS, findCountryName } from "../../utils/countries";
-import { deriveLadderDates } from "courtchamps-shared/helpers";
+import { deriveLadderDates, getLadderName } from "courtchamps-shared/helpers";
 import AddCourtModal from "./AddCourtModal";
 import CourtsMap from "./CourtsMap";
 import CityInput, { mostCommonCity } from "./CityInput";
@@ -50,7 +49,7 @@ const REGION_DATALIST_ID = "ladder-region-options";
 // Form state mirrors the shared LadderInput, but the fields a user types are
 // held as strings until parsed/validated on submit.
 type LadderFormState = Omit<
-  LadderInput,
+  LadderFormInput,
   "registrationOpensAt" | "entryFee" | "minRank" | "maxPlayers"
 > & {
   city: string;
@@ -81,7 +80,6 @@ const buildInitialState = (
 ): LadderFormState => {
   const details = initialLadder ?? prefill;
   return {
-    name: details?.name ?? "",
     description: details?.description ?? "",
     image: details?.image ?? "",
     region: details?.region ?? "",
@@ -125,7 +123,7 @@ function LadderForm({
 }: {
   initialLadder?: Ladder | null;
   prefill?: LadderPreRegistrationDetails | null;
-  onSubmit: (input: LadderInput, options: { imageFile: File | null }) => void;
+  onSubmit: (input: LadderFormInput, options: { imageFile: File | null }) => void;
   submitting: boolean;
   locked?: boolean;
 }) {
@@ -458,7 +456,6 @@ function LadderForm({
 
     onSubmit(
       {
-        name: values.name.trim(),
         description: values.description.trim(),
         image: values.image.trim(),
         region: values.region.trim(),
@@ -494,18 +491,15 @@ function LadderForm({
                 <FormField
                   label="Name"
                   htmlFor="ladder-name"
-                  error={errors.name?.message ?? null}
+                  hint="Worked out from the city and team type, so it matches the ladder ticket."
                 >
-                  <Controller
-                    control={control}
-                    name="name"
-                    rules={{
-                      validate: (value) =>
-                        value.trim().length > 0 || "Name is required.",
-                    }}
-                    render={({ field }) => (
-                      <TextInput id="ladder-name" type="text" {...field} />
-                    )}
+                  <TextInput
+                    id="ladder-name"
+                    type="text"
+                    value={getLadderName(currentValues)}
+                    placeholder="Set the city and team type"
+                    readOnly
+                    disabled
                   />
                 </FormField>
 

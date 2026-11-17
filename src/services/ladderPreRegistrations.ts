@@ -17,6 +17,7 @@ import {
   LADDER_PRE_REGISTRATIONS_COLLECTION,
   LADDER_PRE_REGISTRATION_STATUS,
 } from "courtchamps-shared/types";
+import { getLadderName } from "courtchamps-shared/helpers";
 import type {
   GenderType,
   LadderPreRegistrant,
@@ -26,7 +27,11 @@ import type {
   LadderType,
 } from "courtchamps-shared/types";
 
-export type LadderPreRegistrationInput = LadderPreRegistrationDetails & {
+/** What the admin form saves: `name` is worked out from the city and title. */
+export type LadderPreRegistrationInput = Omit<
+  LadderPreRegistrationDetails,
+  "name"
+> & {
   expectedOpensAt: Date | null;
 };
 
@@ -107,6 +112,7 @@ export const createLadderPreRegistration = async ({
     collection(db, LADDER_PRE_REGISTRATIONS_COLLECTION),
     {
       ...input,
+      name: getLadderName(input),
       status: LADDER_PRE_REGISTRATION_STATUS.OPEN,
       ladderId: null,
       notifiedAt: null,
@@ -130,6 +136,7 @@ export const updateLadderPreRegistration = async ({
 }): Promise<void> => {
   await updateDoc(preRegistrationRef(preRegistrationId), {
     ...input,
+    name: getLadderName(input),
     updatedBy: actorUserId,
     updatedAt: new Date(),
   });

@@ -30,7 +30,10 @@ import {
   REPORTS_COLLECTION,
 } from "courtchamps-shared/types";
 import { normalizeLadderStatus } from "courtchamps-shared/helpers";
-import { deriveLadderDates } from "courtchamps-shared/helpers";
+import { deriveLadderDates, getLadderName } from "courtchamps-shared/helpers";
+
+/** What the admin form saves: `name` is worked out from the city and title. */
+export type LadderFormInput = Omit<LadderInput, "name">;
 import { buildLadderActivity, LadderActivity } from "../utils/ladderActivity";
 
 const LADDERS_COLLECTION = "ladders";
@@ -145,7 +148,7 @@ export const createLadder = async ({
   actorUserId,
   preRegistrationId,
 }: {
-  input: LadderInput;
+  input: LadderFormInput;
   actorUserId: string;
   preRegistrationId?: string | null;
 }): Promise<string> => {
@@ -156,6 +159,7 @@ export const createLadder = async ({
 
   batch.set(ladderReference, {
     ...input,
+    name: getLadderName(input),
     ...derivedDates,
     status: LADDER_STATUS.REGISTRATION_OPEN,
     participantCount: 0,
@@ -189,7 +193,7 @@ export const updateLadder = async ({
   registrationOpensChanged,
 }: {
   ladderId: string;
-  input: LadderInput;
+  input: LadderFormInput;
   actorUserId: string;
   registrationOpensChanged: boolean;
 }): Promise<void> => {
@@ -202,6 +206,7 @@ export const updateLadder = async ({
 
   await updateDoc(ladderReference, {
     ...input,
+    name: getLadderName(input),
     ...derivedDates,
     updatedBy: actorUserId,
     updatedAt: now,
