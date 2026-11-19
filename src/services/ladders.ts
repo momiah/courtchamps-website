@@ -31,10 +31,10 @@ import {
 } from "courtchamps-shared/types";
 import { normalizeLadderStatus } from "courtchamps-shared/helpers";
 import { deriveLadderDates, getLadderName } from "courtchamps-shared/helpers";
+import { buildLadderActivity, LadderActivity } from "../utils/ladderActivity";
 
 /** What the admin form saves: `name` is worked out from the city and title. */
 export type LadderFormInput = Omit<LadderInput, "name">;
-import { buildLadderActivity, LadderActivity } from "../utils/ladderActivity";
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_SUBCOLLECTION = "ladderMatches";
