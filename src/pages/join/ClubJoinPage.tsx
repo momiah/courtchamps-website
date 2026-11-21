@@ -4,12 +4,10 @@ import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import type { Club, Player } from "courtchamps-shared/types";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
 import { db } from "../../services/firebase.config";
-import { CourtChampLogo } from "../../assets";
 import Tag from "../../components/Tag";
 import { formatDisplayName } from "helpers/formatDisplayName";
 import {
   PageContainer,
-  LogoImg,
   HeroCard,
   HeroImage,
   HeroOverlay,
@@ -89,7 +87,6 @@ const ClubJoinPage: React.FC = () => {
   if (loading) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <SkeletonWrapper>
           <SkeletonBlock height={220} borderRadius={16} />
           <SkeletonBlock height={28} width="60%" />
@@ -103,7 +100,6 @@ const ClubJoinPage: React.FC = () => {
   if (error || !club) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <ErrorCard>
           <ErrorIcon>🏸</ErrorIcon>
           <ErrorTitle>Club Not Found</ErrorTitle>
@@ -128,14 +124,6 @@ const ClubJoinPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <LogoImg
-        src={CourtChampLogo}
-        alt="Court Champs"
-        onClick={() => {
-          window.location.href = "/";
-        }}
-      />
-
       <HeroCard>
         <HeroImage
           src={club.clubImage || ccImageEndpoint}

@@ -7,11 +7,9 @@ import { normalizeCompetition } from "../../helpers/normalizeCompetition";
 import { NormalizedCompetition } from "courtchamps-shared/types";
 import Tag from "../../components/Tag";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
-import { CourtChampLogo } from "../../assets";
 import { formatDisplayName } from "helpers/formatDisplayName";
 import {
   PageContainer,
-  LogoImg,
   HeroCard,
   HeroImage,
   HeroOverlay,
@@ -108,7 +106,6 @@ const JoinPage: React.FC = () => {
   if (loading) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <SkeletonWrapper>
           <SkeletonBlock height={220} borderRadius={16} />
           <SkeletonBlock height={28} width="60%" />
@@ -128,7 +125,6 @@ const JoinPage: React.FC = () => {
   if (error || !competition) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <ErrorCard>
           <ErrorIcon>🏸</ErrorIcon>
           <ErrorTitle>Competition Not Found</ErrorTitle>
@@ -155,18 +151,8 @@ const JoinPage: React.FC = () => {
     : `${competition.currencyType} ${competition.entryFee} Entry`;
   const competitionImage = competition.image || ccImageEndpoint;
 
-  const navigateToHome = () => {
-    window.location.href = "/";
-  };
-
   return (
     <PageContainer>
-      <LogoImg
-        src={CourtChampLogo}
-        alt="Court Champs"
-        onClick={navigateToHome}
-      />
-
       {/* Hero card */}
       <HeroCard>
         <HeroImage
