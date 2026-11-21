@@ -393,7 +393,8 @@ const Logo = styled.img({
   width: "300px",
   maxWidth: "70%",
   height: "auto",
-  marginBottom: "28px",
+  aspectRatio: "1890 / 700",
+  objectFit: "cover",
 });
 
 const SeasonBadge = styled.div({
