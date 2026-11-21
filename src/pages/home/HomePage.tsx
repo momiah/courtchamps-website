@@ -395,6 +395,7 @@ const Logo = styled.img({
   height: "auto",
   aspectRatio: "1890 / 700",
   objectFit: "cover",
+  marginBottom: "20px",
 });
 
 const SeasonBadge = styled.div({
