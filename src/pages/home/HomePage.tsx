@@ -17,6 +17,7 @@ import {
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { appScreens } from "../../assets/appScreens";
 import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
+import ComingSoonSports from "./ComingSoonSports";
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
@@ -291,6 +292,8 @@ export default function HomePage() {
         </CtaSub>
         {StoreBadges}
       </CtaBand>
+
+      <ComingSoonSports />
 
       {/* ─── Footer ─── */}
       <FooterRow>
