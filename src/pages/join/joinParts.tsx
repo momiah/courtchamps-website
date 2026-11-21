@@ -29,6 +29,7 @@ export const PageContainer = styled.div({
   width: "100%",
   padding: "32px 16px 60px",
   boxSizing: "border-box",
+  overflowX: "hidden",
   "@media (max-width: 480px)": {
     padding: "20px 12px 48px",
   },
