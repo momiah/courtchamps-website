@@ -33,7 +33,8 @@ export const SEASON_ONE_ANCHOR = "season-one";
 
 const palette = {
   navy: "#041426",
-  navyLight: "#0a2747",
+  card: "#071b30",
+  cardHover: "#0c2137",
   blue: "#00A2FF",
   gold: "#ffc800",
   body: "#c9d6e3",
@@ -306,14 +307,14 @@ const Card = styled(Link)({
   flexDirection: "column",
   padding: "24px",
   borderRadius: "20px",
-  background: `linear-gradient(160deg, ${palette.navyLight}, ${palette.navy})`,
+  background: palette.card,
   border: `1px solid ${palette.panelBorder}`,
   color: "#fff",
   textDecoration: "none",
   boxSizing: "border-box",
-  transition: "transform 0.25s ease, border-color 0.25s ease",
+  transition: "border-color 0.2s ease, background 0.2s ease",
   ":hover": {
-    transform: "translateY(-6px)",
+    background: palette.cardHover,
     borderColor: `${palette.gold}88`,
   },
 });
@@ -394,9 +395,9 @@ const SkeletonCard = styled.div`
   border-radius: 20px;
   background: linear-gradient(
     90deg,
-    ${palette.navyLight} 0px,
-    #12345a 120px,
-    ${palette.navyLight} 240px
+    ${palette.card} 0px,
+    ${palette.cardHover} 120px,
+    ${palette.card} 240px
   );
   background-size: 800px 100%;
   animation: ${shimmer} 1.4s linear infinite;
@@ -540,7 +541,7 @@ const InviteBand = styled.section({
   margin: "24px 0 40px",
   padding: "40px 28px",
   borderRadius: "24px",
-  background: `linear-gradient(145deg, ${palette.navyLight}, ${palette.navy})`,
+  background: palette.card,
   border: "1px solid rgba(0, 162, 255, 0.25)",
   boxSizing: "border-box",
   "@media (max-width: 480px)": { padding: "32px 20px" },

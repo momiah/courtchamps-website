@@ -16,12 +16,7 @@ import {
   FaArrowDown,
 } from "react-icons/fa";
 
-import {
-  CourtChampLogo,
-  playStoreBadge,
-  appStoreBadge,
-  ladderTrophies,
-} from "../../assets";
+import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { appImages } from "../../assets/appImages";
 import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
 
@@ -232,7 +227,6 @@ export default function HomePage() {
               alt="CourtChamps scoreboard"
             />
           </PhoneFrame>
-          <HeroTrophy src={ladderTrophies[0]} alt="" />
         </HeroVisual>
       </Hero>
 
@@ -411,7 +405,7 @@ const SeasonBadge = styled.div({
   color: theme.gold,
   background: "rgba(255, 200, 0, 0.08)",
   border: "1px solid rgba(255, 200, 0, 0.45)",
-  marginBottom: "18px",
+  marginBottom: "8px",
 });
 
 const HeroHeadline = styled.h1({
@@ -433,7 +427,7 @@ const HeroSub = styled.p({
   lineHeight: 1.6,
   color: theme.muted,
   maxWidth: "520px",
-  margin: "24px 0 32px",
+  margin: "14px 0 28px",
   "@media (max-width: 480px)": { fontSize: "1.05rem" },
 });
 
@@ -496,23 +490,6 @@ const HeroVisual = styled.div({
   "@media (max-width: 900px)": { minHeight: "520px", width: "100%" },
   "@media (max-width: 480px)": { minHeight: "460px" },
 });
-
-const HeroTrophy = styled.img`
-  position: absolute;
-  bottom: 24px;
-  left: 2%;
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
-  z-index: 3;
-  filter: drop-shadow(0 12px 30px rgba(255, 200, 0, 0.35));
-  animation: ${float} 5s ease-in-out infinite 0.3s;
-  @media (max-width: 480px) {
-    width: 88px;
-    height: 88px;
-    bottom: 8px;
-  }
-`;
 
 // ─── Phone frame ───
 const PhoneFrame = styled.div<{ $featured?: boolean; $floatingBack?: boolean }>`
