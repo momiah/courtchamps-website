@@ -109,10 +109,7 @@ export default function ComingSoonSports() {
       <Grid>
         {sports.map((sport, i) => (
           <Card key={sport.name} data-aos="fade-up" data-aos-delay={i * 80}>
-            <CardTop>
-              <IconTile>{sport.icon}</IconTile>
-              <SoonPill>Coming soon</SoonPill>
-            </CardTop>
+            <IconTile>{sport.icon}</IconTile>
             <SportName>{sport.name}</SportName>
             <SportText>{sport.description}</SportText>
           </Card>
@@ -179,13 +176,6 @@ const Card = styled.div({
   ":hover": { borderColor: `${palette.blue}55` },
 });
 
-const CardTop = styled.div({
-  display: "flex",
-  alignItems: "flex-start",
-  justifyContent: "space-between",
-  marginBottom: "18px",
-});
-
 const IconTile = styled.div({
   display: "inline-flex",
   alignItems: "center",
@@ -196,18 +186,7 @@ const IconTile = styled.div({
   background: `${palette.blue}1a`,
   border: `1px solid ${palette.blue}33`,
   color: palette.blue,
-});
-
-const SoonPill = styled.span({
-  padding: "5px 12px",
-  borderRadius: "999px",
-  fontSize: "0.75rem",
-  fontWeight: 700,
-  letterSpacing: "0.5px",
-  textTransform: "uppercase",
-  color: palette.gold,
-  background: `${palette.gold}14`,
-  border: `1px solid ${palette.gold}55`,
+  marginBottom: "18px",
 });
 
 const SportName = styled.h3({
