@@ -386,7 +386,7 @@ const CardAction = styled.span({
   borderRadius: "12px",
   fontWeight: 700,
   fontSize: "0.95rem",
-  color: palette.navy,
+  color: "white",
   background: palette.blue,
 });
 
