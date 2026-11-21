@@ -16,7 +16,6 @@ import { LADDER_PRE_REGISTRATION_STATUS } from "courtchamps-shared/types";
 import type { LadderPreRegistration } from "courtchamps-shared/types";
 import { ccImageEndpoint } from "courtchamps-shared/schema";
 
-import { CourtChampLogo } from "../../assets";
 import Tag from "../../components/Tag";
 import LadderHowItWorks from "./LadderHowItWorks";
 import {
@@ -39,7 +38,6 @@ import {
   HeroImage,
   HeroOverlay,
   LocationText,
-  LogoImg,
   PageContainer,
   SectionCard,
   SectionTitle,
@@ -79,7 +77,6 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
   if (loading) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <SkeletonWrapper>
           <SkeletonBlock height={220} borderRadius={16} />
           <SkeletonBlock height={48} width="50%" />
@@ -96,7 +93,6 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
   ) {
     return (
       <PageContainer>
-        <LogoImg src={CourtChampLogo} alt="Court Champs" />
         <ErrorCard>
           <ErrorIcon>🏸</ErrorIcon>
           <ErrorTitle>Ladder Not Found</ErrorTitle>
@@ -130,14 +126,6 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <LogoImg
-        src={CourtChampLogo}
-        alt="Court Champs"
-        onClick={() => {
-          window.location.href = "/";
-        }}
-      />
-
       <HeroCard>
         <HeroImage
           src={preRegistration.image || ccImageEndpoint}
