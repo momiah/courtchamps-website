@@ -6,12 +6,11 @@ import {
   IoCashOutline,
   IoGitNetworkOutline,
   IoPeopleOutline,
-  IoPodiumOutline,
+  IoPersonAddOutline,
   IoShareSocialOutline,
-  IoSwapHorizontalOutline,
 } from "react-icons/io5";
 import {
-  LADDER_PLAYOFF_SIZES,
+  LADDER_MIN_ENTRANTS_TO_START,
   PLATFORM_FEE,
   formatCurrency,
   formatLadderPrizePool,
@@ -19,9 +18,7 @@ import {
   getLadderEntryPrice,
   getLadderLocation,
   getLadderName,
-  getLadderPlayoffStructure,
   getLadderPreRegistrationJoinPath,
-  getLadderSeasonPhases,
   isCashLadder,
 } from "courtchamps-shared/helpers";
 import type { LadderPreRegistration } from "courtchamps-shared/types";
@@ -152,67 +149,27 @@ const OpenLadders: React.FC<{ ladders: OpenLadder[]; loading: boolean }> = ({
   );
 };
 
-const explainers = [
+const steps = [
   {
-    icon: IoPodiumOutline,
-    title: "A ranked season",
-    text: "Players across a whole region compete on one ladder. Every win earns CP and moves you up the rankings.",
+    icon: IoPersonAddOutline,
+    title: "Pre-register free",
+    text: "Lock in your place now. Nothing to pay today.",
   },
   {
-    icon: IoSwapHorizontalOutline,
-    title: "Matchmaking",
-    text: "Post a match at your court and time, or accept one that suits you. Your opponent stays hidden until the match is accepted.",
+    icon: IoPeopleOutline,
+    title: "Play starts",
+    text: `Matches open once ${LADDER_MIN_ENTRANTS_TO_START} players have joined. If not, the ladder is cancelled and refunded.`,
   },
   {
     icon: IoGitNetworkOutline,
     title: "Playoffs",
-    text: "The top of the ladder goes into a knockout. Win the Final to take the title and the top prize.",
+    text: "The top of the ladder plays a knockout for the title and the top prize.",
   },
 ];
 
-const SeasonTimeline: React.FC<{ maxPlayers: number }> = ({ maxPlayers }) => {
-  const { playoffSpots } = getLadderPlayoffStructure(maxPlayers);
-  const phases = [
-    {
-      key: "preRegister",
-      label: "Pre-register",
-      length: "Now",
-      text: "Free, with nothing to pay today. You'll be notified the moment registration opens.",
-    },
-    ...getLadderSeasonPhases({ noun: "player", playoffSpots, isPaid: true }),
-  ];
-
-  return (
-    <Timeline>
-      {phases.map((phase, i) => {
-        const gold = i === 0 || i === phases.length - 1;
-        return (
-          <PhaseRow key={phase.key} data-aos="fade-up" data-aos-delay={i * 60}>
-            <PhaseRail>
-              <PhaseDot $gold={gold}>{i + 1}</PhaseDot>
-              {i < phases.length - 1 ? <PhaseLine /> : null}
-            </PhaseRail>
-            <PhaseBody>
-              <PhaseHead>
-                <PhaseLabel $gold={gold}>{phase.label}</PhaseLabel>
-                {phase.length ? (
-                  <PhaseLength>{phase.length}</PhaseLength>
-                ) : null}
-              </PhaseHead>
-              <PhaseText>{phase.text}</PhaseText>
-            </PhaseBody>
-          </PhaseRow>
-        );
-      })}
-    </Timeline>
-  );
-};
-
 const SeasonOne: React.FC = () => {
   const { ladders, loading } = useOpenLadders();
-  const timelineSize =
-    ladders[0]?.maxPlayers ??
-    LADDER_PLAYOFF_SIZES[LADDER_PLAYOFF_SIZES.length - 1];
+  const guideLadder = ladders[0];
 
   return (
     <>
@@ -224,28 +181,26 @@ const SeasonOne: React.FC = () => {
           to pay today.
         </Lead>
         <OpenLadders ladders={ladders} loading={loading} />
-      </Section>
-
-      <Section>
-        <Eyebrow data-aos="fade-up">Ladders</Eyebrow>
-        <Title data-aos="fade-up">What&apos;s a ladder?</Title>
-        <ExplainerGrid>
-          {explainers.map(({ icon: Icon, title, text }, i) => (
-            <Explainer key={title} data-aos="fade-up" data-aos-delay={i * 100}>
-              <ExplainerIcon>
+        <StepGrid>
+          {steps.map(({ icon: Icon, title, text }, i) => (
+            <Step key={title} data-aos="fade-up" data-aos-delay={i * 100}>
+              <StepIcon>
                 <Icon />
-              </ExplainerIcon>
-              <ExplainerTitle>{title}</ExplainerTitle>
-              <ExplainerText>{text}</ExplainerText>
-            </Explainer>
+              </StepIcon>
+              <div>
+                <StepTitle>{title}</StepTitle>
+                <StepText>{text}</StepText>
+              </div>
+            </Step>
           ))}
-        </ExplainerGrid>
-      </Section>
-
-      <Section>
-        <Eyebrow data-aos="fade-up">The season</Eyebrow>
-        <Title data-aos="fade-up">How Season One works</Title>
-        <SeasonTimeline maxPlayers={timelineSize} />
+        </StepGrid>
+        {guideLadder ? (
+          <GuideLink
+            to={getLadderPreRegistrationJoinPath(guideLadder.preRegistrationId)}
+          >
+            See how ladders work <IoArrowForward />
+          </GuideLink>
+        ) : null}
       </Section>
 
       <Section>
@@ -460,127 +415,62 @@ const EmptyCard = styled.div({
   boxSizing: "border-box",
 });
 
-const ExplainerGrid = styled.div({
+const StepGrid = styled.div({
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  gap: "20px",
+  gap: "16px",
   width: "100%",
-  marginTop: "20px",
+  maxWidth: "880px",
+  marginTop: "28px",
   "@media (max-width: 768px)": { gridTemplateColumns: "minmax(0, 1fr)" },
 });
 
-const Explainer = styled.div({
+const Step = styled.div({
   display: "flex",
-  flexDirection: "column",
   alignItems: "flex-start",
-  padding: "28px 24px",
-  borderRadius: "20px",
+  gap: "14px",
+  padding: "18px",
+  borderRadius: "16px",
   background: "rgba(0, 162, 255, 0.06)",
   border: "1px solid rgba(0, 162, 255, 0.22)",
 });
 
-const ExplainerIcon = styled.div({
+const StepIcon = styled.div({
+  flexShrink: 0,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: "52px",
-  height: "52px",
+  width: "42px",
+  height: "42px",
   borderRadius: "50%",
-  fontSize: "1.6rem",
+  fontSize: "1.3rem",
   color: palette.blue,
   background: "rgba(0, 162, 255, 0.15)",
   border: "1px solid rgba(0, 162, 255, 0.35)",
-  marginBottom: "18px",
 });
 
-const ExplainerTitle = styled.h3({
-  fontSize: "1.25rem",
+const StepTitle = styled.h3({
+  fontSize: "1.05rem",
   fontWeight: 700,
-  margin: "0 0 8px",
+  margin: "2px 0 4px",
 });
 
-const ExplainerText = styled.p({
-  fontSize: "1rem",
-  lineHeight: 1.6,
+const StepText = styled.p({
+  fontSize: "0.92rem",
+  lineHeight: 1.5,
   color: palette.muted,
   margin: 0,
 });
 
-const Timeline = styled.div({
-  display: "flex",
-  flexDirection: "column",
-  width: "100%",
-  maxWidth: "640px",
-  marginTop: "20px",
-});
-
-const PhaseRow = styled.div({
-  display: "flex",
-  gap: "16px",
-});
-
-const PhaseRail = styled.div({
-  display: "flex",
-  flexDirection: "column",
+const GuideLink = styled(Link)({
+  display: "inline-flex",
   alignItems: "center",
-});
-
-const PhaseDot = styled.div<{ $gold?: boolean }>(({ $gold }) => ({
-  width: "40px",
-  height: "40px",
-  borderRadius: "50%",
-  flexShrink: 0,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 800,
-  fontSize: "0.95rem",
-  color: $gold ? palette.gold : palette.blue,
-  background: $gold ? "rgba(255, 200, 0, 0.12)" : "rgba(0, 162, 255, 0.12)",
-  border: `1px solid ${$gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)"}`,
-}));
-
-const PhaseLine = styled.div({
-  flex: 1,
-  width: "2px",
-  minHeight: "16px",
-  margin: "4px 0",
-  borderRadius: "1px",
-  background: "rgba(0, 162, 255, 0.35)",
-});
-
-const PhaseBody = styled.div({
-  padding: "8px 0 22px",
-  minWidth: 0,
-});
-
-const PhaseHead = styled.div({
-  display: "flex",
-  alignItems: "center",
-  flexWrap: "wrap",
   gap: "8px",
-});
-
-const PhaseLabel = styled.span<{ $gold?: boolean }>(({ $gold }) => ({
-  fontWeight: 700,
-  fontSize: "1.05rem",
-  color: $gold ? palette.gold : "#fff",
-}));
-
-const PhaseLength = styled.span({
-  fontSize: "0.75rem",
+  marginTop: "24px",
   fontWeight: 700,
   color: palette.blue,
-  background: "rgba(0, 162, 255, 0.12)",
-  borderRadius: "999px",
-  padding: "3px 9px",
-});
-
-const PhaseText = styled.p({
-  fontSize: "0.95rem",
-  lineHeight: 1.55,
-  color: palette.body,
-  margin: "4px 0 0",
+  textDecoration: "none",
+  ":hover": { textDecoration: "underline" },
 });
 
 const TypeGrid = styled.div({
