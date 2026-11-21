@@ -5,9 +5,7 @@ import "aos/dist/aos.css";
 import { Link } from "react-router-dom";
 import {
   FaTrophy,
-  FaUsers,
   FaChartLine,
-  FaMedal,
   FaBell,
   FaVideo,
   FaMapMarkerAlt,
@@ -17,7 +15,7 @@ import {
 } from "react-icons/fa";
 
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
-import { appImages } from "../../assets/appImages";
+import { appScreens } from "../../assets/appScreens";
 import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
@@ -45,75 +43,72 @@ const heroHighlights = [
 
 const features = [
   {
-    label: "Scoreboard",
-    image: appImages.scoreboard,
+    label: "Regional badminton ladders",
+    image: appScreens.ladderList,
+    alt: "Court Champs list of regional badminton ladders with prize pools",
     description:
-      "Add scores and see real-time match updates, player stats, and player performance.",
+      "Join a ladder in your area and climb the rankings over a full season, with real prize pools up for grabs. Pre-register free and invite your partner to lock in your place.",
   },
   {
-    label: "Home page",
-    image: appImages.homePage,
+    label: "Play for the prize pool",
+    image: appScreens.prizes,
+    alt: "Court Champs ladder prize pool and payout breakdown",
     description:
-      "View top players, see real-time stats and join or create leagues in your area!",
+      "Every entry fee goes into the pot. See exactly what 1st, 2nd and the top 64 take home before you sign up.",
   },
   {
-    label: "Pre-Scheduled matches",
-    image: appImages.tournamentFixtures,
+    label: "Know every step of the season",
+    image: appScreens.season,
+    alt: "Court Champs ladder season timeline from registration to playoffs",
     description:
-      "Cut back admin time with automatic generation of teams and fixtures for round robin tournaments.",
+      "Registration, play, playoffs and the final, all mapped out before you start.",
   },
   {
-    label: "Player details modal",
-    image: appImages.profileDetailModal,
+    label: "Matchmaking made simple",
+    image: appScreens.matchmaking,
+    alt: "Court Champs badminton matchmaking guide",
     description:
-      "A detailed view of a player's profile, showing stats, achievements, and other relevant information in a clean overlay.",
+      "Post a match or accept one from an opponent near you, then play on your own schedule.",
   },
   {
-    label: "League Summary",
-    image: appImages.leagueSummary,
+    label: "Every stat, every rival",
+    image: appScreens.player,
+    alt: "Court Champs badminton player stats, form and medals",
     description:
-      "An overview of the league, including standings, recent matches, prize distribution, and player rankings all in one place.",
+      "Track your form, win streaks, medals and Court Points after every game.",
   },
   {
-    label: "Team details modal",
-    image: appImages.teamDetailModal,
+    label: "Run your own badminton league",
+    image: appScreens.leagues,
+    alt: "Court Champs badminton league summary with prize distribution and standings",
     description:
-      "View detailed team stats for your team and see who your rival is!",
+      "Standings, results, prize distribution and a chat room for every league.",
   },
   {
-    label: "Chat Room",
-    image: appImages.chatRoom,
+    label: "Climb the global rankings",
+    image: appScreens.rankings,
+    alt: "Court Champs global badminton player rankings by Court Points",
     description:
-      "Connect with players in dedicated private chat rooms for every league, discuss games, and share experiences!",
+      "Every player ranked by Court Points, so you always know where you stand.",
+  },
+  {
+    label: "Tournaments sorted for you",
+    image: appScreens.fixtures,
+    alt: "Court Champs badminton tournament fixtures and live scores",
+    description:
+      "Auto-generated fixtures, live scores and score approvals for round-robin tournaments.",
+  },
+  {
+    label: "Create clubs, leagues and tournaments",
+    image: appScreens.competitions,
+    alt: "Court Champs screen for creating a club, league or tournament",
+    description:
+      "Set up a club for your community, an open league or a tournament with pre-generated games and teams.",
   },
 ];
 
 // Feature cards for parts of the app that don't have a screenshot on the page yet.
 const moreFeatures = [
-  {
-    icon: <FaTrophy />,
-    title: "Tournaments",
-    description:
-      "Run knockout brackets and round-robins with automatic fixtures and live results.",
-  },
-  {
-    icon: <FaUsers />,
-    title: "Clubs",
-    description:
-      "Bring your community together under one roof and keep every member in the loop.",
-  },
-  {
-    icon: <FaListOl />,
-    title: "Global Leaderboards",
-    description:
-      "See how you stack up against the best players across every competition.",
-  },
-  {
-    icon: <FaMedal />,
-    title: "Ranks & Medals",
-    description:
-      "Progress through ranks and collect medals that showcase your achievements.",
-  },
   {
     icon: <FaBell />,
     title: "Live Notifications",
@@ -186,7 +181,7 @@ export default function HomePage() {
       {/* ─── Hero ─── */}
       <Hero>
         <HeroCopy>
-          <Logo src={CourtChampLogo} alt="CourtChamps" data-aos="fade-up" />
+          <Logo src={CourtChampLogo} alt="Court Champs" data-aos="fade-up" />
           <SeasonBadge data-aos="fade-up" data-aos-delay="50">
             Season One · Pre-registration open
           </SeasonBadge>
@@ -217,14 +212,14 @@ export default function HomePage() {
         <HeroVisual data-aos="fade-left" data-aos-delay="200">
           <PhoneFrame $featured>
             <PhoneScreen
-              src={appImages.homePage}
-              alt="CourtChamps home screen"
+              src={appScreens.home}
+              alt="Court Champs home screen with Season One badminton ladders"
             />
           </PhoneFrame>
           <PhoneFrame $floatingBack>
             <PhoneScreen
-              src={appImages.scoreboard}
-              alt="CourtChamps scoreboard"
+              src={appScreens.prizes}
+              alt="Court Champs ladder prize pool breakdown"
             />
           </PhoneFrame>
         </HeroVisual>
@@ -234,7 +229,7 @@ export default function HomePage() {
 
       {/* ─── Feature showcase ─── */}
       <Section>
-        <SectionEyebrow data-aos="fade-up">More than ladders</SectionEyebrow>
+        <SectionEyebrow data-aos="fade-up">Inside the app</SectionEyebrow>
         <SectionTitle data-aos="fade-up">
           Everything you need to compete
         </SectionTitle>
@@ -245,7 +240,11 @@ export default function HomePage() {
               <FeatureRow key={feat.label} $reverse={isOdd}>
                 <FeatureVisual data-aos={isOdd ? "fade-left" : "fade-right"}>
                   <PhoneFrame>
-                    <PhoneScreen src={feat.image} alt={feat.label} />
+                    <PhoneScreen
+                      src={feat.image}
+                      alt={feat.alt}
+                      loading="lazy"
+                    />
                   </PhoneFrame>
                 </FeatureVisual>
                 <FeatureDescriptionContainer
