@@ -12,12 +12,13 @@ import {
   FaVideo,
   FaMapMarkerAlt,
   FaListOl,
-  FaBolt,
   FaComments,
+  FaArrowDown,
 } from "react-icons/fa";
 
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { appImages } from "../../assets/appImages";
+import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ const theme = {
   panelBorder: "rgba(255, 255, 255, 0.08)",
   blue: "#00A2FF",
   blueDeep: "#0057FF",
-  gold: "#FFD100",
+  gold: "#ffc800",
   orange: "#FF7800",
   text: "#FFFFFF",
   muted: "#93a7bd",
@@ -37,30 +38,9 @@ const theme = {
 // ─── Content ───────────────────────────────────────────────────────────────────
 
 const heroHighlights = [
-  { icon: <FaTrophy />, label: "Leagues & Tournaments" },
-  { icon: <FaChartLine />, label: "Live Scoreboards" },
-  { icon: <FaMedal />, label: "Ranks, XP & Medals" },
-];
-
-const steps = [
-  {
-    icon: <FaUsers />,
-    title: "Join or Create",
-    description:
-      "Find a league in your area or spin up your own competition, then invite players to the court.",
-  },
-  {
-    icon: <FaBolt />,
-    title: "Play & Log Scores",
-    description:
-      "Record match results on a live scoreboard and watch stats, standings and rivalries update instantly.",
-  },
-  {
-    icon: <FaTrophy />,
-    title: "Climb the Ranks",
-    description:
-      "Earn Court Points (CP) on every win, unlock medals and rise up the leaderboard as you turn every match into a title race.",
-  },
+  { icon: <FaListOl />, label: "Ranked ladders" },
+  { icon: <FaTrophy />, label: "Cash prize pools" },
+  { icon: <FaChartLine />, label: "Playoffs" },
 ];
 
 const features = [
@@ -207,20 +187,23 @@ export default function HomePage() {
       <Hero>
         <HeroCopy>
           <Logo src={CourtChampLogo} alt="CourtChamps" data-aos="fade-up" />
-          <Eyebrow data-aos="fade-up" data-aos-delay="50">
-            The home of competitive racket sports
-          </Eyebrow>
+          <SeasonBadge data-aos="fade-up" data-aos-delay="50">
+            Season One · Pre-registration open
+          </SeasonBadge>
           <HeroHeadline data-aos="fade-up" data-aos-delay="100">
-            Turn every match into a <Gradient>title race</Gradient>
+            Climb. Compete. <GoldText>Conquer.</GoldText>
           </HeroHeadline>
           <HeroSub data-aos="fade-up" data-aos-delay="150">
-            Join leagues and tournaments, log live scores, track your stats and
-            climb the ranks. CourtChamps brings a whole new competitive
-            experience to your pocket.
+            Season One Ladders are here. Pre-register free, invite your friends
+            and lock in your place before play starts. Climb the rankings and
+            compete for the prize pool.
           </HeroSub>
-          <div data-aos="fade-up" data-aos-delay="200">
+          <HeroActions data-aos="fade-up" data-aos-delay="200">
             {StoreBadges}
-          </div>
+            <LaddersLink href={`#${SEASON_ONE_ANCHOR}`}>
+              See open ladders <FaArrowDown />
+            </LaddersLink>
+          </HeroActions>
           <HighlightRow data-aos="fade-up" data-aos-delay="250">
             {heroHighlights.map((h) => (
               <HighlightPill key={h.label}>
@@ -247,31 +230,11 @@ export default function HomePage() {
         </HeroVisual>
       </Hero>
 
-      {/* ─── How it works ─── */}
-      <Section>
-        <SectionEyebrow data-aos="fade-up">How it works</SectionEyebrow>
-        <SectionTitle data-aos="fade-up">
-          From first serve to champion
-        </SectionTitle>
-        <StepsGrid>
-          {steps.map((step, i) => (
-            <StepCard
-              key={step.title}
-              data-aos="fade-up"
-              data-aos-delay={i * 100}
-            >
-              <StepNumber>{i + 1}</StepNumber>
-              <StepIcon>{step.icon}</StepIcon>
-              <StepTitle>{step.title}</StepTitle>
-              <StepText>{step.description}</StepText>
-            </StepCard>
-          ))}
-        </StepsGrid>
-      </Section>
+      <SeasonOne />
 
       {/* ─── Feature showcase ─── */}
       <Section>
-        <SectionEyebrow data-aos="fade-up">Inside the app</SectionEyebrow>
+        <SectionEyebrow data-aos="fade-up">More than ladders</SectionEyebrow>
         <SectionTitle data-aos="fade-up">
           Everything you need to compete
         </SectionTitle>
@@ -323,9 +286,9 @@ export default function HomePage() {
       {/* ─── Download CTA ─── */}
       <CtaBand data-aos="zoom-in">
         <CtaGlow />
-        <CtaTitle>Ready to become a Court Champ?</CtaTitle>
+        <CtaTitle>Lock in your place for Season One</CtaTitle>
         <CtaSub>
-          Download CourtChamps for free and start climbing the ranks today.
+          Download Court Champs, sign in and pre-register. Nothing to pay today.
         </CtaSub>
         {StoreBadges}
       </CtaBand>
@@ -430,16 +393,21 @@ const Logo = styled.img({
   width: "300px",
   maxWidth: "70%",
   height: "auto",
-  marginBottom: "28px",
+  aspectRatio: "1890 / 700",
+  objectFit: "cover",
+  marginBottom: "20px",
 });
 
-const Eyebrow = styled.div({
-  textTransform: "uppercase",
-  letterSpacing: "2.5px",
-  fontSize: "0.8rem",
+const SeasonBadge = styled.div({
+  display: "inline-flex",
+  padding: "6px 14px",
+  borderRadius: "999px",
+  fontSize: "0.85rem",
   fontWeight: 700,
-  color: theme.blue,
-  marginBottom: "18px",
+  color: theme.gold,
+  background: "rgba(255, 200, 0, 0.08)",
+  border: "1px solid rgba(255, 200, 0, 0.45)",
+  marginBottom: "8px",
 });
 
 const HeroHeadline = styled.h1({
@@ -452,12 +420,8 @@ const HeroHeadline = styled.h1({
   "@media (max-width: 480px)": { fontSize: "2rem" },
 });
 
-const Gradient = styled.span({
-  background: `linear-gradient(90deg, ${theme.blue}, ${theme.blueDeep})`,
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  WebkitTextFillColor: "transparent",
-  color: "transparent",
+const GoldText = styled.span({
+  color: theme.gold,
 });
 
 const HeroSub = styled.p({
@@ -465,8 +429,30 @@ const HeroSub = styled.p({
   lineHeight: 1.6,
   color: theme.muted,
   maxWidth: "520px",
-  margin: "24px 0 32px",
+  margin: "14px 0 28px",
   "@media (max-width: 480px)": { fontSize: "1.05rem" },
+});
+
+const HeroActions = styled.div({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "16px",
+  "@media (max-width: 900px)": { alignItems: "center" },
+});
+
+const LaddersLink = styled.a({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "10px 18px",
+  borderRadius: "12px",
+  fontWeight: 700,
+  color: theme.blue,
+  textDecoration: "none",
+  border: `1px solid ${theme.blue}`,
+  transition: "background 0.2s",
+  ":hover": { background: `${theme.blue}1a` },
 });
 
 const HighlightRow = styled.div({
@@ -583,69 +569,6 @@ const SectionTitle = styled.h2({
   margin: "0 0 48px",
   letterSpacing: "-0.5px",
   "@media (max-width: 480px)": { fontSize: "1.8rem", marginBottom: "36px" },
-});
-
-// ─── Steps ───
-const StepsGrid = styled.div({
-  display: "grid",
-  gridTemplateColumns: "repeat(3, 1fr)",
-  gap: "24px",
-  width: "100%",
-  "@media (max-width: 768px)": { gridTemplateColumns: "1fr" },
-});
-
-const StepCard = styled.div({
-  position: "relative",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-start",
-  padding: "32px 28px",
-  borderRadius: "20px",
-  background: theme.panel,
-  border: `1px solid ${theme.panelBorder}`,
-  overflow: "hidden",
-  transition: "transform 0.25s ease, border-color 0.25s ease",
-  ":hover": {
-    transform: "translateY(-6px)",
-    borderColor: `${theme.blue}55`,
-  },
-});
-
-const StepNumber = styled.span({
-  position: "absolute",
-  top: "12px",
-  right: "20px",
-  fontSize: "3.5rem",
-  fontWeight: 800,
-  lineHeight: 1,
-  color: "rgba(255,255,255,0.06)",
-});
-
-const StepIcon = styled.div({
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: "52px",
-  height: "52px",
-  borderRadius: "14px",
-  background: `linear-gradient(145deg, ${theme.blue}, ${theme.blueDeep})`,
-  color: "#fff",
-  fontSize: "1.4rem",
-  marginBottom: "20px",
-  boxShadow: `0 8px 24px ${theme.blue}40`,
-});
-
-const StepTitle = styled.h3({
-  fontSize: "1.35rem",
-  fontWeight: 700,
-  margin: "0 0 10px",
-});
-
-const StepText = styled.p({
-  fontSize: "1rem",
-  lineHeight: 1.6,
-  color: theme.muted,
-  margin: 0,
 });
 
 // ─── Feature showcase ───
