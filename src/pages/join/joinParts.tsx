@@ -34,13 +34,6 @@ export const PageContainer = styled.div({
   },
 });
 
-export const LogoImg = styled.img({
-  width: 200,
-  maxWidth: "60%",
-  height: "auto",
-  marginBottom: 28,
-});
-
 export const HeroCard = styled.div({
   position: "relative",
   width: "100%",

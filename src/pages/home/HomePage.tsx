@@ -186,7 +186,7 @@ export default function HomePage() {
             Season One · Pre-registration open
           </SeasonBadge>
           <HeroHeadline data-aos="fade-up" data-aos-delay="100">
-            Climb. Compete. <GoldText>Conquer.</GoldText>
+            The home of competitive <GoldText>racket sports</GoldText>
           </HeroHeadline>
           <HeroSub data-aos="fade-up" data-aos-delay="150">
             Season One Ladders are here. Pre-register free, invite your friends
@@ -421,6 +421,7 @@ const HeroHeadline = styled.h1({
 
 const GoldText = styled.span({
   color: theme.gold,
+  whiteSpace: "nowrap",
 });
 
 const HeroSub = styled.p({
@@ -488,8 +489,8 @@ const HeroVisual = styled.div({
   justifyContent: "center",
   alignItems: "center",
   minHeight: "560px",
-  "@media (max-width: 900px)": { minHeight: "520px", width: "100%" },
-  "@media (max-width: 480px)": { minHeight: "460px" },
+  "@media (max-width: 900px)": { minHeight: "640px", width: "100%" },
+  "@media (max-width: 480px)": { minHeight: "540px" },
 });
 
 // ─── Phone frame ───
