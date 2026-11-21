@@ -162,18 +162,21 @@ const Grid = styled.div({
   gridTemplateColumns: "repeat(3, 1fr)",
   gap: "20px",
   width: "100%",
-  "@media (max-width: 900px)": { gridTemplateColumns: "1fr" },
+  "@media (max-width: 600px)": { gap: "10px" },
 });
 
 const Card = styled.div({
   display: "flex",
   flexDirection: "column",
+  alignItems: "center",
+  textAlign: "center",
   padding: "26px 24px",
   borderRadius: "18px",
   background: palette.card,
   border: `1px solid ${palette.panelBorder}`,
   transition: "border-color 0.25s ease",
   ":hover": { borderColor: `${palette.blue}55` },
+  "@media (max-width: 600px)": { padding: "18px 8px", borderRadius: "14px" },
 });
 
 const IconTile = styled.div({
@@ -187,12 +190,20 @@ const IconTile = styled.div({
   border: `1px solid ${palette.blue}33`,
   color: palette.blue,
   marginBottom: "18px",
+  "@media (max-width: 600px)": {
+    width: "52px",
+    height: "52px",
+    borderRadius: "14px",
+    marginBottom: "12px",
+    svg: { width: "32px", height: "32px" },
+  },
 });
 
 const SportName = styled.h3({
   fontSize: "1.3rem",
   fontWeight: 700,
   margin: "0 0 8px",
+  "@media (max-width: 600px)": { fontSize: "1rem", margin: 0 },
 });
 
 const SportText = styled.p({
@@ -200,4 +211,5 @@ const SportText = styled.p({
   lineHeight: 1.55,
   color: palette.muted,
   margin: 0,
+  "@media (max-width: 600px)": { display: "none" },
 });
