@@ -14,7 +14,7 @@ import {
   FaArrowDown,
 } from "react-icons/fa";
 
-import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
+import { playStoreBadge, appStoreBadge } from "../../assets";
 import { appScreens } from "../../assets/appScreens";
 import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
 
@@ -181,7 +181,6 @@ export default function HomePage() {
       {/* ─── Hero ─── */}
       <Hero>
         <HeroCopy>
-          <Logo src={CourtChampLogo} alt="Court Champs" data-aos="fade-up" />
           <SeasonBadge data-aos="fade-up" data-aos-delay="50">
             Season One · Pre-registration open
           </SeasonBadge>
@@ -386,15 +385,6 @@ const HeroCopy = styled.div({
     alignItems: "center",
     textAlign: "center",
   },
-});
-
-const Logo = styled.img({
-  width: "300px",
-  maxWidth: "70%",
-  height: "auto",
-  aspectRatio: "1890 / 700",
-  objectFit: "cover",
-  marginBottom: "20px",
 });
 
 const SeasonBadge = styled.div({
