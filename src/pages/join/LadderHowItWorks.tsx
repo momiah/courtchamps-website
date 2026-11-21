@@ -27,12 +27,12 @@ import type { IconType } from "react-icons";
 import {
   LADDER_MATCH_BEST_OF_OPTIONS,
   LADDER_PLAYOFF_START_DAYS,
-  LADDER_PLAYOFF_TIE_DAYS,
-  LADDER_POSTING_CLOSE_DAYS,
-  LADDER_REGISTRATION_CLOSE_DAYS,
-  LADDER_STATUS,
 } from "courtchamps-shared";
-import { LADDER_STATUS_LABELS } from "courtchamps-shared/helpers";
+import {
+  LADDER_SEASON_PHASE,
+  getLadderSeasonPhases,
+} from "courtchamps-shared/helpers";
+import type { LadderSeasonPhaseKey } from "courtchamps-shared/helpers";
 
 import { ladderTrophies } from "../../assets";
 
@@ -40,8 +40,6 @@ const BLUE = "#00A2FF";
 const GOLD = "#FFC800";
 const BODY = "#c9d6e3";
 const MUTED = "#9fb8c8";
-
-const days = (count: number) => `${count} day${count === 1 ? "" : "s"}`;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
@@ -174,48 +172,13 @@ const MATCH_STEPS: { icon: IconType; text: string }[] = [
   { icon: IoCreateOutline, text: "Report your scores" },
 ];
 
-interface Phase {
-  icon: IconType;
-  image?: string;
-  label: string;
-  length?: string;
-  text: string;
-  gold?: boolean;
-}
-
-const seasonPhases = (
-  noun: string,
-  playoffSpots: number,
-  cash: boolean,
-): Phase[] => [
-  {
-    icon: IoPersonAddOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
-    length: `Day 1 - ${LADDER_REGISTRATION_CLOSE_DAYS}`,
-    text: "Sign up and start posting or accepting matches straight away.",
-  },
-  {
-    icon: IoLockClosedOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
-    length: `Day ${LADDER_REGISTRATION_CLOSE_DAYS + 1} - ${LADDER_PLAYOFF_START_DAYS}`,
-    text: `No new ${noun}s join. Keep climbing; new matches close ${days(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
-  },
-  {
-    icon: IoGitNetworkOutline,
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
-    length: `${Math.log2(playoffSpots)} rounds`,
-    text: `The top ${playoffSpots} ${noun}s play a knockout. Each round is two matches, home and away, played within ${days(LADDER_PLAYOFF_TIE_DAYS)}.`,
-  },
-  {
-    icon: IoTrophyOutline,
-    image: ladderTrophies[0],
-    label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
-    text: cash
-      ? "The champion crowned. Cash paid. CP awarded."
-      : "The champion crowned. CP awarded.",
-    gold: true,
-  },
-];
+const PHASE_ICONS: Record<LadderSeasonPhaseKey, IconType> = {
+  [LADDER_SEASON_PHASE.REGISTRATION_OPEN]: IoPersonAddOutline,
+  [LADDER_SEASON_PHASE.SEASON_STARTS]: IoFlashOutline,
+  [LADDER_SEASON_PHASE.REGISTRATION_CLOSED]: IoLockClosedOutline,
+  [LADDER_SEASON_PHASE.PLAYOFFS]: IoGitNetworkOutline,
+  [LADDER_SEASON_PHASE.COMPLETED]: IoTrophyOutline,
+};
 
 interface Step {
   title: string;
@@ -354,29 +317,35 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
         <>
           <PageIcon icon={IoCalendarOutline} />
           <Phases>
-            {seasonPhases(noun, playoffSpots, cash).map((phase, i, all) => (
-              <PhaseRow key={phase.label}>
-                <PhaseRail>
-                  <PhaseDot $gold={phase.gold}>
-                    {phase.image ? (
-                      <img src={phase.image} alt="" />
-                    ) : (
-                      <phase.icon />
-                    )}
-                  </PhaseDot>
-                  {i < all.length - 1 ? <PhaseLine /> : null}
-                </PhaseRail>
-                <PhaseBody>
-                  <PhaseHead>
-                    <PhaseLabel $gold={phase.gold}>{phase.label}</PhaseLabel>
-                    {phase.length ? (
-                      <PhaseLength>{phase.length}</PhaseLength>
-                    ) : null}
-                  </PhaseHead>
-                  <PhaseText>{phase.text}</PhaseText>
-                </PhaseBody>
-              </PhaseRow>
-            ))}
+            {getLadderSeasonPhases({ noun, playoffSpots, isPaid: cash }).map(
+              (phase, i, all) => {
+                const completed = phase.key === LADDER_SEASON_PHASE.COMPLETED;
+                const Icon = PHASE_ICONS[phase.key];
+                return (
+                  <PhaseRow key={phase.key}>
+                    <PhaseRail>
+                      <PhaseDot $gold={completed}>
+                        {completed ? (
+                          <img src={ladderTrophies[0]} alt="" />
+                        ) : (
+                          <Icon />
+                        )}
+                      </PhaseDot>
+                      {i < all.length - 1 ? <PhaseLine /> : null}
+                    </PhaseRail>
+                    <PhaseBody>
+                      <PhaseHead>
+                        <PhaseLabel $gold={completed}>{phase.label}</PhaseLabel>
+                        {phase.length ? (
+                          <PhaseLength>{phase.length}</PhaseLength>
+                        ) : null}
+                      </PhaseHead>
+                      <PhaseText>{phase.text}</PhaseText>
+                    </PhaseBody>
+                  </PhaseRow>
+                );
+              },
+            )}
           </Phases>
         </>
       ),
@@ -1209,6 +1178,9 @@ const PhaseRow = styled.div`
   }
   &:nth-child(4) {
     animation-delay: 0.75s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.9s;
   }
 `;
 

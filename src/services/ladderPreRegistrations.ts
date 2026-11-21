@@ -9,6 +9,7 @@ import {
   query,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
@@ -89,6 +90,22 @@ export const fetchLadderPreRegistrations = async (): Promise<
   return snapshot.docs.map((preRegistration) =>
     mapPreRegistration(preRegistration.id, preRegistration.data()),
   );
+};
+
+export const fetchOpenLadderPreRegistrations = async (): Promise<
+  LadderPreRegistration[]
+> => {
+  const snapshot = await getDocs(
+    query(
+      collection(db, LADDER_PRE_REGISTRATIONS_COLLECTION),
+      where("status", "==", LADDER_PRE_REGISTRATION_STATUS.OPEN),
+    ),
+  );
+  return snapshot.docs
+    .map((preRegistration) =>
+      mapPreRegistration(preRegistration.id, preRegistration.data()),
+    )
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 };
 
 export const fetchLadderPreRegistration = async (
