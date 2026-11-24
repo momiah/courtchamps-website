@@ -5,6 +5,7 @@ import {
   formatCurrency,
   getLadderEntryPrice,
   getLadderPlayoffStructure,
+  getLadderPrizePlaces,
 } from "courtchamps-shared";
 import {
   formatLadderPrizePool,
@@ -112,9 +113,10 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
 
   const cash = isCashLadder(preRegistration);
   const noun = getLadderEntrantNoun(preRegistration.ladderType);
-  const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(
+  const { playoffSpots } = getLadderPlayoffStructure(
     preRegistration.maxPlayers,
   );
+  const prizePlaces = getLadderPrizePlaces(preRegistration.maxPlayers, cash);
   const launched =
     preRegistration.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED;
   const { entryFee, platformFee } = getLadderEntryPrice(
@@ -177,7 +179,9 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
             {getFullLadderPrizeTable(preRegistration).map((row) => (
               <tr key={row.fromPlace}>
                 <PlaceCell>{row.label}</PlaceCell>
-                {cash ? <CashCell>{money(row.cash)}</CashCell> : null}
+                {cash ? (
+                  <CashCell>{row.cash > 0 ? money(row.cash) : "–"}</CashCell>
+                ) : null}
                 <td>{row.cp.toLocaleString("en-GB")}</td>
               </tr>
             ))}
@@ -193,7 +197,7 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
         noun={noun}
         maxPlayers={preRegistration.maxPlayers}
         playoffSpots={playoffSpots}
-        inTheMoney={inTheMoney}
+        prizePlaces={prizePlaces}
         cash={cash}
         prizePool={formatLadderPrizePool(preRegistration)}
         firstEntrant={registeredCount === 0}
