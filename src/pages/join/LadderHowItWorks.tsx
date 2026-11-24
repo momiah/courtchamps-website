@@ -192,7 +192,7 @@ export interface LadderHowItWorksProps {
   noun: "player" | "team";
   maxPlayers: number;
   playoffSpots: number;
-  inTheMoney: number;
+  prizePlaces: number;
   cash: boolean;
   prizePool: string;
   firstEntrant: boolean;
@@ -203,7 +203,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
   noun,
   maxPlayers,
   playoffSpots,
-  inTheMoney,
+  prizePlaces,
   cash,
   prizePool,
   firstEntrant,
@@ -377,7 +377,7 @@ const LadderHowItWorks: React.FC<LadderHowItWorksProps> = ({
             <Card>
               Win the Final to be crowned <Gold>champion</Gold>! <br />{" "}
               Top&nbsp;
-              {inTheMoney} {cash ? "paid" : "awarded CP"} in a full ladder.
+              {prizePlaces} {cash ? "paid" : "awarded CP"} in a full ladder.
             </Card>
           </Cards>
         </>

@@ -49,7 +49,14 @@ import type {
   GenderType,
   LadderPreRegistration,
   LadderType,
+  PayoutStructure,
 } from "courtchamps-shared/types";
+import {
+  PAYOUT_STRUCTURE_OPTIONS,
+  PAYOUT_STRUCTURE_REQUIRED,
+  isPayoutStructure,
+  payoutStructureHint,
+} from "../../utils/payoutStructure";
 
 interface FormState {
   description: string;
@@ -60,6 +67,7 @@ interface FormState {
   genderType: GenderType;
   entryFee: string;
   currencyType: string;
+  payoutStructure: string;
   maxPlayers: string;
   expectedOpensAt: string;
 }
@@ -75,6 +83,7 @@ const toFormState = (
   genderType: preRegistration?.genderType ?? GENDER_TYPE.MENS,
   entryFee: preRegistration ? String(preRegistration.entryFee) : "0",
   currencyType: preRegistration?.currencyType ?? "GBP",
+  payoutStructure: preRegistration?.payoutStructure ?? "",
   maxPlayers: String(preRegistration?.maxPlayers ?? 2048),
   expectedOpensAt: preRegistration?.expectedOpensAt
     ? format(preRegistration.expectedOpensAt, "yyyy-MM-dd")
@@ -82,7 +91,7 @@ const toFormState = (
 });
 
 const toInput = (
-  state: FormState,
+  state: FormState & { payoutStructure: PayoutStructure },
   image: string,
 ): LadderPreRegistrationInput => ({
   description: state.description.trim(),
@@ -94,6 +103,7 @@ const toInput = (
   genderType: state.genderType,
   entryFee: Number(state.entryFee),
   currencyType: state.currencyType,
+  payoutStructure: state.payoutStructure,
   maxPlayers: Number(state.maxPlayers),
   expectedOpensAt: state.expectedOpensAt
     ? new Date(`${state.expectedOpensAt}T00:00:00`)
@@ -110,6 +120,7 @@ const validate = (state: FormState): string | null => {
   if (!Number.isFinite(entryFee) || entryFee < 0) {
     return "Entry fee must be 0 or more.";
   }
+  if (!isPayoutStructure(state.payoutStructure)) return PAYOUT_STRUCTURE_REQUIRED;
   return null;
 };
 
@@ -181,14 +192,15 @@ function LadderPreRegistrationEdit() {
       return;
     }
     const validationError = validate(form);
-    if (validationError) {
-      setError(validationError);
+    const { payoutStructure } = form;
+    if (validationError || !isPayoutStructure(payoutStructure)) {
+      setError(validationError ?? PAYOUT_STRUCTURE_REQUIRED);
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      const input = toInput(form, preRegistration?.image ?? "");
+      const input = toInput({ ...form, payoutStructure }, preRegistration?.image ?? "");
       if (preRegistrationId) {
         await updateLadderPreRegistration({
           preRegistrationId,
@@ -470,6 +482,29 @@ function LadderPreRegistrationEdit() {
                   {currencyTypes.map((currency) => (
                     <option key={currency} value={currency}>
                       {currency}
+                    </option>
+                  ))}
+                </SelectInput>
+              </FormField>
+              <FormField
+                label="Payout structure"
+                htmlFor="pre-registration-payout-structure"
+                hint={payoutStructureHint(form.payoutStructure)}
+              >
+                <SelectInput
+                  id="pre-registration-payout-structure"
+                  value={form.payoutStructure}
+                  disabled={launched}
+                  onChange={(event) =>
+                    setField("payoutStructure", event.target.value)
+                  }
+                >
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                  {PAYOUT_STRUCTURE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </SelectInput>

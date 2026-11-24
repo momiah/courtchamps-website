@@ -24,7 +24,7 @@ import type {
   LadderPrizePayoutStatus,
   LadderPrizeReviewDecision,
 } from "courtchamps-shared/types";
-import { formatLadderPrizeWon, ordinalPlace } from "courtchamps-shared/helpers";
+import { formatLadderFinishPlace, formatLadderPrizeWon } from "courtchamps-shared/helpers";
 
 type LadderWithPot = Ladder & {
   unclaimedPrizePot?: LadderPrizeAmount;
@@ -52,7 +52,7 @@ const minus = (a: LadderPrizeAmount, b: LadderPrizeAmount): LadderPrizeAmount =>
 });
 
 const placeOf = (payout: EnrichedPrizePayout): string =>
-  `${payout.voided ? "Joint " : ""}${ordinalPlace(payout.place)}`;
+  formatLadderFinishPlace(payout.place, payout.voided);
 
 function ReviewForm({
   payout,
@@ -289,7 +289,7 @@ function LadderPrizePayouts() {
             <SummaryCard>
               <Label>{LADDER_PRIZE_POT_NAME}</Label>
               <Value>{money(ladder.unclaimedPrizePot ?? NOTHING)}</Value>
-              <Meta>Shared equally between everyone in the money who played</Meta>
+              <Meta>Cash shared between everyone who played and won cash, CP between everyone who won CP</Meta>
             </SummaryCard>
             <SummaryCard>
               <Label>Retained by Court Champs</Label>
