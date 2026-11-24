@@ -25,6 +25,7 @@ import {
   LADDER_PRE_REGISTRATIONS_COLLECTION,
   LADDER_STATUS,
   LadderType,
+  PayoutStructure,
   LADDER_TYPE,
   Report,
   REPORTS_COLLECTION,
@@ -56,6 +57,7 @@ interface LadderDocumentData {
   playoffStartsAt?: Timestamp | null;
   entryFee?: number;
   currencyType?: string;
+  payoutStructure?: string;
   minRank?: number;
   maxPlayers?: number;
   participantCount?: number;
@@ -90,6 +92,7 @@ const mapLadderDocument = (
   playoffStartsAt: toDate(data.playoffStartsAt),
   entryFee: data.entryFee ?? 0,
   currencyType: data.currencyType ?? "GBP",
+  payoutStructure: data.payoutStructure as PayoutStructure,
   minRank: data.minRank ?? 0,
   maxPlayers: data.maxPlayers ?? 0,
   participantCount: data.participantCount ?? 0,

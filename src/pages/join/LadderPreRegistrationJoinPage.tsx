@@ -116,7 +116,11 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
   const { playoffSpots } = getLadderPlayoffStructure(
     preRegistration.maxPlayers,
   );
-  const prizePlaces = getLadderPrizePlaces(preRegistration.maxPlayers, cash);
+  const prizePlaces = getLadderPrizePlaces(
+    preRegistration.maxPlayers,
+    cash,
+    preRegistration.payoutStructure,
+  );
   const launched =
     preRegistration.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED;
   const { entryFee, platformFee } = getLadderEntryPrice(

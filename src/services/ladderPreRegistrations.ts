@@ -26,6 +26,7 @@ import type {
   LadderPreRegistrationDetails,
   LadderPreRegistrationStatus,
   LadderType,
+  PayoutStructure,
 } from "courtchamps-shared/types";
 
 /** What the admin form saves: `name` is worked out from the city and title. */
@@ -54,6 +55,7 @@ const mapPreRegistration = (
   genderType: (data.genderType as GenderType) ?? "Mixed",
   entryFee: Number(data.entryFee ?? 0),
   currencyType: String(data.currencyType ?? "GBP"),
+  payoutStructure: data.payoutStructure as PayoutStructure,
   maxPlayers: Number(data.maxPlayers ?? 0),
   status:
     (data.status as LadderPreRegistrationStatus) ??

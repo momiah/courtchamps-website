@@ -30,6 +30,12 @@ import {
   genderOptionsFor,
   isGenderAllowed,
 } from "../../utils/ladderGender";
+import {
+  PAYOUT_STRUCTURE_OPTIONS,
+  PAYOUT_STRUCTURE_REQUIRED,
+  isPayoutStructure,
+  payoutStructureHint,
+} from "../../utils/payoutStructure";
 import Modal from "./Modal";
 import MultiSelect, { MultiSelectOption } from "./MultiSelect";
 import {
@@ -50,9 +56,10 @@ const REGION_DATALIST_ID = "ladder-region-options";
 // held as strings until parsed/validated on submit.
 type LadderFormState = Omit<
   LadderFormInput,
-  "registrationOpensAt" | "entryFee" | "minRank" | "maxPlayers"
+  "registrationOpensAt" | "entryFee" | "minRank" | "maxPlayers" | "payoutStructure"
 > & {
   city: string;
+  payoutStructure: string;
   registrationOpensAt: string;
   entryFee: string;
   minRank: string;
@@ -93,6 +100,7 @@ const buildInitialState = (
       : "",
     entryFee: details ? String(details.entryFee) : "0",
     currencyType: details?.currencyType ?? "GBP",
+    payoutStructure: details?.payoutStructure ?? "",
     minRank: initialLadder ? String(initialLadder.minRank) : "0",
     maxPlayers: details ? String(details.maxPlayers) : "",
   };
@@ -450,7 +458,7 @@ function LadderForm({
     }
 
     const registrationOpens = parseDateInputValue(values.registrationOpensAt);
-    if (!registrationOpens) {
+    if (!registrationOpens || !isPayoutStructure(values.payoutStructure)) {
       return;
     }
 
@@ -467,6 +475,7 @@ function LadderForm({
         registrationOpensAt: registrationOpens,
         entryFee: Number(values.entryFee),
         currencyType: values.currencyType,
+        payoutStructure: values.payoutStructure,
         minRank: Number(values.minRank),
         maxPlayers: Number(values.maxPlayers),
       },
@@ -861,6 +870,34 @@ function LadderForm({
                 />
               </FormField>
             </FeeRow>
+
+            <FormField
+              label="Payout structure"
+              htmlFor="ladder-payout-structure"
+              hint={payoutStructureHint(watch("payoutStructure"))}
+              error={errors.payoutStructure?.message ?? null}
+            >
+              <Controller
+                control={control}
+                name="payoutStructure"
+                rules={{
+                  validate: (value) =>
+                    isPayoutStructure(value) || PAYOUT_STRUCTURE_REQUIRED,
+                }}
+                render={({ field }) => (
+                  <SelectInput id="ladder-payout-structure" {...field}>
+                    <option value="" disabled>
+                      Choose…
+                    </option>
+                    {PAYOUT_STRUCTURE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </SelectInput>
+                )}
+              />
+            </FormField>
 
             <FeeRow>
               <FormField
