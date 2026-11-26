@@ -7,6 +7,8 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import { TERMS_PATH } from "courtchamps-shared";
+
 import { AuthProvider } from "./context/AuthContext";
 import Header from "./components/Header";
 import RequireRole from "./components/auth/RequireRole";
@@ -20,6 +22,7 @@ import LadderPreRegistrationJoinPage from "./pages/join/LadderPreRegistrationJoi
 import ClubJoinPage from "./pages/join/ClubJoinPage";
 import VideoPage from "pages/gameVideos/VideoPage";
 import Login from "./pages/Login";
+import TermsPage from "./pages/legal/TermsPage";
 import Courts from "./pages/admin/Courts";
 import LadderList from "./pages/admin/LadderList";
 import LadderEdit from "./pages/admin/LadderEdit";
@@ -68,6 +71,7 @@ function AppShell() {
           path="/join/:competitionType/:competitionId"
           element={<JoinPage />}
         />
+        <Route path={TERMS_PATH} element={<TermsPage />} />
         <Route path="/videos" element={<VideoPage />} />
         <Route path="/login" element={<Login />} />
         <Route

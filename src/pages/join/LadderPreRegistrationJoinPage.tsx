@@ -6,6 +6,9 @@ import {
   getLadderEntryPrice,
   getLadderPlayoffStructure,
   getLadderPrizePlaces,
+  PAID_LADDER_AGE_DISCLAIMER,
+  TERMS_PATH,
+  getPlatformFeeFootnote,
 } from "courtchamps-shared";
 import {
   formatLadderPrizePool,
@@ -19,6 +22,7 @@ import { ccImageEndpoint } from "courtchamps-shared/schema";
 
 import Tag from "../../components/Tag";
 import LadderHowItWorks from "./LadderHowItWorks";
+import { TERMS_ANCHORS } from "../legal/TermsPage";
 import {
   countLadderPreRegistrants,
   fetchLadderPreRegistration,
@@ -123,9 +127,7 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
   );
   const launched =
     preRegistration.status === LADDER_PRE_REGISTRATION_STATUS.LAUNCHED;
-  const { entryFee, platformFee } = getLadderEntryPrice(
-    preRegistration.entryFee,
-  );
+  const { entryFee } = getLadderEntryPrice(preRegistration.entryFee);
   const money = (amount: number) =>
     formatCurrency(amount, preRegistration.currencyType);
   const places = preRegistration.maxPlayers.toLocaleString("en-GB");
@@ -227,11 +229,21 @@ const LadderPreRegistrationJoinPage: React.FC = () => {
 
       {cash ? (
         <Note style={{ maxWidth: 680, textAlign: "center" }}>
-          *A {money(platformFee)} platform fee is added on top of the{" "}
-          {money(entryFee)} entry. The full entry fee goes into the prize pool.
-          18+ only.
+          {getPlatformFeeFootnote(preRegistration.entryFee, preRegistration.currencyType)}{" "}
+          {PAID_LADDER_AGE_DISCLAIMER}
         </Note>
       ) : null}
+      <Note style={{ maxWidth: 680, textAlign: "center" }}>
+        Joining means you accept the{" "}
+        <TermsLink to={`${TERMS_PATH}#${TERMS_ANCHORS.ladderTerms}`}>
+          Ladder Terms
+        </TermsLink>{" "}
+        and{" "}
+        <TermsLink to={`${TERMS_PATH}#${TERMS_ANCHORS.ladderRules}`}>
+          Rules
+        </TermsLink>
+        .
+      </Note>
 
       <FooterText>© {new Date().getFullYear()} Court Champs</FooterText>
     </PageContainer>
@@ -289,6 +301,8 @@ const PrizeTable = styled.table({
 const PlaceCell = styled.td({ color: "#00A2FF !important" });
 
 const CashCell = styled.td({ color: "#ffc800 !important" });
+
+const TermsLink = styled(Link)({ color: "#00A2FF" });
 
 const Note = styled.p({
   fontSize: 12,

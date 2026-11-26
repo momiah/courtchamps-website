@@ -11,7 +11,6 @@ import {
 } from "react-icons/io5";
 import {
   LADDER_MIN_ENTRANTS_TO_START,
-  PLATFORM_FEE,
   formatCurrency,
   formatLadderPrizePool,
   getLadderEntrantNoun,
@@ -21,6 +20,11 @@ import {
   getLadderPreRegistrationJoinPath,
   isCashLadder,
 } from "courtchamps-shared/helpers";
+import {
+  LADDER_CANCELLED_REFUND,
+  PAID_LADDER_AGE_BADGE,
+  PLATFORM_FEE_PERCENT,
+} from "courtchamps-shared";
 import type { LadderPreRegistration } from "courtchamps-shared/types";
 
 import { ladderTrophies } from "../../assets";
@@ -159,7 +163,7 @@ const steps = [
   {
     icon: IoPeopleOutline,
     title: "Play starts",
-    text: `Matches open once ${LADDER_MIN_ENTRANTS_TO_START} players have joined. If not, the ladder is cancelled and refunded.`,
+    text: `Matches open once ${LADDER_MIN_ENTRANTS_TO_START} players have joined. If not, the ladder is cancelled and every entry is ${LADDER_CANCELLED_REFUND}.`,
   },
   {
     icon: IoGitNetworkOutline,
@@ -210,14 +214,14 @@ const SeasonOne: React.FC = () => {
         <TypeGrid>
           <TypeCard $gold data-aos="fade-up">
             <TypeHead $gold>
-              <IoCashOutline /> Cash ladders <AgeBadge>18+</AgeBadge>
+              <IoCashOutline /> Cash ladders <AgeBadge>{PAID_LADDER_AGE_BADGE}</AgeBadge>
             </TypeHead>
             <TypeText>
               The full entry fee goes into the prize pool, so the pot grows with
-              every player who joins. A {Math.round(PLATFORM_FEE * 100)}%
-              platform fee is added on top of the entry. If a ladder
-              doesn&apos;t reach its minimum players, it&apos;s cancelled and
-              every entry is refunded.
+              every player who joins. A {PLATFORM_FEE_PERCENT} platform fee is
+              added on top of the entry. If a ladder doesn&apos;t reach its
+              minimum players, it&apos;s cancelled and every entry is{" "}
+              {LADDER_CANCELLED_REFUND}.
             </TypeText>
           </TypeCard>
           <TypeCard data-aos="fade-up" data-aos-delay={100}>

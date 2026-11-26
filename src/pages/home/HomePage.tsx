@@ -14,6 +14,7 @@ import {
   FaArrowDown,
 } from "react-icons/fa";
 
+import { PRIVACY_POLICY_URL, TERMS_PATH } from "courtchamps-shared";
 import { CourtChampLogo, playStoreBadge, appStoreBadge } from "../../assets";
 import { appScreens } from "../../assets/appScreens";
 import SeasonOne, { SEASON_ONE_ANCHOR } from "./SeasonOne";
@@ -298,13 +299,10 @@ export default function HomePage() {
       {/* ─── Footer ─── */}
       <FooterRow>
         <FooterLinks>
-          <a
-            href="https://www.privacypolicies.com/live/914311ad-9248-4550-ac0b-b316f863aa78"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">
             Privacy Policy
           </a>
+          <Link to={TERMS_PATH}>Terms</Link>
           <Link to="/accounts/delete-account">Delete Account</Link>
           <a href="mailto:info@courtchamps.com">info@courtchamps.com</a>
         </FooterLinks>
